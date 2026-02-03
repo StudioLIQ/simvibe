@@ -8,7 +8,12 @@ import {
   type ExtractorConfig,
   type OrchestratorConfig,
 } from '@simvibe/engine';
-import { getCalibrationKey } from '@simvibe/shared';
+import {
+  getCalibrationKey,
+  createInitialDiagnostics,
+  type RunDiagnostics,
+  type PhaseTiming,
+} from '@simvibe/shared';
 
 function getStorageConfig(): StorageConfig {
   const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/simvibe.db';
@@ -53,6 +58,9 @@ export async function POST(
 
   const storage = createStorage(getStorageConfig());
 
+  const diagnostics: RunDiagnostics = createInitialDiagnostics(id);
+  let currentPhase: PhaseTiming | null = null;
+
   try {
     const run = await storage.getRun(id);
 
@@ -72,6 +80,7 @@ export async function POST(
 
     await storage.updateRunStatus(id, 'running');
 
+    currentPhase = { phase: 'extraction', startedAt: new Date().toISOString() };
     const extractor = createExtractor(getExtractorConfig());
 
     let landingExtract;
@@ -85,8 +94,21 @@ export async function POST(
       );
     }
 
+    currentPhase.endedAt = new Date().toISOString();
+    currentPhase.durationMs = new Date(currentPhase.endedAt).getTime() - new Date(currentPhase.startedAt).getTime();
+    diagnostics.phaseTimings.push(currentPhase);
+
+    diagnostics.extractionConfidence = landingExtract.confidence;
+    if (landingExtract.warnings) {
+      diagnostics.extractionWarnings = landingExtract.warnings;
+    }
+    if (landingExtract.failed) {
+      diagnostics.extractionWarnings.push(`Extraction failed: ${landingExtract.failureReason || 'Unknown reason'}`);
+    }
+
     await storage.saveLandingExtract(id, landingExtract);
 
+    currentPhase = { phase: 'simulation', startedAt: new Date().toISOString() };
     const orchestrator = createOrchestrator(getOrchestratorConfig());
 
     orchestrator.onEvent(async (event) => {
@@ -95,11 +117,26 @@ export async function POST(
 
     const result = await orchestrator.runSimulation(id, run.input, landingExtract);
 
+    currentPhase.endedAt = new Date().toISOString();
+    currentPhase.durationMs = new Date(currentPhase.endedAt).getTime() - new Date(currentPhase.startedAt).getTime();
+    diagnostics.phaseTimings.push(currentPhase);
+
+    diagnostics.llmCalls = result.agentResults.length;
+    diagnostics.fallbacksUsed = result.agentResults.filter(r => r.output.isFallback).length;
+
     for (const agentResult of result.agentResults) {
       await storage.saveAgentOutput(id, agentResult.output);
+      if (agentResult.output.isFallback) {
+        diagnostics.agentWarnings.push({
+          agentId: agentResult.output.personaId,
+          warning: `Used fallback output: ${agentResult.output.fallbackReason || 'Unknown reason'}`,
+        });
+      }
     }
 
     if (!result.error) {
+      currentPhase = { phase: 'report_generation', startedAt: new Date().toISOString() };
+
       const category = run.input.category || 'general';
       const pricingModel = run.input.pricingModel || 'unknown';
       const calibrationKey = getCalibrationKey(category, pricingModel);
@@ -111,11 +148,25 @@ export async function POST(
         run.variantOf,
         calibrationPrior
       );
+
+      currentPhase.endedAt = new Date().toISOString();
+      currentPhase.durationMs = new Date(currentPhase.endedAt).getTime() - new Date(currentPhase.startedAt).getTime();
+      diagnostics.phaseTimings.push(currentPhase);
+
       await storage.saveReport(id, report);
       await storage.updateRunStatus(id, 'completed');
     } else {
+      diagnostics.errors.push({
+        timestamp: new Date().toISOString(),
+        message: result.error,
+        phase: 'simulation',
+      });
       await storage.updateRunStatus(id, 'failed', result.error);
     }
+
+    diagnostics.completedAt = new Date().toISOString();
+    diagnostics.totalDurationMs = new Date(diagnostics.completedAt).getTime() - new Date(diagnostics.startedAt).getTime();
+    await storage.saveDiagnostics(id, diagnostics);
 
     return NextResponse.json({
       success: !result.error,
@@ -124,10 +175,26 @@ export async function POST(
     });
   } catch (error) {
     console.error('Error starting run:', error);
-    await storage.updateRunStatus(id, 'failed', error instanceof Error ? error.message : 'Unknown error');
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+    diagnostics.errors.push({
+      timestamp: new Date().toISOString(),
+      message: errorMessage,
+      phase: currentPhase?.phase,
+    });
+    diagnostics.completedAt = new Date().toISOString();
+    diagnostics.totalDurationMs = new Date(diagnostics.completedAt).getTime() - new Date(diagnostics.startedAt).getTime();
+
+    try {
+      await storage.saveDiagnostics(id, diagnostics);
+    } catch (diagError) {
+      console.error('Failed to save diagnostics:', diagError);
+    }
+
+    await storage.updateRunStatus(id, 'failed', errorMessage);
 
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Internal server error' },
+      { error: errorMessage },
       { status: 500 }
     );
   } finally {

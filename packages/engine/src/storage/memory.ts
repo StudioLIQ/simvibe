@@ -7,6 +7,7 @@ import type {
   Report,
   ActualOutcomes,
   CalibrationPrior,
+  RunDiagnostics,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -94,6 +95,15 @@ export class MemoryStorage implements Storage {
       throw new Error(`Run not found: ${runId}`);
     }
     run.actuals = actuals;
+    run.updatedAt = new Date().toISOString();
+  }
+
+  async saveDiagnostics(runId: string, diagnostics: RunDiagnostics): Promise<void> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+    run.diagnostics = diagnostics;
     run.updatedAt = new Date().toISOString();
   }
 

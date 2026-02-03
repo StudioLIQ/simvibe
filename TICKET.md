@@ -465,7 +465,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-017 (P1) Add observability: run logs, timings, extraction confidence, warnings
+### [x] SIM-017 (P1) Add observability: run logs, timings, extraction confidence, warnings
 **Goal:** Judges trust what they can inspect.
 
 **Deliverables**
@@ -480,6 +480,18 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Failures are explainable, not silent
 
 **Dependencies:** SIM-006, SIM-010
+
+**Completion notes:**
+- RunDiagnostics schema in packages/shared/src/schemas/run-diagnostics.ts
+- Tracks: phase timings, extraction confidence, extraction warnings, agent warnings, errors, LLM calls, fallbacks
+- Storage updated with diagnostics column and saveDiagnostics method
+- Start API captures and saves diagnostics throughout simulation lifecycle
+- Diagnostics panel in run page with collapsible UI showing:
+  - Total duration, extraction confidence, LLM calls/fallbacks
+  - Phase timings table
+  - Extraction warnings, agent warnings, errors
+- Test: `pnpm typecheck` passes for all packages
+- Test: Run a simulation, view diagnostics panel after completion
 
 ---
 
