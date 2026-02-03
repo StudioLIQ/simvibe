@@ -222,7 +222,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-008 (P0) Aggregator + report generator (traction band, friction top 3, one-line fixes)
+### [x] SIM-008 (P0) Aggregator + report generator (traction band, friction top 3, one-line fixes)
 **Goal:** Produce a judge-friendly, readable report.
 
 **Deliverables**
@@ -243,6 +243,16 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Report highlights at least 3 actionable fixes
 
 **Dependencies:** SIM-006
+
+**Completion notes:**
+- Aggregator in packages/engine/src/aggregator/
+- aggregateMetrics(): computes expected actions, bounce/share rates, disagreement/uncertainty scores
+- determineTractionBand(): maps metrics to very_low/low/moderate/high/very_high
+- extractFrictions(): consolidates friction points from all agents, ranks by frequency
+- calculateScores(): clarity, credibility, differentiation, pricing, conversion scores
+- generateReport(): creates full Report object from agent outputs
+- formatReportMarkdown(): renders report as readable markdown
+- Test: `pnpm --filter @simvibe/engine typecheck` passes
 
 ---
 
