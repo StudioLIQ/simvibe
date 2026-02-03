@@ -281,8 +281,8 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-010 (P0) Implement live run page with SSE stream (agent debate + event timeline)
-**Goal:** The “wow” moment: viewers watch agents argue and act in real time.
+### [x] SIM-010 (P0) Implement live run page with SSE stream (agent debate + event timeline)
+**Goal:** The "wow" moment: viewers watch agents argue and act in real time.
 
 **Deliverables**
 - `/run/:id` page with:
@@ -297,6 +297,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Page does not freeze; handles reconnects gracefully
 
 **Dependencies:** SIM-006, SIM-009
+
+**Completion notes:**
+- /run/[id] page with event timeline, phase indicator, status display
+- GET /api/run/[id] fetches run details
+- POST /api/run/[id]/start triggers simulation (extraction + orchestrator + report)
+- GET /api/run/[id]/stream provides SSE stream of events
+- Events show timestamp, type, agent, action with probabilities
+- Auto-scrolls to latest events
+- Test: `pnpm --filter @simvibe/web typecheck` passes
 
 ---
 
