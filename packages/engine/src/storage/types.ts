@@ -1,0 +1,35 @@
+import type {
+  RunInput,
+  LandingExtract,
+  AgentOutput,
+  SimEvent,
+  Report,
+} from '@simvibe/shared';
+
+export type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
+
+export interface Run {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  status: RunStatus;
+  input: RunInput;
+  landingExtract?: LandingExtract;
+  agentOutputs: AgentOutput[];
+  events: SimEvent[];
+  report?: Report;
+  variantOf?: string;
+  error?: string;
+}
+
+export interface Storage {
+  createRun(input: RunInput): Promise<Run>;
+  getRun(runId: string): Promise<Run | null>;
+  updateRunStatus(runId: string, status: RunStatus, error?: string): Promise<void>;
+  saveLandingExtract(runId: string, extract: LandingExtract): Promise<void>;
+  appendEvent(runId: string, event: SimEvent): Promise<void>;
+  saveAgentOutput(runId: string, output: AgentOutput): Promise<void>;
+  saveReport(runId: string, report: Report): Promise<void>;
+  listRuns(limit?: number): Promise<Run[]>;
+  close(): Promise<void>;
+}

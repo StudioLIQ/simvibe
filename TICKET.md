@@ -78,7 +78,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-003 (P0) Implement a minimal storage layer (SQLite or in-memory + file persistence)
+### [x] SIM-003 (P0) Implement a minimal storage layer (SQLite or in-memory + file persistence)
 **Goal:** Persist runs for shareable report links.
 
 **Deliverables**
@@ -96,6 +96,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Storage errors are surfaced clearly
 
 **Dependencies:** SIM-002
+
+**Completion notes:**
+- Storage interface in packages/engine/src/storage/
+- SQLiteStorage: better-sqlite3 with WAL mode, tables for runs/events/agent_outputs
+- MemoryStorage: in-memory fallback for testing/demo
+- createStorage() factory with config-based selection
+- Test: `pnpm --filter @simvibe/engine typecheck` passes
 
 ---
 
