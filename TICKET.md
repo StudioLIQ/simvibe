@@ -422,19 +422,26 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 ---
 
 ## Milestone M5 — Demo Polish (P0/P1)
-### [ ] SIM-016 (P0) Produce a 2-minute demo script + seeded demo examples
+### [x] SIM-016 (P0) Produce a 2-minute demo script + seeded demo examples
 **Goal:** Control the narrative and avoid live failures.
 
 **Deliverables**
 - `DEMO.md` script
 - 2–3 example products with saved landing extracts (offline demo mode)
-- “Demo mode” toggle that uses cached extracts and stable outputs
+- "Demo mode" toggle that uses cached extracts and stable outputs
 
 **Acceptance Criteria**
 - Demo runs without external dependencies (optional mode)
 - Script fits within ~2 minutes
 
 **Dependencies:** SIM-010, SIM-011
+
+**Completion notes:**
+- DEMO.md with 2-minute script: intro, create world, watch simulation, review results, what-if rerun
+- Demo product: CodeReviewer (AI code review tool) with cached landing extract and 5 agent outputs
+- packages/engine/src/demo/ with fixtures and isDemoMode() helper
+- DEMO_MODE=true env var for cached mode (no API calls)
+- Test: `pnpm --filter @simvibe/engine typecheck` passes
 
 ---
 
