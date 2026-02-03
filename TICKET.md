@@ -309,12 +309,12 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-011 (P0) Report page + shareable permalink
+### [x] SIM-011 (P0) Report page + shareable permalink
 **Goal:** Share a run outcome with judges/others quickly.
 
 **Deliverables**
 - `/run/:id/report` page
-- “Copy share link”
+- "Copy share link"
 - Store report in DB and serve read-only
 
 **Acceptance Criteria**
@@ -322,6 +322,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Link works after refresh
 
 **Dependencies:** SIM-008, SIM-003
+
+**Completion notes:**
+- /run/[id]/report page with full report visualization
+- Overall score with color-coded traction band
+- Score breakdown bars (clarity, credibility, differentiation, pricing, conversion)
+- Predicted metrics grid (upvotes, signups, pays, bounce, share)
+- Top 5 friction points with severity indicators
+- Top 5 recommended fixes with priority ranking
+- Persona analysis cards showing primary action, friction, one-line fix
+- "Copy Share Link" button copies URL to clipboard
+- Test: `pnpm --filter @simvibe/web typecheck` passes
 
 ---
 
