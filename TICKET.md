@@ -421,8 +421,8 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 ---
 
 ## Milestone M4 — Optional On-chain Receipt (P2, Feature-flagged)
-### [ ] SIM-015 (P2) Implement receipt hashing + optional chain write
-**Goal:** Provide a tamper-evident “receipt” without making the product crypto-native.
+### [x] SIM-015 (P2) Implement receipt hashing + optional chain write
+**Goal:** Provide a tamper-evident "receipt" without making the product crypto-native.
 
 **Deliverables**
 - `report_hash = sha256(canonical_report_json)`
@@ -438,6 +438,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - With flag on: receipt write succeeds (or fails gracefully with clear message)
 
 **Dependencies:** SIM-011
+
+**Completion notes:**
+- ChainReceipt schema in packages/shared/src/schemas/chain-receipt.ts
+- Chain module in packages/engine/src/chain/ with hash.ts and writer.ts
+- sha256Hash() computes canonical JSON hash (deep sorted keys)
+- hashRunInput() and hashReport() for specific hashing
+- createReceipt() generates receipt, optionally writes to chain if ENABLE_CHAIN_RECEIPT=true
+- Storage updated with receipt field and saveReceipt() method (SQLite + Memory)
+- POST/GET /api/run/[id]/receipt endpoint for creating/fetching receipts
+- Report page updated with "Simulation Receipt" section showing hashes and chain info
+- ethers.js dynamically loaded only when chain write is enabled (not bundled)
+- Test: `pnpm typecheck` passes for all packages
+- Test: Visit /run/[id]/report, click "Generate Receipt" to create offline receipt
 
 ---
 

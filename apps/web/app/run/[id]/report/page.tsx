@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Report, PersonaReport, FrictionItem, ActualOutcomes } from '@simvibe/shared';
+import type { Report, PersonaReport, FrictionItem, ActualOutcomes, ChainReceipt } from '@simvibe/shared';
 
 interface PredictionErrors {
   signupError: number;
@@ -23,6 +23,7 @@ interface RunData {
   };
   report?: Report;
   actuals?: ActualOutcomes;
+  receipt?: ChainReceipt;
   variantOf?: string;
 }
 
@@ -135,9 +136,13 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [actualsInput, setActualsInput] = useState({ signupRate: '', payRate: '', bounceRate: '', notes: '' });
   const [isSavingActuals, setIsSavingActuals] = useState(false);
   const [predictionErrors, setPredictionErrors] = useState<PredictionErrors | null>(null);
+  const [isCreatingReceipt, setIsCreatingReceipt] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
+  const [chainEnabled, setChainEnabled] = useState(false);
 
   useEffect(() => {
     fetchRun();
+    fetchReceiptStatus();
   }, [id]);
 
   useEffect(() => {
@@ -266,6 +271,45 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       setError(err instanceof Error ? err.message : 'Failed to save actuals');
     } finally {
       setIsSavingActuals(false);
+    }
+  };
+
+  const fetchReceiptStatus = async () => {
+    try {
+      const response = await fetch(`/api/run/${id}/receipt`);
+      if (response.ok) {
+        const data = await response.json();
+        setChainEnabled(data.chainEnabled);
+      }
+    } catch (err) {
+      console.error('Error fetching receipt status:', err);
+    }
+  };
+
+  const createReceipt = async () => {
+    setIsCreatingReceipt(true);
+    setReceiptError(null);
+
+    try {
+      const response = await fetch(`/api/run/${id}/receipt`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create receipt');
+      }
+
+      if (data.error) {
+        setReceiptError(data.error);
+      }
+
+      await fetchRun();
+    } catch (err) {
+      setReceiptError(err instanceof Error ? err.message : 'Failed to create receipt');
+    } finally {
+      setIsCreatingReceipt(false);
     }
   };
 
@@ -650,6 +694,124 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         {!run?.actuals && !showActuals && (
           <p style={{ fontSize: '0.875rem', color: '#666' }}>
             Help improve predictions by entering your actual launch results
+          </p>
+        )}
+      </div>
+
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: run?.receipt ? '1rem' : 0 }}>
+          <h3 style={{ fontSize: '1rem' }}>Simulation Receipt</h3>
+          {!run?.receipt && (
+            <button
+              onClick={createReceipt}
+              disabled={isCreatingReceipt}
+              className="btn"
+              style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+            >
+              {isCreatingReceipt ? 'Creating...' : 'Generate Receipt'}
+            </button>
+          )}
+        </div>
+
+        {receiptError && (
+          <div style={{
+            background: '#450a0a',
+            border: '1px solid #dc2626',
+            borderRadius: '0.5rem',
+            padding: '0.75rem',
+            marginBottom: '1rem',
+            fontSize: '0.875rem',
+            color: '#fca5a5',
+          }}>
+            {receiptError}
+          </div>
+        )}
+
+        {run?.receipt ? (
+          <div>
+            <div style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.25rem' }}>Run Hash (SHA-256)</div>
+                <code style={{
+                  fontSize: '0.75rem',
+                  color: '#a78bfa',
+                  background: '#0a0a0a',
+                  padding: '0.5rem',
+                  borderRadius: '4px',
+                  display: 'block',
+                  wordBreak: 'break-all',
+                }}>
+                  {run.receipt.runHash}
+                </code>
+              </div>
+              <div style={{ marginBottom: '0.75rem' }}>
+                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.25rem' }}>Report Hash (SHA-256)</div>
+                <code style={{
+                  fontSize: '0.75rem',
+                  color: '#22c55e',
+                  background: '#0a0a0a',
+                  padding: '0.5rem',
+                  borderRadius: '4px',
+                  display: 'block',
+                  wordBreak: 'break-all',
+                }}>
+                  {run.receipt.reportHash}
+                </code>
+              </div>
+              <div style={{ fontSize: '0.75rem', color: '#666' }}>
+                Created: {new Date(run.receipt.timestamp).toLocaleString()}
+              </div>
+            </div>
+
+            {run.receipt.txHash ? (
+              <div style={{
+                background: '#14532d',
+                border: '1px solid #22c55e',
+                borderRadius: '0.5rem',
+                padding: '0.75rem',
+                fontSize: '0.875rem',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                  <span style={{ color: '#86efac', fontWeight: 500 }}>On-chain Receipt</span>
+                  {run.receipt.chainId && (
+                    <span style={{ fontSize: '0.75rem', color: '#86efac', background: '#0f3a1e', padding: '0.125rem 0.5rem', borderRadius: '4px' }}>
+                      Chain ID: {run.receipt.chainId}
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#86efac', marginBottom: '0.25rem' }}>
+                  <span style={{ color: '#6ee7b7' }}>TX Hash:</span>
+                </div>
+                <code style={{
+                  fontSize: '0.7rem',
+                  color: '#86efac',
+                  wordBreak: 'break-all',
+                }}>
+                  {run.receipt.txHash}
+                </code>
+                {run.receipt.blockNumber && (
+                  <div style={{ fontSize: '0.75rem', color: '#86efac', marginTop: '0.5rem' }}>
+                    Block: {run.receipt.blockNumber}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{
+                background: '#1a1a2e',
+                border: '1px solid #2d2d44',
+                borderRadius: '0.5rem',
+                padding: '0.75rem',
+                fontSize: '0.875rem',
+                color: '#a5a5ff',
+              }}>
+                Offline receipt (chain write disabled)
+              </div>
+            )}
+          </div>
+        ) : (
+          <p style={{ fontSize: '0.875rem', color: '#666' }}>
+            Generate a tamper-evident receipt with SHA-256 hashes of your simulation
+            {chainEnabled && ' (will be written to blockchain)'}
           </p>
         )}
       </div>

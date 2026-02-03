@@ -6,5 +6,6 @@ export * from './prompts';
 export * from './orchestrator';
 export * from './aggregator';
 export * from './demo';
+export * from './chain';
 
 export const PACKAGE_NAME = '@simvibe/engine';

@@ -9,6 +9,7 @@ import type {
   ActualOutcomes,
   CalibrationPrior,
   RunDiagnostics,
+  ChainReceipt,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -23,6 +24,7 @@ const INIT_SQL = `
     report TEXT,
     actuals TEXT,
     diagnostics TEXT,
+    receipt TEXT,
     variant_of TEXT,
     error TEXT
   );
@@ -100,6 +102,7 @@ export class SQLiteStorage implements Storage {
       report: string | null;
       actuals: string | null;
       diagnostics: string | null;
+      receipt: string | null;
       variant_of: string | null;
       error: string | null;
     } | undefined;
@@ -126,6 +129,7 @@ export class SQLiteStorage implements Storage {
       report: row.report ? JSON.parse(row.report) : undefined,
       actuals: row.actuals ? JSON.parse(row.actuals) : undefined,
       diagnostics: row.diagnostics ? JSON.parse(row.diagnostics) : undefined,
+      receipt: row.receipt ? JSON.parse(row.receipt) : undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
       events: events.map((e) => JSON.parse(e.data)),
@@ -206,6 +210,17 @@ export class SQLiteStorage implements Storage {
     const result = this.db.prepare(`
       UPDATE runs SET diagnostics = ?, updated_at = ? WHERE id = ?
     `).run(JSON.stringify(diagnostics), now, runId);
+
+    if (result.changes === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async saveReceipt(runId: string, receipt: ChainReceipt): Promise<void> {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      UPDATE runs SET receipt = ?, updated_at = ? WHERE id = ?
+    `).run(JSON.stringify(receipt), now, runId);
 
     if (result.changes === 0) {
       throw new Error(`Run not found: ${runId}`);
