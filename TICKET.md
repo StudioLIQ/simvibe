@@ -51,7 +51,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-002 (P0) Define shared schemas for Run, Event, AgentOutput, Report
+### [x] SIM-002 (P0) Define shared schemas for Run, Event, AgentOutput, Report
 **Goal:** Make outputs structured and validation enforceable.
 
 **Deliverables**
@@ -68,6 +68,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Types are imported cleanly across web and engine
 
 **Dependencies:** SIM-001
+
+**Completion notes:**
+- All schemas in packages/shared/src/schemas/ using Zod
+- Each schema has validate*() helper returning typed success/error
+- createFallbackAgentOutput() provides safe fallback for failed parsing
+- Types exported from @simvibe/shared, importable in web and engine
+- Test: `pnpm --filter @simvibe/shared typecheck` passes
 
 ---
 
