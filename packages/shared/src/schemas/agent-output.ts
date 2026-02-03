@@ -118,3 +118,7 @@ export function validateAgentOutput(data: unknown): { success: true; data: Agent
   const errorMessages = result.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
   return { success: false, error: errorMessages };
 }
+
+export function getAllPersonaIds(): PersonaId[] {
+  return PersonaIdSchema.options as PersonaId[];
+}

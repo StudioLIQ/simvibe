@@ -164,7 +164,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-006 (P0) Build orchestrator: phases (scan → skim → debate → actions)
+### [x] SIM-006 (P0) Build orchestrator: phases (scan → skim → debate → actions)
 **Goal:** Execute the simulation with a coherent multi-step flow.
 
 **Deliverables**
@@ -183,6 +183,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - All agent outputs pass schema validation (with retries later)
 
 **Dependencies:** SIM-005
+
+**Completion notes:**
+- Orchestrator in packages/engine/src/orchestrator/
+- LLM clients: Anthropic (Claude) and OpenAI (GPT-4o) support
+- runSimulation(): emits phase events, runs all 5 agents in parallel
+- Agent runner: composes prompts, parses JSON, handles validation
+- Auto-retry built in (up to 3 retries with fix-your-json prompt)
+- Fallback output generated if all retries fail
+- Test: `pnpm --filter @simvibe/engine typecheck` passes
 
 ---
 
