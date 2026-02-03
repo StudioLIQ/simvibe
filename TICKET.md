@@ -137,7 +137,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-005 (P0) Create the 5 persona prompt templates + shared world protocol
+### [x] SIM-005 (P0) Create the 5 persona prompt templates + shared world protocol
 **Goal:** Ensure agents behave differently and always output valid JSON.
 
 **Deliverables**
@@ -150,9 +150,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Acceptance Criteria**
 - Prompts are deterministic and consistent (avoid ambiguous instructions)
-- Personas produce meaningfully different “primary friction” and actions on the same input
+- Personas produce meaningfully different "primary friction" and actions on the same input
 
 **Dependencies:** SIM-002
+
+**Completion notes:**
+- Prompts in packages/engine/src/prompts/
+- WORLD_PROTOCOL: shared simulation rules, JSON output format, phases
+- 5 personas: cynical_engineer, passionate_pm, pragmatic_investor, ruthless_marketer, agency_owner
+- Each persona has unique priorities, red flags, budget range, skepticism level
+- composePrompt(): combines protocol + persona + input + extract
+- Test: `pnpm --filter @simvibe/engine typecheck` passes
 
 ---
 
