@@ -107,7 +107,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 ---
 
 ## Milestone M1 — Simulation Engine (P0)
-### [ ] SIM-004 (P0) Implement landing page extraction pipeline with fallback
+### [x] SIM-004 (P0) Implement landing page extraction pipeline with fallback
 **Goal:** Convert a URL into structured text the agents can consume.
 
 **Deliverables**
@@ -122,9 +122,18 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 **Acceptance Criteria**
 - For a normal SaaS landing page, extraction returns at least:
     - hero + pricing or hero + features
-- If extraction fails, system returns a graceful “ExtractionFailed” extract and continues
+- If extraction fails, system returns a graceful "ExtractionFailed" extract and continues
 
 **Dependencies:** SIM-003
+
+**Completion notes:**
+- Extractor interface in packages/engine/src/extractor/
+- FirecrawlExtractor: uses Firecrawl API v1
+- JinaExtractor: uses Jina Reader (works without API key)
+- PastedExtractor: parses user-pasted content
+- Sectioner: pattern-based section detection (hero, features, pricing, faq, testimonials, footer)
+- createFailedExtract() for graceful degradation
+- Test: `pnpm --filter @simvibe/engine typecheck` passes
 
 ---
 
