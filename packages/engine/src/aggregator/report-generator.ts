@@ -1,4 +1,13 @@
-import type { AgentOutput, Report, PersonaReport, PersonaId, ActionType } from '@simvibe/shared';
+import type {
+  AgentOutput,
+  Report,
+  PersonaReport,
+  PersonaId,
+  ActionType,
+  CalibrationPrior,
+  AggregatedMetrics,
+} from '@simvibe/shared';
+import { applyCalibration } from '@simvibe/shared';
 import { aggregateOutputs, type AggregationResult } from './aggregator';
 
 function createPersonaReport(output: AgentOutput): PersonaReport {
@@ -43,29 +52,65 @@ function prioritizeFixes(outputs: AgentOutput[]): { fix: string; source: Persona
   return fixes.map((f, i) => ({ ...f, priority: i + 1 }));
 }
 
+export interface GenerateReportOptions {
+  runId: string;
+  outputs: AgentOutput[];
+  variantOf?: string;
+  calibrationPrior?: CalibrationPrior | null;
+}
+
 export function generateReport(
   runId: string,
   outputs: AgentOutput[],
-  variantOf?: string
+  variantOf?: string,
+  calibrationPrior?: CalibrationPrior | null
 ): Report {
   const aggregation = aggregateOutputs(outputs);
 
   const personaReports = outputs.map(createPersonaReport);
   const oneLineFixes = prioritizeFixes(outputs);
 
+  const calibrated = applyCalibration(
+    {
+      signupRate: aggregation.metrics.expectedSignups,
+      payRate: aggregation.metrics.expectedPays,
+      bounceRate: aggregation.metrics.bounceRate,
+    },
+    calibrationPrior ?? null
+  );
+
+  const calibratedMetrics: AggregatedMetrics = calibrated.calibrationApplied
+    ? {
+        ...aggregation.metrics,
+        expectedSignups: calibrated.calibratedSignups,
+        expectedPays: calibrated.calibratedPays,
+        bounceRate: calibrated.calibratedBounce,
+      }
+    : aggregation.metrics;
+
+  const rawMetrics: AggregatedMetrics = calibrated.calibrationApplied
+    ? aggregation.metrics
+    : undefined as unknown as AggregatedMetrics;
+
+  const warnings = [...aggregation.warnings];
+  if (calibrated.calibrationApplied) {
+    warnings.push(`Calibration applied based on ${calibrated.sampleCount} previous actual outcomes (key: ${calibrated.priorKey})`);
+  }
+
   return {
     runId,
     generatedAt: new Date().toISOString(),
     tractionBand: aggregation.tractionBand,
     confidence: aggregation.confidence,
-    metrics: aggregation.metrics,
+    metrics: calibratedMetrics,
     scores: aggregation.scores,
     overallScore: aggregation.overallScore,
     frictionList: aggregation.frictionList,
     personaReports,
     oneLineFixes,
-    warnings: aggregation.warnings.length > 0 ? aggregation.warnings : undefined,
-    calibrationApplied: false,
+    warnings: warnings.length > 0 ? warnings : undefined,
+    calibrationApplied: calibrated.calibrationApplied,
+    rawMetrics: calibrated.calibrationApplied ? rawMetrics : undefined,
     variantOf,
   };
 }

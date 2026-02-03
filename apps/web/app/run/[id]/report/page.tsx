@@ -402,6 +402,30 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             <div style={{ fontSize: '0.75rem', color: '#888' }}>Share</div>
           </div>
         </div>
+
+        {report.calibrationApplied && report.rawMetrics && (
+          <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#1a1a2e', borderRadius: '0.5rem', border: '1px solid #2d2d44' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.75rem', background: '#4c1d95', padding: '0.125rem 0.5rem', borderRadius: '4px', color: '#c4b5fd' }}>
+                CALIBRATED
+              </span>
+              <span style={{ fontSize: '0.75rem', color: '#888' }}>
+                Adjusted based on previous actual outcomes
+              </span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', fontSize: '0.75rem' }}>
+              <div style={{ color: '#888' }}>
+                Raw Signups: <span style={{ color: '#666' }}>{(report.rawMetrics.expectedSignups * 100).toFixed(1)}%</span>
+              </div>
+              <div style={{ color: '#888' }}>
+                Raw Pays: <span style={{ color: '#666' }}>{(report.rawMetrics.expectedPays * 100).toFixed(1)}%</span>
+              </div>
+              <div style={{ color: '#888' }}>
+                Raw Bounce: <span style={{ color: '#666' }}>{(report.rawMetrics.bounceRate * 100).toFixed(1)}%</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginBottom: '1.5rem' }}>

@@ -4,3 +4,4 @@ export * from './agent-output';
 export * from './sim-event';
 export * from './report';
 export * from './actual-outcomes';
+export * from './calibration-prior';

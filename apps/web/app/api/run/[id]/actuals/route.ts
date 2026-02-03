@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createStorage, type StorageConfig } from '@simvibe/engine';
-import { validateActualOutcomesInput, type ActualOutcomes } from '@simvibe/shared';
+import {
+  validateActualOutcomesInput,
+  type ActualOutcomes,
+  getCalibrationKey,
+  createDefaultCalibrationPrior,
+  updateCalibrationPrior,
+} from '@simvibe/shared';
 
 function getStorageConfig(): StorageConfig {
   const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/simvibe.db';
@@ -72,6 +78,26 @@ export async function POST(
         : undefined,
     };
 
+    const category = run.input.category || 'general';
+    const pricingModel = run.input.pricingModel || 'unknown';
+    const calibrationKey = getCalibrationKey(category, pricingModel);
+
+    let existingPrior = await storage.getCalibrationPrior(calibrationKey);
+    if (!existingPrior) {
+      existingPrior = createDefaultCalibrationPrior(calibrationKey);
+    }
+
+    const updatedPrior = updateCalibrationPrior(
+      existingPrior,
+      predicted,
+      {
+        signupRate: actuals.signupRate,
+        payRate: actuals.payRate,
+        bounceRate: actuals.bounceRate,
+      }
+    );
+
+    await storage.saveCalibrationPrior(updatedPrior);
     await storage.close();
 
     return NextResponse.json({
@@ -79,6 +105,10 @@ export async function POST(
       actuals,
       predicted,
       errors,
+      calibration: {
+        key: calibrationKey,
+        prior: updatedPrior,
+      },
     });
   } catch (error) {
     console.error('Error saving actuals:', error);

@@ -5,6 +5,7 @@ import type {
   SimEvent,
   Report,
   ActualOutcomes,
+  CalibrationPrior,
 } from '@simvibe/shared';
 
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
@@ -33,6 +34,8 @@ export interface Storage {
   saveAgentOutput(runId: string, output: AgentOutput): Promise<void>;
   saveReport(runId: string, report: Report): Promise<void>;
   saveActuals(runId: string, actuals: ActualOutcomes): Promise<void>;
+  getCalibrationPrior(key: string): Promise<CalibrationPrior | null>;
+  saveCalibrationPrior(prior: CalibrationPrior): Promise<void>;
   listRuns(limit?: number): Promise<Run[]>;
   close(): Promise<void>;
 }

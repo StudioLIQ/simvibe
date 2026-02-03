@@ -6,11 +6,13 @@ import type {
   SimEvent,
   Report,
   ActualOutcomes,
+  CalibrationPrior,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
 export class MemoryStorage implements Storage {
   private runs: Map<string, Run> = new Map();
+  private calibrationPriors: Map<string, CalibrationPrior> = new Map();
 
   async createRun(input: RunInput): Promise<Run> {
     const now = new Date().toISOString();
@@ -93,6 +95,14 @@ export class MemoryStorage implements Storage {
     }
     run.actuals = actuals;
     run.updatedAt = new Date().toISOString();
+  }
+
+  async getCalibrationPrior(key: string): Promise<CalibrationPrior | null> {
+    return this.calibrationPriors.get(key) ?? null;
+  }
+
+  async saveCalibrationPrior(prior: CalibrationPrior): Promise<void> {
+    this.calibrationPriors.set(prior.key, prior);
   }
 
   async listRuns(limit = 100): Promise<Run[]> {

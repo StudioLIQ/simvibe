@@ -7,6 +7,7 @@ import type {
   SimEvent,
   Report,
   ActualOutcomes,
+  CalibrationPrior,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -39,6 +40,15 @@ const INIT_SQL = `
     data TEXT NOT NULL,
     UNIQUE(run_id, persona_id),
     FOREIGN KEY (run_id) REFERENCES runs(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS calibration_priors (
+    key TEXT PRIMARY KEY,
+    signup_multiplier REAL NOT NULL DEFAULT 1.0,
+    pay_multiplier REAL NOT NULL DEFAULT 1.0,
+    bounce_multiplier REAL NOT NULL DEFAULT 1.0,
+    sample_count INTEGER NOT NULL DEFAULT 0,
+    last_updated TEXT NOT NULL
   );
 
   CREATE INDEX IF NOT EXISTS idx_events_run_id ON events(run_id);
@@ -185,6 +195,46 @@ export class SQLiteStorage implements Storage {
     if (result.changes === 0) {
       throw new Error(`Run not found: ${runId}`);
     }
+  }
+
+  async getCalibrationPrior(key: string): Promise<CalibrationPrior | null> {
+    const row = this.db.prepare(`
+      SELECT * FROM calibration_priors WHERE key = ?
+    `).get(key) as {
+      key: string;
+      signup_multiplier: number;
+      pay_multiplier: number;
+      bounce_multiplier: number;
+      sample_count: number;
+      last_updated: string;
+    } | undefined;
+
+    if (!row) {
+      return null;
+    }
+
+    return {
+      key: row.key,
+      signupMultiplier: row.signup_multiplier,
+      payMultiplier: row.pay_multiplier,
+      bounceMultiplier: row.bounce_multiplier,
+      sampleCount: row.sample_count,
+      lastUpdated: row.last_updated,
+    };
+  }
+
+  async saveCalibrationPrior(prior: CalibrationPrior): Promise<void> {
+    this.db.prepare(`
+      INSERT OR REPLACE INTO calibration_priors (key, signup_multiplier, pay_multiplier, bounce_multiplier, sample_count, last_updated)
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).run(
+      prior.key,
+      prior.signupMultiplier,
+      prior.payMultiplier,
+      prior.bounceMultiplier,
+      prior.sampleCount,
+      prior.lastUpdated
+    );
   }
 
   async listRuns(limit = 100): Promise<Run[]> {

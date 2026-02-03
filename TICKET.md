@@ -392,7 +392,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-014 (P1) Implement calibration priors (category/pricing-model multipliers)
+### [x] SIM-014 (P1) Implement calibration priors (category/pricing-model multipliers)
 **Goal:** Make the simulator improve measurably over time.
 
 **Deliverables**
@@ -404,9 +404,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Acceptance Criteria**
 - After submitting actuals, subsequent runs in same category show calibrated adjustments
-- Calibration is transparent in report (“raw vs calibrated”)
+- Calibration is transparent in report ("raw vs calibrated")
 
 **Dependencies:** SIM-013
+
+**Completion notes:**
+- CalibrationPrior schema in packages/shared/src/schemas/calibration-prior.ts
+- Calibration key: category_pricing_model (e.g., "saas_subscription")
+- Storage updated with calibration_priors table, getCalibrationPrior/saveCalibrationPrior methods
+- Actuals API updated to trigger calibration update on submission (exponential moving average, 0.2 learning rate)
+- Report generator updated to accept calibration prior and apply multipliers
+- Report UI shows "CALIBRATED" badge and raw vs calibrated metrics when calibration is applied
+- Test: Submit actuals for a run, create new run in same category, verify calibration is applied
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

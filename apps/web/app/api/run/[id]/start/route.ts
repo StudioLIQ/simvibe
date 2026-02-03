@@ -8,6 +8,7 @@ import {
   type ExtractorConfig,
   type OrchestratorConfig,
 } from '@simvibe/engine';
+import { getCalibrationKey } from '@simvibe/shared';
 
 function getStorageConfig(): StorageConfig {
   const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/simvibe.db';
@@ -99,9 +100,16 @@ export async function POST(
     }
 
     if (!result.error) {
+      const category = run.input.category || 'general';
+      const pricingModel = run.input.pricingModel || 'unknown';
+      const calibrationKey = getCalibrationKey(category, pricingModel);
+      const calibrationPrior = await storage.getCalibrationPrior(calibrationKey);
+
       const report = generateReport(
         id,
-        result.agentResults.map(r => r.output)
+        result.agentResults.map(r => r.output),
+        run.variantOf,
+        calibrationPrior
       );
       await storage.saveReport(id, report);
       await storage.updateRunStatus(id, 'completed');
