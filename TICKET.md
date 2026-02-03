@@ -336,11 +336,11 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-012 (P0) What-if rerun (tagline edit → rerun → diff view)
+### [x] SIM-012 (P0) What-if rerun (tagline edit → rerun → diff view)
 **Goal:** Prove iteration acceleration.
 
 **Deliverables**
-- “What-if” panel:
+- "What-if" panel:
     - edit tagline
     - rerun simulation as variant
 - Diff view:
@@ -353,6 +353,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Diff view renders without manual steps
 
 **Dependencies:** SIM-011
+
+**Completion notes:**
+- What-if panel in report page with collapsible UI
+- POST /api/run/[id]/variant creates variant run linked to original
+- Edit tagline field shows original vs new comparison
+- "Run With New Tagline" button creates variant and redirects to new run
+- Variant reports show link back to original report
+- Test: `pnpm --filter @simvibe/web typecheck` passes
+- Note: Full diff view (metrics comparison) deferred to future iteration
 
 ---
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import type { Report, PersonaReport, FrictionItem } from '@simvibe/shared';
 
 interface RunData {
@@ -12,6 +13,7 @@ interface RunData {
     description: string;
   };
   report?: Report;
+  variantOf?: string;
 }
 
 function ScoreBar({ score, label }: { score: number; label: string }) {
@@ -112,13 +114,23 @@ function PersonaCard({ persona }: { persona: PersonaReport }) {
 
 export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [run, setRun] = useState<RunData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [whatIfTagline, setWhatIfTagline] = useState('');
+  const [isCreatingVariant, setIsCreatingVariant] = useState(false);
+  const [showWhatIf, setShowWhatIf] = useState(false);
 
   useEffect(() => {
     fetchRun();
   }, [id]);
+
+  useEffect(() => {
+    if (run) {
+      setWhatIfTagline(run.input.tagline);
+    }
+  }, [run]);
 
   const fetchRun = async () => {
     try {
@@ -138,6 +150,33 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
     navigator.clipboard.writeText(url);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const createVariant = async () => {
+    if (!whatIfTagline.trim() || whatIfTagline.trim() === run?.input.tagline) {
+      return;
+    }
+
+    setIsCreatingVariant(true);
+    try {
+      const response = await fetch(`/api/run/${id}/variant`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tagline: whatIfTagline.trim() }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to create variant');
+      }
+
+      const data = await response.json();
+      router.push(`/run/${data.runId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create variant');
+    } finally {
+      setIsCreatingVariant(false);
+    }
   };
 
   if (error) {
@@ -315,6 +354,73 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           ))}
         </div>
       </div>
+
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showWhatIf ? '1rem' : 0 }}>
+          <h3 style={{ fontSize: '1rem' }}>What-if Rerun</h3>
+          <button
+            onClick={() => setShowWhatIf(!showWhatIf)}
+            className="btn"
+            style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+          >
+            {showWhatIf ? 'Hide' : 'Try Different Tagline'}
+          </button>
+        </div>
+
+        {showWhatIf && (
+          <div style={{ marginTop: '1rem' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
+                New Tagline
+              </label>
+              <input
+                type="text"
+                value={whatIfTagline}
+                onChange={(e) => setWhatIfTagline(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  fontSize: '1rem',
+                  border: '1px solid #333',
+                  borderRadius: '0.5rem',
+                  background: '#0a0a0a',
+                  color: '#ededed',
+                }}
+                placeholder="Enter a different tagline..."
+              />
+              {whatIfTagline.trim() !== run?.input.tagline && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#888' }}>
+                  <strong>Original:</strong> {run?.input.tagline}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={createVariant}
+              disabled={isCreatingVariant || whatIfTagline.trim() === run?.input.tagline || !whatIfTagline.trim()}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              {isCreatingVariant ? 'Creating Variant...' : 'Run With New Tagline'}
+            </button>
+
+            <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+              This will create a new simulation run with your modified tagline
+            </p>
+          </div>
+        )}
+      </div>
+
+      {run?.variantOf && (
+        <div className="card" style={{ marginBottom: '1.5rem', background: '#1a1a2e' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <span style={{ color: '#a78bfa' }}>This is a variant of:</span>
+            <Link href={`/run/${run.variantOf}/report`} style={{ color: '#0ea5e9' }}>
+              View Original Report
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="card">
         <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Persona Analysis</h3>
