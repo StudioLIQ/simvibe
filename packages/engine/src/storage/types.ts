@@ -4,6 +4,7 @@ import type {
   AgentOutput,
   SimEvent,
   Report,
+  ActualOutcomes,
 } from '@simvibe/shared';
 
 export type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
@@ -18,6 +19,7 @@ export interface Run {
   agentOutputs: AgentOutput[];
   events: SimEvent[];
   report?: Report;
+  actuals?: ActualOutcomes;
   variantOf?: string;
   error?: string;
 }
@@ -30,6 +32,7 @@ export interface Storage {
   appendEvent(runId: string, event: SimEvent): Promise<void>;
   saveAgentOutput(runId: string, output: AgentOutput): Promise<void>;
   saveReport(runId: string, report: Report): Promise<void>;
+  saveActuals(runId: string, actuals: ActualOutcomes): Promise<void>;
   listRuns(limit?: number): Promise<Run[]>;
   close(): Promise<void>;
 }

@@ -6,6 +6,7 @@ import type {
   AgentOutput,
   SimEvent,
   Report,
+  ActualOutcomes,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -18,6 +19,7 @@ const INIT_SQL = `
     input TEXT NOT NULL,
     landing_extract TEXT,
     report TEXT,
+    actuals TEXT,
     variant_of TEXT,
     error TEXT
   );
@@ -84,6 +86,7 @@ export class SQLiteStorage implements Storage {
       input: string;
       landing_extract: string | null;
       report: string | null;
+      actuals: string | null;
       variant_of: string | null;
       error: string | null;
     } | undefined;
@@ -108,6 +111,7 @@ export class SQLiteStorage implements Storage {
       input: JSON.parse(row.input),
       landingExtract: row.landing_extract ? JSON.parse(row.landing_extract) : undefined,
       report: row.report ? JSON.parse(row.report) : undefined,
+      actuals: row.actuals ? JSON.parse(row.actuals) : undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
       events: events.map((e) => JSON.parse(e.data)),
@@ -166,6 +170,17 @@ export class SQLiteStorage implements Storage {
     const result = this.db.prepare(`
       UPDATE runs SET report = ?, updated_at = ? WHERE id = ?
     `).run(JSON.stringify(report), now, runId);
+
+    if (result.changes === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async saveActuals(runId: string, actuals: ActualOutcomes): Promise<void> {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      UPDATE runs SET actuals = ?, updated_at = ? WHERE id = ?
+    `).run(JSON.stringify(actuals), now, runId);
 
     if (result.changes === 0) {
       throw new Error(`Run not found: ${runId}`);

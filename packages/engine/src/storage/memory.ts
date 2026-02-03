@@ -5,6 +5,7 @@ import type {
   AgentOutput,
   SimEvent,
   Report,
+  ActualOutcomes,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -82,6 +83,15 @@ export class MemoryStorage implements Storage {
       throw new Error(`Run not found: ${runId}`);
     }
     run.report = report;
+    run.updatedAt = new Date().toISOString();
+  }
+
+  async saveActuals(runId: string, actuals: ActualOutcomes): Promise<void> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+    run.actuals = actuals;
     run.updatedAt = new Date().toISOString();
   }
 

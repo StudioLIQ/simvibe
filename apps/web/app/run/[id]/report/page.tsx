@@ -3,7 +3,16 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Report, PersonaReport, FrictionItem } from '@simvibe/shared';
+import type { Report, PersonaReport, FrictionItem, ActualOutcomes } from '@simvibe/shared';
+
+interface PredictionErrors {
+  signupError: number;
+  payError: number;
+  bounceError?: number;
+  absoluteSignupError: number;
+  absolutePayError: number;
+  absoluteBounceError?: number;
+}
 
 interface RunData {
   id: string;
@@ -13,6 +22,7 @@ interface RunData {
     description: string;
   };
   report?: Report;
+  actuals?: ActualOutcomes;
   variantOf?: string;
 }
 
@@ -121,6 +131,10 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [whatIfTagline, setWhatIfTagline] = useState('');
   const [isCreatingVariant, setIsCreatingVariant] = useState(false);
   const [showWhatIf, setShowWhatIf] = useState(false);
+  const [showActuals, setShowActuals] = useState(false);
+  const [actualsInput, setActualsInput] = useState({ signupRate: '', payRate: '', bounceRate: '', notes: '' });
+  const [isSavingActuals, setIsSavingActuals] = useState(false);
+  const [predictionErrors, setPredictionErrors] = useState<PredictionErrors | null>(null);
 
   useEffect(() => {
     fetchRun();
@@ -129,6 +143,33 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   useEffect(() => {
     if (run) {
       setWhatIfTagline(run.input.tagline);
+      if (run.actuals) {
+        setActualsInput({
+          signupRate: (run.actuals.signupRate * 100).toFixed(1),
+          payRate: (run.actuals.payRate * 100).toFixed(1),
+          bounceRate: run.actuals.bounceRate !== undefined ? (run.actuals.bounceRate * 100).toFixed(1) : '',
+          notes: run.actuals.notes || '',
+        });
+        if (run.report) {
+          const predicted = {
+            signupRate: run.report.metrics.expectedSignups,
+            payRate: run.report.metrics.expectedPays,
+            bounceRate: run.report.metrics.bounceRate,
+          };
+          setPredictionErrors({
+            signupError: predicted.signupRate - run.actuals.signupRate,
+            payError: predicted.payRate - run.actuals.payRate,
+            bounceError: run.actuals.bounceRate !== undefined
+              ? predicted.bounceRate - run.actuals.bounceRate
+              : undefined,
+            absoluteSignupError: Math.abs(predicted.signupRate - run.actuals.signupRate),
+            absolutePayError: Math.abs(predicted.payRate - run.actuals.payRate),
+            absoluteBounceError: run.actuals.bounceRate !== undefined
+              ? Math.abs(predicted.bounceRate - run.actuals.bounceRate)
+              : undefined,
+          });
+        }
+      }
     }
   }, [run]);
 
@@ -176,6 +217,55 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       setError(err instanceof Error ? err.message : 'Failed to create variant');
     } finally {
       setIsCreatingVariant(false);
+    }
+  };
+
+  const saveActuals = async () => {
+    const signupRate = parseFloat(actualsInput.signupRate) / 100;
+    const payRate = parseFloat(actualsInput.payRate) / 100;
+    const bounceRate = actualsInput.bounceRate ? parseFloat(actualsInput.bounceRate) / 100 : undefined;
+
+    if (isNaN(signupRate) || signupRate < 0 || signupRate > 1) {
+      setError('Invalid signup rate. Enter a percentage between 0 and 100.');
+      return;
+    }
+    if (isNaN(payRate) || payRate < 0 || payRate > 1) {
+      setError('Invalid pay rate. Enter a percentage between 0 and 100.');
+      return;
+    }
+    if (bounceRate !== undefined && (isNaN(bounceRate) || bounceRate < 0 || bounceRate > 1)) {
+      setError('Invalid bounce rate. Enter a percentage between 0 and 100.');
+      return;
+    }
+
+    setIsSavingActuals(true);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/run/${id}/actuals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signupRate,
+          payRate,
+          bounceRate,
+          notes: actualsInput.notes || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to save actuals');
+      }
+
+      const data = await response.json();
+      setPredictionErrors(data.errors);
+      await fetchRun();
+      setShowActuals(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to save actuals');
+    } finally {
+      setIsSavingActuals(false);
     }
   };
 
@@ -312,6 +402,232 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             <div style={{ fontSize: '0.75rem', color: '#888' }}>Share</div>
           </div>
         </div>
+      </div>
+
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: run?.actuals || showActuals ? '1rem' : 0 }}>
+          <h3 style={{ fontSize: '1rem' }}>Actual Outcomes</h3>
+          {!run?.actuals && (
+            <button
+              onClick={() => setShowActuals(!showActuals)}
+              className="btn"
+              style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+            >
+              {showActuals ? 'Cancel' : 'Enter Actual Results'}
+            </button>
+          )}
+        </div>
+
+        {run?.actuals && predictionErrors && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', textAlign: 'center', marginBottom: '1rem' }}>
+              <div style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '0.5rem' }}>
+                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>Signup Rate</div>
+                <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                  <div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#666' }}>
+                      {(report.metrics.expectedSignups * 100).toFixed(1)}%
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: '#666' }}>Predicted</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#22c55e' }}>
+                      {(run.actuals.signupRate * 100).toFixed(1)}%
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: '#666' }}>Actual</div>
+                  </div>
+                </div>
+                <div style={{
+                  marginTop: '0.5rem',
+                  fontSize: '0.75rem',
+                  color: predictionErrors.signupError > 0 ? '#ef4444' : '#22c55e',
+                }}>
+                  Error: {predictionErrors.signupError > 0 ? '+' : ''}{(predictionErrors.signupError * 100).toFixed(1)}%
+                </div>
+              </div>
+
+              <div style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '0.5rem' }}>
+                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>Pay Rate</div>
+                <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                  <div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#666' }}>
+                      {(report.metrics.expectedPays * 100).toFixed(1)}%
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: '#666' }}>Predicted</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#a78bfa' }}>
+                      {(run.actuals.payRate * 100).toFixed(1)}%
+                    </div>
+                    <div style={{ fontSize: '0.625rem', color: '#666' }}>Actual</div>
+                  </div>
+                </div>
+                <div style={{
+                  marginTop: '0.5rem',
+                  fontSize: '0.75rem',
+                  color: predictionErrors.payError > 0 ? '#ef4444' : '#22c55e',
+                }}>
+                  Error: {predictionErrors.payError > 0 ? '+' : ''}{(predictionErrors.payError * 100).toFixed(1)}%
+                </div>
+              </div>
+
+              {run.actuals.bounceRate !== undefined && predictionErrors.bounceError !== undefined && (
+                <div style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>Bounce Rate</div>
+                  <div style={{ display: 'flex', justifyContent: 'space-around' }}>
+                    <div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#666' }}>
+                        {(report.metrics.bounceRate * 100).toFixed(1)}%
+                      </div>
+                      <div style={{ fontSize: '0.625rem', color: '#666' }}>Predicted</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#ef4444' }}>
+                        {(run.actuals.bounceRate * 100).toFixed(1)}%
+                      </div>
+                      <div style={{ fontSize: '0.625rem', color: '#666' }}>Actual</div>
+                    </div>
+                  </div>
+                  <div style={{
+                    marginTop: '0.5rem',
+                    fontSize: '0.75rem',
+                    color: predictionErrors.bounceError > 0 ? '#22c55e' : '#ef4444',
+                  }}>
+                    Error: {predictionErrors.bounceError > 0 ? '+' : ''}{(predictionErrors.bounceError * 100).toFixed(1)}%
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {run.actuals.notes && (
+              <div style={{ fontSize: '0.875rem', color: '#888', fontStyle: 'italic' }}>
+                Notes: {run.actuals.notes}
+              </div>
+            )}
+
+            <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem' }}>
+              Submitted: {new Date(run.actuals.submittedAt).toLocaleString()}
+            </div>
+          </div>
+        )}
+
+        {showActuals && !run?.actuals && (
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
+                  Signup Rate (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={actualsInput.signupRate}
+                  onChange={(e) => setActualsInput({ ...actualsInput, signupRate: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '1rem',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    background: '#0a0a0a',
+                    color: '#ededed',
+                  }}
+                  placeholder="e.g., 5.2"
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
+                  Pay Rate (%)
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={actualsInput.payRate}
+                  onChange={(e) => setActualsInput({ ...actualsInput, payRate: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '1rem',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    background: '#0a0a0a',
+                    color: '#ededed',
+                  }}
+                  placeholder="e.g., 1.5"
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
+                  Bounce Rate (%) <span style={{ color: '#666' }}>optional</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.1"
+                  value={actualsInput.bounceRate}
+                  onChange={(e) => setActualsInput({ ...actualsInput, bounceRate: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    fontSize: '1rem',
+                    border: '1px solid #333',
+                    borderRadius: '0.5rem',
+                    background: '#0a0a0a',
+                    color: '#ededed',
+                  }}
+                  placeholder="e.g., 45"
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
+                Notes <span style={{ color: '#666' }}>optional</span>
+              </label>
+              <textarea
+                value={actualsInput.notes}
+                onChange={(e) => setActualsInput({ ...actualsInput, notes: e.target.value })}
+                maxLength={500}
+                rows={2}
+                style={{
+                  width: '100%',
+                  padding: '0.75rem',
+                  fontSize: '0.875rem',
+                  border: '1px solid #333',
+                  borderRadius: '0.5rem',
+                  background: '#0a0a0a',
+                  color: '#ededed',
+                  resize: 'vertical',
+                }}
+                placeholder="Any context about the actual results..."
+              />
+            </div>
+
+            <button
+              onClick={saveActuals}
+              disabled={isSavingActuals || !actualsInput.signupRate || !actualsInput.payRate}
+              className="btn btn-primary"
+              style={{ width: '100%' }}
+            >
+              {isSavingActuals ? 'Saving...' : 'Save Actual Outcomes'}
+            </button>
+
+            <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+              Enter your real conversion data to calibrate future predictions
+            </p>
+          </div>
+        )}
+
+        {!run?.actuals && !showActuals && (
+          <p style={{ fontSize: '0.875rem', color: '#666' }}>
+            Help improve predictions by entering your actual launch results
+          </p>
+        )}
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>

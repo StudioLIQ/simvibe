@@ -366,7 +366,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 ---
 
 ## Milestone M3 — Data Flywheel (MVP) (P1)
-### [ ] SIM-013 (P1) Add optional “Actual outcomes” input and store for calibration
+### [x] SIM-013 (P1) Add optional "Actual outcomes" input and store for calibration
 **Goal:** Close the loop: from synthetic to reality.
 
 **Deliverables**
@@ -379,6 +379,16 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - System can compute absolute error vs predicted
 
 **Dependencies:** SIM-011
+
+**Completion notes:**
+- ActualOutcomes schema in packages/shared/src/schemas/actual-outcomes.ts
+- Storage interface updated with saveActuals() method in both SQLite and Memory storage
+- POST/GET /api/run/[id]/actuals endpoint for saving and retrieving actual outcomes
+- Report page updated with "Actual Outcomes" section:
+  - Collapsible form to enter signup rate, pay rate, bounce rate (optional), and notes
+  - Displays comparison between predicted vs actual with error calculation
+- Test: `pnpm --filter @simvibe/web typecheck` passes
+- Test: Visit /run/[id]/report, click "Enter Actual Results", enter data, save, see comparison
 
 ---
 
