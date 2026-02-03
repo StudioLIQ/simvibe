@@ -1,11 +1,186 @@
+'use client';
+
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import type { PricingModel } from '@simvibe/shared';
+import { createRun } from '@/lib/api';
+
+const PRICING_MODELS: { value: PricingModel; label: string }[] = [
+  { value: 'free', label: 'Free' },
+  { value: 'freemium', label: 'Freemium' },
+  { value: 'subscription', label: 'Subscription' },
+  { value: 'one_time', label: 'One-time payment' },
+  { value: 'usage_based', label: 'Usage-based' },
+  { value: 'custom', label: 'Custom' },
+];
+
 export default function HomePage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [tagline, setTagline] = useState('');
+  const [description, setDescription] = useState('');
+  const [url, setUrl] = useState('');
+  const [pricingModel, setPricingModel] = useState<PricingModel>('freemium');
+  const [category, setCategory] = useState('');
+  const [tags, setTags] = useState('');
+  const [pastedContent, setPastedContent] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    try {
+      if (!tagline.trim()) {
+        throw new Error('Tagline is required');
+      }
+      if (!description.trim()) {
+        throw new Error('Description is required');
+      }
+      if (!url.trim() && !pastedContent.trim()) {
+        throw new Error('Please provide a URL or paste your landing page content');
+      }
+
+      const result = await createRun({
+        tagline: tagline.trim(),
+        description: description.trim(),
+        url: url.trim() || undefined,
+        pricingModel,
+        category: category.trim() || undefined,
+        tags: tags.trim() ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
+        pastedContent: pastedContent.trim() || undefined,
+      });
+
+      router.push(`/run/${result.runId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <main style={{ padding: '2rem', fontFamily: 'system-ui, sans-serif' }}>
-      <h1>simvi.be</h1>
-      <p>Agentic Market Simulator for Vibe-coders</p>
-      <p style={{ color: '#666', marginTop: '1rem' }}>
-        Launch into a synthetic market before you launch into the real one.
-      </p>
+    <main className="container">
+      <header className="header">
+        <h1>simvi.be</h1>
+        <p>Launch into a synthetic market before you launch into the real one.</p>
+      </header>
+
+      <form onSubmit={handleSubmit}>
+        {error && (
+          <div className="error-message">
+            {error}
+          </div>
+        )}
+
+        <div className="card">
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Product Information</h2>
+
+          <div className="form-group">
+            <label htmlFor="tagline">Tagline *</label>
+            <input
+              id="tagline"
+              type="text"
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+              placeholder="e.g., The AI-powered code review tool for teams"
+              maxLength={200}
+              required
+            />
+            <p className="hint">A compelling one-liner that describes your product</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="description">Description *</label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Describe what your product does, who it's for, and what makes it unique..."
+              maxLength={2000}
+              required
+            />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label htmlFor="pricingModel">Pricing Model *</label>
+              <select
+                id="pricingModel"
+                value={pricingModel}
+                onChange={(e) => setPricingModel(e.target.value as PricingModel)}
+              >
+                {PRICING_MODELS.map((model) => (
+                  <option key={model.value} value={model.value}>
+                    {model.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="category">Category</label>
+              <input
+                id="category"
+                type="text"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                placeholder="e.g., Developer Tools, Marketing, AI"
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="tags">Tags</label>
+            <input
+              id="tags"
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              placeholder="e.g., AI, SaaS, B2B, Productivity (comma-separated)"
+            />
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Landing Page</h2>
+
+          <div className="form-group">
+            <label htmlFor="url">Landing Page URL</label>
+            <input
+              id="url"
+              type="url"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="https://yourproduct.com"
+            />
+            <p className="hint">We'll extract content from your landing page</p>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="pastedContent">Or paste your landing page content</label>
+            <textarea
+              id="pastedContent"
+              value={pastedContent}
+              onChange={(e) => setPastedContent(e.target.value)}
+              placeholder="Paste the text content from your landing page here if you don't have a URL..."
+              style={{ minHeight: '150px' }}
+            />
+            <p className="hint">Use this if your page is not public or extraction fails</p>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          className="btn btn-primary"
+          disabled={loading}
+          style={{ width: '100%', marginTop: '1rem' }}
+        >
+          {loading ? 'Creating World...' : 'Create World'}
+        </button>
+      </form>
     </main>
   );
 }

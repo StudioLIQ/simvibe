@@ -257,12 +257,12 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 ---
 
 ## Milestone M2 — Web App UI + Streaming (P0)
-### [ ] SIM-009 (P0) Build the input page (tagline, description, pricing, URL, tags)
+### [x] SIM-009 (P0) Build the input page (tagline, description, pricing, URL, tags)
 **Goal:** Start a run from the UI.
 
 **Deliverables**
 - Form with validation
-- “Create World” button
+- "Create World" button
 - Run creation API integration
 
 **Acceptance Criteria**
@@ -270,6 +270,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Basic error handling (missing URL, missing tagline)
 
 **Dependencies:** SIM-001, SIM-003
+
+**Completion notes:**
+- Input form in apps/web/app/page.tsx with dark theme styling
+- Fields: tagline, description, pricing model, category, tags, URL, pasted content
+- POST /api/run creates run in SQLite storage
+- Form validation: requires tagline, description, and either URL or pasted content
+- Redirects to /run/:id on success
+- Test: `pnpm --filter @simvibe/web typecheck` passes
 
 ---
 
