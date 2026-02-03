@@ -195,7 +195,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-007 (P0) Implement agent JSON validation + auto-retry on failure
+### [x] SIM-007 (P0) Implement agent JSON validation + auto-retry on failure
 **Goal:** Prevent broken outputs from killing the demo.
 
 **Deliverables**
@@ -203,7 +203,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
     - parse JSON strictly
     - validate schema
 - Retry strategy:
-    - retry up to N times with “fix-your-json” instruction
+    - retry up to N times with "fix-your-json" instruction
     - final fallback: safe minimal output + warning event
 
 **Acceptance Criteria**
@@ -211,6 +211,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Final report always renders with a warning if fallback used
 
 **Dependencies:** SIM-006
+
+**Completion notes:**
+- Implemented as part of SIM-006 in agent-runner.ts
+- extractJSON(): handles markdown code blocks, bare JSON, partial extraction
+- validateAgentOutput(): strict Zod schema validation
+- 3 retries with "fix-your-json" prompt appended to conversation
+- createFallbackAgentOutput(): safe fallback with isFallback=true flag
+- VALIDATION_ERROR event emitted when fallback used
 
 ---
 
