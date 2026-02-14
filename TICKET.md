@@ -564,7 +564,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-018A (P0) Add `apps/worker` long-running executor (Railway service)
+### [x] SIM-018A (P0) Add `apps/worker` long-running executor (Railway service)
 **Goal:** Introduce a dedicated process that can run 2–10 minute simulations reliably.
 
 **Deliverables**
@@ -585,9 +585,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Dependencies:** SIM-018
 
+**Completion notes:**
+- Worker supports two modes: CLI (`start <run_id>`) and Service (health server + await jobs)
+- HTTP health endpoint at /health and /healthz returns JSON status (healthy/draining/activeRun)
+- Structured JSON logging suitable for Railway log aggregation
+- Time-budget enforcement via WORKER_RUN_TIMEOUT_MS (default 10 min)
+- Graceful shutdown (SIGTERM/SIGINT): drains active run, returns 503 on /health
+- Clear separation: web does not execute long jobs; worker owns execution
+- Test: `pnpm --filter @simvibe/worker start <run_id>` executes a run end-to-end
+- Test: `pnpm --filter @simvibe/worker start` starts health server on port 8080
+
 ---
 
-### [ ] SIM-018B (P0) Implement Postgres storage + migrations (replace SQLite for prod)
+### [x] SIM-018B (P0) Implement Postgres storage + migrations (replace SQLite for prod)
 **Goal:** Swap storage backend from SQLite to Postgres with real migrations.
 
 **Deliverables**
@@ -606,6 +616,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Local: reset DB, run migrations, run a simulation, confirm data stored and retrievable
 
 **Dependencies:** SIM-018
+
+**Completion notes:**
+- PostgresStorage class in packages/engine/src/storage/postgres.ts (full Storage interface)
+- Migration runner (migrate.ts) with versioned SQL tracking via _migrations table
+- 001_initial.sql: runs, events, agent_outputs, calibration_priors tables with JSONB columns
+- Indexes: events(run_id, timestamp), agent_outputs(run_id, persona_id UNIQUE), runs(created_at, status)
+- CLI: `DATABASE_URL=postgres://... pnpm db:migrate`
+- storageConfigFromEnv() auto-detects postgres:// vs SQLite from DATABASE_URL
+- Implemented in SIM-018 alongside the umbrella ticket
 
 ---
 
