@@ -3,6 +3,9 @@ import {
   createStorage,
   storageConfigFromEnv,
   executeRun,
+  createJobQueue,
+  queueConfigFromEnv,
+  JOB_RUN_EXECUTE,
   type ExtractorConfig,
   type OrchestratorConfig,
 } from '@simvibe/engine';
@@ -26,10 +29,7 @@ function getOrchestratorConfig(): OrchestratorConfig {
   }
 
   return {
-    llm: {
-      provider,
-      apiKey,
-    },
+    llm: { provider, apiKey },
     enableDebate: false,
   };
 }
@@ -40,7 +40,8 @@ export async function POST(
 ) {
   const { id } = await params;
 
-  const storage = createStorage(storageConfigFromEnv());
+  const storageConfig = storageConfigFromEnv();
+  const storage = createStorage(storageConfig);
 
   try {
     const run = await storage.getRun(id);
@@ -59,7 +60,34 @@ export async function POST(
       );
     }
 
-    // Execute inline (will be replaced by queue enqueue in SIM-018C)
+    const queueConfig = queueConfigFromEnv();
+
+    // Async mode: enqueue to pg-boss, return immediately
+    if (queueConfig.type === 'pgboss') {
+      await storage.updateRunStatus(id, 'queued');
+
+      const queue = createJobQueue(queueConfig);
+      await queue.start();
+
+      try {
+        const jobId = await queue.enqueue(JOB_RUN_EXECUTE, {
+          runId: id,
+        }, {
+          retryLimit: 2,
+          expireInSeconds: 600,
+        });
+
+        return NextResponse.json({
+          queued: true,
+          runId: id,
+          jobId,
+        });
+      } finally {
+        await queue.stop();
+      }
+    }
+
+    // Inline mode: execute synchronously (SQLite/dev)
     const result = await executeRun(id, {
       storage,
       extractorConfig: getExtractorConfig(),
@@ -75,7 +103,11 @@ export async function POST(
     console.error('Error starting run:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-    await storage.updateRunStatus(id, 'failed', errorMessage);
+    try {
+      await storage.updateRunStatus(id, 'failed', errorMessage);
+    } catch {
+      console.error('Failed to update run status');
+    }
 
     return NextResponse.json(
       { error: errorMessage },

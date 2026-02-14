@@ -5,12 +5,12 @@
  * It provides a health endpoint for Railway and supports graceful shutdown.
  *
  * Architecture:
- *   - apps/web: creates runs, enqueues jobs, serves UI
- *   - apps/worker: executes runs using @simvibe/engine
+ *   - apps/web: creates runs, enqueues jobs via pg-boss, serves UI
+ *   - apps/worker: consumes jobs from pg-boss, executes runs using @simvibe/engine
  *
  * Modes:
  *   - CLI: `pnpm --filter @simvibe/worker start <run_id>` — execute one run
- *   - Service: `pnpm --filter @simvibe/worker start` — start health server, await jobs (SIM-018C)
+ *   - Service: `pnpm --filter @simvibe/worker start` — consume from job queue
  */
 
 import * as http from 'http';
@@ -18,9 +18,15 @@ import {
   createStorage,
   storageConfigFromEnv,
   executeRun,
+  createJobQueue,
+  queueConfigFromEnv,
+  JOB_RUN_EXECUTE,
   type ExecuteRunConfig,
   type ExtractorConfig,
   type OrchestratorConfig,
+  type JobQueue,
+  type Job,
+  type RunExecutePayload,
 } from '@simvibe/engine';
 
 // --- Config helpers ---
@@ -70,6 +76,7 @@ function log(level: 'info' | 'warn' | 'error', message: string, meta?: Record<st
 
 let activeRunId: string | null = null;
 let shutdownRequested = false;
+let jobQueue: JobQueue | null = null;
 
 // --- Run execution ---
 
@@ -87,7 +94,7 @@ export async function executeRunById(runId: string): Promise<{ success: boolean;
       orchestratorConfig: getOrchestratorConfig(),
     };
 
-    log('info', `Executing run`, { runId });
+    log('info', 'Executing run', { runId });
 
     // Time-budget enforcement
     const timeoutPromise = new Promise<never>((_, reject) => {
@@ -100,15 +107,15 @@ export async function executeRunById(runId: string): Promise<{ success: boolean;
     ]);
 
     if (result.success) {
-      log('info', `Run completed`, { runId, durationMs: result.durationMs });
+      log('info', 'Run completed', { runId, durationMs: result.durationMs });
     } else {
-      log('error', `Run failed`, { runId, error: result.error, durationMs: result.durationMs });
+      log('error', 'Run failed', { runId, error: result.error, durationMs: result.durationMs });
     }
 
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    log('error', `Run execution error`, { runId, error: errorMessage });
+    log('error', 'Run execution error', { runId, error: errorMessage });
 
     try {
       await storage.updateRunStatus(runId, 'failed', errorMessage);
@@ -123,17 +130,33 @@ export async function executeRunById(runId: string): Promise<{ success: boolean;
   }
 }
 
+// --- Job handler ---
+
+async function handleRunExecuteJob(job: Job<RunExecutePayload>): Promise<void> {
+  const { runId } = job.data;
+  log('info', 'Processing job', { jobId: job.id, runId });
+
+  const result = await executeRunById(runId);
+
+  if (!result.success) {
+    // Throw to trigger pg-boss retry
+    throw new Error(result.error || 'Run execution failed');
+  }
+}
+
 // --- Health endpoint ---
 
 function createHealthServer(port: number): http.Server {
   const server = http.createServer((req, res) => {
     if (req.url === '/health' || req.url === '/healthz') {
+      const queueConfig = queueConfigFromEnv();
       const status = {
         status: shutdownRequested ? 'draining' : 'healthy',
         service: 'simvibe-worker',
         activeRun: activeRunId,
         uptime: process.uptime(),
         storage: storageConfigFromEnv().type,
+        queue: queueConfig.type,
       };
       res.writeHead(shutdownRequested ? 503 : 200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(status));
@@ -144,7 +167,7 @@ function createHealthServer(port: number): http.Server {
   });
 
   server.listen(port, () => {
-    log('info', `Health endpoint listening`, { port, path: '/health' });
+    log('info', 'Health endpoint listening', { port, path: '/health' });
   });
 
   return server;
@@ -153,7 +176,7 @@ function createHealthServer(port: number): http.Server {
 // --- Graceful shutdown ---
 
 function setupGracefulShutdown(server: http.Server) {
-  const shutdown = (signal: string) => {
+  const shutdown = async (signal: string) => {
     log('info', `Received ${signal}, shutting down gracefully`);
     shutdownRequested = true;
 
@@ -161,9 +184,13 @@ function setupGracefulShutdown(server: http.Server) {
       log('info', 'Health server closed');
     });
 
+    if (jobQueue) {
+      await jobQueue.stop();
+      log('info', 'Job queue stopped');
+    }
+
     if (activeRunId) {
-      log('info', `Waiting for active run to complete`, { runId: activeRunId });
-      // The run will finish naturally; process exit happens in main()
+      log('info', 'Waiting for active run to complete', { runId: activeRunId });
     } else {
       process.exit(0);
     }
@@ -177,7 +204,8 @@ function setupGracefulShutdown(server: http.Server) {
 
 async function main() {
   const storageConfig = storageConfigFromEnv();
-  log('info', 'Worker starting', { storage: storageConfig.type });
+  const queueConfig = queueConfigFromEnv();
+  log('info', 'Worker starting', { storage: storageConfig.type, queue: queueConfig.type });
 
   // CLI mode: execute a single run ID
   const runId = process.argv[2];
@@ -186,12 +214,19 @@ async function main() {
     process.exit(result.success ? 0 : 1);
   }
 
-  // Service mode: start health server, await job queue (SIM-018C)
+  // Service mode: start health server + job queue consumer
   const port = parseInt(process.env.WORKER_PORT || '8080', 10);
   const server = createHealthServer(port);
   setupGracefulShutdown(server);
 
-  log('info', 'Worker ready — awaiting jobs (job queue: SIM-018C)');
+  if (queueConfig.type === 'pgboss') {
+    jobQueue = createJobQueue(queueConfig);
+    await jobQueue.start();
+    await jobQueue.work(JOB_RUN_EXECUTE, handleRunExecuteJob);
+    log('info', 'Worker consuming jobs from pg-boss queue');
+  } else {
+    log('warn', 'No Postgres configured — queue consumer disabled. Use CLI mode to execute runs.');
+  }
 }
 
 main().catch((error) => {

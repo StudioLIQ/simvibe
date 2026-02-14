@@ -628,7 +628,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-018C (P0) Add job queue for run execution (Postgres-backed)
+### [x] SIM-018C (P0) Add job queue for run execution (Postgres-backed)
 **Goal:** Make run execution async, durable, and retryable without adding extra infra.
 
 **Deliverables**
@@ -647,6 +647,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Local: enqueue job, kill worker mid-run, restart worker; job resumes/retries and ends in a consistent state
 
 **Dependencies:** SIM-018A, SIM-018B
+
+**Completion notes:**
+- Queue module in packages/engine/src/queue/ with JobQueue interface
+- PgBossJobQueue: wraps pg-boss v10, batchSize=1, retryLimit=2, expireInSeconds=600
+- InlineJobQueue: no-op for SQLite/dev mode (caller handles execution)
+- createJobQueue() + queueConfigFromEnv() factories: auto-detect postgres → pgboss, else inline
+- Start route: enqueues to pg-boss when Postgres, executes inline when SQLite
+- Worker: consumes from pg-boss queue, handles failed runs with retry via throw
+- Job type: `run.execute` with payload { runId, runMode? }
+- Test: `pnpm typecheck` passes for all packages
+- Test (Postgres): POST /api/run/[id]/start returns { queued: true, jobId }; worker consumes and executes
 
 ---
 
