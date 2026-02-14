@@ -6,6 +6,7 @@ export * from './prompts';
 export * from './orchestrator';
 export * from './aggregator';
 export * from './executor';
+export * from './config';
 export * from './queue';
 export * from './demo';
 export * from './chain';

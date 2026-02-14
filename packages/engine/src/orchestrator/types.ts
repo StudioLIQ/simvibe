@@ -15,6 +15,8 @@ export interface OrchestratorConfig {
   maxRetries?: number;
   timeoutMs?: number;
   enableDebate?: boolean;
+  personaIds?: string[];
+  timeBudgetMs?: number;
 }
 
 export interface SimulationContext {

@@ -4,6 +4,7 @@ import type { Storage } from '../storage/types';
 import { createExtractor, type ExtractorConfig } from '../extractor';
 import { createOrchestrator, type OrchestratorConfig } from '../orchestrator';
 import { generateReport } from '../aggregator';
+import { getRunModeConfig } from '../config';
 
 export interface ExecuteRunConfig {
   storage: Storage;
@@ -73,9 +74,21 @@ export async function executeRun(
 
     await storage.saveLandingExtract(runId, landingExtract);
 
-    // Phase 2: Simulation
+    // Phase 2: Simulation — apply run mode config
     currentPhase = { phase: 'simulation', startedAt: new Date().toISOString() };
-    const orchestrator = createOrchestrator(orchestratorConfig);
+    const modeConfig = getRunModeConfig(run.input.runMode);
+    const modeAwareConfig: typeof orchestratorConfig = {
+      ...orchestratorConfig,
+      llm: {
+        ...orchestratorConfig.llm,
+        maxTokens: orchestratorConfig.llm.maxTokens ?? modeConfig.maxTokensPerAgent,
+        temperature: orchestratorConfig.llm.temperature ?? modeConfig.temperature,
+      },
+      enableDebate: orchestratorConfig.enableDebate ?? modeConfig.enableDebate,
+      personaIds: modeConfig.personaIds,
+      timeBudgetMs: modeConfig.timeBudgetMs,
+    };
+    const orchestrator = createOrchestrator(modeAwareConfig);
 
     orchestrator.onEvent(async (event) => {
       await storage.appendEvent(runId, event);
@@ -113,7 +126,8 @@ export async function executeRun(
         runId,
         result.agentResults.map(r => r.output),
         run.variantOf,
-        calibrationPrior
+        calibrationPrior,
+        run.input.runMode || 'quick'
       );
 
       currentPhase.endedAt = new Date().toISOString();

@@ -9,6 +9,8 @@ export const PricingModelSchema = z.enum([
   'custom',
 ]);
 
+export const RunModeSchema = z.enum(['quick', 'deep']).default('quick');
+
 export const RunInputSchema = z.object({
   tagline: z.string().min(1, 'Tagline is required').max(200, 'Tagline too long'),
   description: z.string().min(1, 'Description is required').max(2000, 'Description too long'),
@@ -27,9 +29,11 @@ export const RunInputSchema = z.object({
     summary: z.string().optional(),
   })).optional(),
   pastedContent: z.string().optional(),
+  runMode: RunModeSchema.optional(),
 });
 
 export type PricingModel = z.infer<typeof PricingModelSchema>;
+export type RunMode = z.infer<typeof RunModeSchema>;
 export type RunInput = z.infer<typeof RunInputSchema>;
 
 export function validateRunInput(data: unknown): { success: true; data: RunInput } | { success: false; error: string } {

@@ -6,6 +6,7 @@ import type {
   ActionType,
   CalibrationPrior,
   AggregatedMetrics,
+  RunMode,
 } from '@simvibe/shared';
 import { applyCalibration } from '@simvibe/shared';
 import { aggregateOutputs, type AggregationResult } from './aggregator';
@@ -63,7 +64,9 @@ export function generateReport(
   runId: string,
   outputs: AgentOutput[],
   variantOf?: string,
-  calibrationPrior?: CalibrationPrior | null
+  calibrationPrior?: CalibrationPrior | null,
+  runMode?: RunMode,
+  earlyStopReason?: string
 ): Report {
   const aggregation = aggregateOutputs(outputs);
 
@@ -112,6 +115,8 @@ export function generateReport(
     calibrationApplied: calibrated.calibrationApplied,
     rawMetrics: calibrated.calibrationApplied ? rawMetrics : undefined,
     variantOf,
+    runMode,
+    earlyStopReason,
   };
 }
 

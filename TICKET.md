@@ -730,7 +730,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-019 (P1) Add run modes: 2-minute “Quick” vs 10-minute “Deep” (predictable runtime)
+### [x] SIM-019 (P1) Add run modes: 2-minute "Quick" vs 10-minute "Deep" (predictable runtime)
 **Goal:** Support two execution budgets with predictable latency/cost while keeping outputs comparable.
 
 **Deliverables**
@@ -754,6 +754,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
   - deep mode adds more timeline depth / higher-confidence report without schema breakage
 
 **Dependencies:** SIM-018
+
+**Completion notes:**
+- Added `runMode` field to RunInput schema (quick | deep, defaults to quick)
+- RunModeConfig in packages/engine/src/config/run-modes.ts:
+  - Quick: 5 personas, 2048 tokens, no debate, 2 min budget
+  - Deep: 5 personas, 4096 tokens, debate enabled, 10 min budget
+- Orchestrator accepts personaIds override from config
+- Executor applies mode config to orchestrator (tokens, debate, time budget)
+- Report includes runMode + earlyStopReason fields
+- UI: radio selector for Quick/Deep on input form
+- CreateRunRequest type updated with runMode
+- Test: `pnpm typecheck` passes for all packages
+- Test: Create run with mode=deep, verify debate is enabled in output
 
 ---
 

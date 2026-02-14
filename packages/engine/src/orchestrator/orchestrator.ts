@@ -1,5 +1,6 @@
 import type { RunInput, LandingExtract, SimEvent, PersonaId } from '@simvibe/shared';
 import { createSimEvent, getAllPersonaIds } from '@simvibe/shared';
+import { getRunModeConfig } from '../config';
 import type {
   OrchestratorConfig,
   SimulationContext,
@@ -57,7 +58,7 @@ export class Orchestrator {
         payload: { input, landingExtract: { title: landingExtract.title, failed: landingExtract.failed } },
       }));
 
-      const personaIds = getAllPersonaIds();
+      const personaIds = (this.config.personaIds ?? getAllPersonaIds()) as PersonaId[];
 
       await emit(createSimEvent(runId, 'PHASE_START', {
         phase: 'scan',

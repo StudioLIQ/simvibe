@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { PricingModel } from '@simvibe/shared';
+import type { PricingModel, RunMode } from '@simvibe/shared';
 import { createRun } from '@/lib/api';
 
 const PRICING_MODELS: { value: PricingModel; label: string }[] = [
@@ -26,6 +26,7 @@ export default function HomePage() {
   const [category, setCategory] = useState('');
   const [tags, setTags] = useState('');
   const [pastedContent, setPastedContent] = useState('');
+  const [runMode, setRunMode] = useState<RunMode>('quick');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +52,7 @@ export default function HomePage() {
         category: category.trim() || undefined,
         tags: tags.trim() ? tags.split(',').map(t => t.trim()).filter(Boolean) : undefined,
         pastedContent: pastedContent.trim() || undefined,
+        runMode,
       });
 
       router.push(`/run/${result.runId}`);
@@ -169,6 +171,54 @@ export default function HomePage() {
               style={{ minHeight: '150px' }}
             />
             <p className="hint">Use this if your page is not public or extraction fails</p>
+          </div>
+        </div>
+
+        <div className="card">
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Simulation Mode</h2>
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <label
+              style={{
+                flex: 1,
+                padding: '1rem',
+                border: `2px solid ${runMode === 'quick' ? '#6366f1' : '#333'}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: runMode === 'quick' ? 'rgba(99,102,241,0.1)' : 'transparent',
+              }}
+            >
+              <input
+                type="radio"
+                name="runMode"
+                value="quick"
+                checked={runMode === 'quick'}
+                onChange={() => setRunMode('quick')}
+                style={{ display: 'none' }}
+              />
+              <strong>Quick</strong>
+              <p className="hint" style={{ margin: '0.25rem 0 0' }}>5 personas, ~2 min</p>
+            </label>
+            <label
+              style={{
+                flex: 1,
+                padding: '1rem',
+                border: `2px solid ${runMode === 'deep' ? '#6366f1' : '#333'}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: runMode === 'deep' ? 'rgba(99,102,241,0.1)' : 'transparent',
+              }}
+            >
+              <input
+                type="radio"
+                name="runMode"
+                value="deep"
+                checked={runMode === 'deep'}
+                onChange={() => setRunMode('deep')}
+                style={{ display: 'none' }}
+              />
+              <strong>Deep</strong>
+              <p className="hint" style={{ margin: '0.25rem 0 0' }}>5 personas + debate, ~10 min</p>
+            </label>
           </div>
         </div>
 

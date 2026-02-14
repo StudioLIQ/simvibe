@@ -1,4 +1,4 @@
-import type { RunInput, PricingModel } from '@simvibe/shared';
+import type { RunInput, PricingModel, RunMode } from '@simvibe/shared';
 
 export interface CreateRunRequest {
   tagline: string;
@@ -9,6 +9,7 @@ export interface CreateRunRequest {
   category?: string;
   tags?: string[];
   pastedContent?: string;
+  runMode?: RunMode;
 }
 
 export interface CreateRunResponse {
