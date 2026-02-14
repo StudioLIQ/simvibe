@@ -695,7 +695,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-018E (P0) Deployment split: Vercel FE + Railway API/worker/Postgres (+ optional Redis)
+### [x] SIM-018E (P0) Deployment split: Vercel FE + Railway API/worker/Postgres (+ optional Redis)
 **Goal:** Make the deployable shape explicit and reproducible.
 
 **Deliverables**
@@ -718,6 +718,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Deploy a staging environment: create run from Vercel, see it executed by Railway worker, view report
 
 **Dependencies:** SIM-018A, SIM-018B, SIM-018C, SIM-018D
+
+**Completion notes:**
+- Worker Dockerfile: Node 20 slim, pnpm monorepo install, health check on :8080/health
+- .env.example updated with complete prod config: WORKER_PORT, WORKER_RUN_TIMEOUT_MS
+- Deployment architecture documented in .env.example comments
+- Architecture: Vercel (FE + short API) ↔ Railway Postgres ↔ Railway Worker (long jobs)
+- Worker .dockerignore for clean builds
+- No Redis required yet (pg-boss uses Postgres)
+- Test: `docker build -f apps/worker/Dockerfile .` (from repo root)
 
 ---
 
