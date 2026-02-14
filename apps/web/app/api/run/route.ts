@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateRunInput } from '@simvibe/shared';
-import { createStorage, type StorageConfig } from '@simvibe/engine';
-
-function getStorageConfig(): StorageConfig {
-  const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/simvibe.db';
-  return {
-    type: 'sqlite',
-    sqlitePath: dbPath,
-  };
-}
+import { createStorage, storageConfigFromEnv } from '@simvibe/engine';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,7 +14,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const storage = createStorage(getStorageConfig());
+    const storage = createStorage(storageConfigFromEnv());
 
     try {
       const run = await storage.createRun(validation.data);
@@ -49,7 +41,7 @@ export async function GET(request: NextRequest) {
   const limit = parseInt(searchParams.get('limit') || '10', 10);
 
   try {
-    const storage = createStorage(getStorageConfig());
+    const storage = createStorage(storageConfigFromEnv());
 
     try {
       const runs = await storage.listRuns(limit);

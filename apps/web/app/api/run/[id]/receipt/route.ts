@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import {
   createStorage,
-  type StorageConfig,
+  storageConfigFromEnv,
   createReceipt,
   isChainReceiptEnabled,
 } from '@simvibe/engine';
-
-function getStorageConfig(): StorageConfig {
-  const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/simvibe.db';
-  return {
-    type: 'sqlite',
-    sqlitePath: dbPath,
-  };
-}
 
 /**
  * POST /api/run/:id/receipt
@@ -28,7 +20,7 @@ export async function POST(
   const { id } = await params;
 
   try {
-    const storage = createStorage(getStorageConfig());
+    const storage = createStorage(storageConfigFromEnv());
     const run = await storage.getRun(id);
 
     if (!run) {
@@ -91,7 +83,7 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const storage = createStorage(getStorageConfig());
+    const storage = createStorage(storageConfigFromEnv());
     const run = await storage.getRun(id);
 
     if (!run) {

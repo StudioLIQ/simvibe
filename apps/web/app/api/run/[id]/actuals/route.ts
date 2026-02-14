@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createStorage, type StorageConfig } from '@simvibe/engine';
+import { createStorage, storageConfigFromEnv } from '@simvibe/engine';
 import {
   validateActualOutcomesInput,
   type ActualOutcomes,
@@ -7,14 +7,6 @@ import {
   createDefaultCalibrationPrior,
   updateCalibrationPrior,
 } from '@simvibe/shared';
-
-function getStorageConfig(): StorageConfig {
-  const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/simvibe.db';
-  return {
-    type: 'sqlite',
-    sqlitePath: dbPath,
-  };
-}
 
 export async function POST(
   request: NextRequest,
@@ -33,7 +25,7 @@ export async function POST(
       );
     }
 
-    const storage = createStorage(getStorageConfig());
+    const storage = createStorage(storageConfigFromEnv());
     const run = await storage.getRun(id);
 
     if (!run) {
@@ -126,7 +118,7 @@ export async function GET(
   const { id } = await params;
 
   try {
-    const storage = createStorage(getStorageConfig());
+    const storage = createStorage(storageConfigFromEnv());
     const run = await storage.getRun(id);
 
     if (!run) {

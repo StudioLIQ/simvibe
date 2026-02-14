@@ -1,13 +1,5 @@
 import { NextRequest } from 'next/server';
-import { createStorage, type StorageConfig } from '@simvibe/engine';
-
-function getStorageConfig(): StorageConfig {
-  const dbPath = process.env.DATABASE_URL?.replace('file:', '') || './data/simvibe.db';
-  return {
-    type: 'sqlite',
-    sqlitePath: dbPath,
-  };
-}
+import { createStorage, storageConfigFromEnv } from '@simvibe/engine';
 
 export async function GET(
   request: NextRequest,
@@ -29,7 +21,7 @@ export async function GET(
 
       const poll = async () => {
         try {
-          const storage = createStorage(getStorageConfig());
+          const storage = createStorage(storageConfigFromEnv());
           try {
             const run = await storage.getRun(id);
 

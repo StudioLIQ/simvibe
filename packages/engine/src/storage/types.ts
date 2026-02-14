@@ -10,7 +10,7 @@ import type {
   ChainReceipt,
 } from '@simvibe/shared';
 
-export type RunStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type RunStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed';
 
 export interface Run {
   id: string;

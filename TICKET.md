@@ -514,3 +514,427 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Similar-case retrieval (RAG) from historical library
 - White-label PDF export for agencies
 - Template library for Launch Ops kits
+
+---
+
+## Milestone M6 — Production Run Pipeline (Postgres + Worker) (P0/P1)
+### [x] SIM-018 (P0) Move simulation execution off Vercel into Railway worker (Postgres-backed)
+**Goal:** Ensure runs can execute reliably (2–10 minutes) without Vercel serverless timeouts; persist everything in Postgres.
+
+**Deliverables**
+- Postgres storage implementation (replace SQLite for prod):
+  - `DATABASE_URL` (postgres) support
+  - Tables for `runs`, `events`, `agent_outputs`, `calibration_priors` (and migrations)
+- Async execution:
+  - API enqueues `run_id` for execution (returns quickly)
+  - Railway `worker` service consumes jobs and executes extraction → simulation → report
+- Progress + logs:
+  - Append phase events to `events` as today
+  - `GET /api/run/[id]/stream` provides SSE stream driven from `events` (sufficient for progress bar + log panel)
+
+**Acceptance Criteria**
+- `POST /api/run` creates run; returns `runId` quickly
+- `POST /api/run/[id]/start` enqueues job and returns immediately (no long work on Vercel)
+- `events` stream updates UI in near-real-time (progress bar + logs)
+- Failed runs are marked `failed` with error + diagnostics; worker retries are bounded
+
+**Implementation Notes**
+- Prefer a Postgres-backed queue to minimize moving parts (e.g. `pg-boss`) unless Redis is already required.
+- Keep “engine” as a pure library; add a separate worker app (e.g. `apps/worker`) as the long-running executor.
+
+**Test Plan**
+- Local: run Postgres, start web + worker; create run, start run, watch SSE stream, verify completion + stored report
+- Failure injection: force LLM key missing; run transitions to `failed` with useful error
+
+**Dependencies:** SIM-003, SIM-006, SIM-010, SIM-017
+
+**Completion notes:**
+- Extracted run execution logic into `packages/engine/src/executor/run-executor.ts` (`executeRun()`)
+- Added `queued` to RunStatus (pending → queued → running → completed/failed)
+- Created `PostgresStorage` class in `packages/engine/src/storage/postgres.ts` (full Storage interface)
+- SQL migration `001_initial.sql` with JSONB columns, indexes, foreign keys
+- Migration runner (`migrate.ts`) + CLI script (`run-migrations.ts`)
+- Scaffolded `apps/worker/` (package.json, tsconfig, entry point with direct run execution)
+- Added `storageConfigFromEnv()` helper: auto-detects postgres:// vs file: from DATABASE_URL
+- Refactored all 7 API routes to use `storageConfigFromEnv()` (no more hardcoded SQLite)
+- Added `pg` + `@types/pg` to engine, `tsx` for migration CLI
+- Test: `pnpm typecheck` passes for all 4 packages
+- Test: `pnpm --filter @simvibe/worker start <run_id>` executes a run via worker
+- Note: Full async (queue-based) execution deferred to SIM-018C (pg-boss)
+
+---
+
+### [ ] SIM-018A (P0) Add `apps/worker` long-running executor (Railway service)
+**Goal:** Introduce a dedicated process that can run 2–10 minute simulations reliably.
+
+**Deliverables**
+- New workspace app: `apps/worker`
+  - Boots with env config, connects to Postgres, runs job loop
+  - Calls existing engine functions to execute a run (extraction → simulation → report)
+- Health endpoints / basic logging suitable for Railway
+- Clear separation:
+  - `apps/web` does not execute long jobs
+  - `apps/worker` owns execution + retries + time-budget enforcement
+
+**Acceptance Criteria**
+- Worker can be started locally and in Railway
+- Worker can execute a single `run_id` end-to-end and persist results
+
+**Test Plan**
+- Local: start Postgres, start worker; manually enqueue a run; verify completion
+
+**Dependencies:** SIM-018
+
+---
+
+### [ ] SIM-018B (P0) Implement Postgres storage + migrations (replace SQLite for prod)
+**Goal:** Swap storage backend from SQLite to Postgres with real migrations.
+
+**Deliverables**
+- New storage driver (e.g. `packages/engine/src/storage/postgres.ts`)
+- Migration mechanism (SQL migrations folder + runner) covering:
+  - `runs`, `events`, `agent_outputs`, `calibration_priors` tables
+  - Appropriate indexes (`events(run_id, timestamp)`, `agent_outputs(run_id, persona_id UNIQUE)`, `runs(created_at)`)
+- JSON columns for large documents:
+  - `runs.input`, `runs.landing_extract`, `runs.report`, `runs.actuals`, `runs.diagnostics`, `runs.receipt` as JSON/JSONB
+
+**Acceptance Criteria**
+- Existing API and engine flows work against Postgres without schema changes to the app layer
+- Migration runner can bring up a fresh DB and upgrade existing DBs
+
+**Test Plan**
+- Local: reset DB, run migrations, run a simulation, confirm data stored and retrievable
+
+**Dependencies:** SIM-018
+
+---
+
+### [ ] SIM-018C (P0) Add job queue for run execution (Postgres-backed)
+**Goal:** Make run execution async, durable, and retryable without adding extra infra.
+
+**Deliverables**
+- Queue implementation using Postgres (preferred: `pg-boss`)
+- Job types:
+  - `run.execute` (payload: `runId`, `runMode`, optional overrides)
+- Retry policy + dead-letter behavior:
+  - bounded retries
+  - persistent failure writes error + diagnostics and marks run `failed`
+
+**Acceptance Criteria**
+- `POST /api/run/[id]/start` enqueues `run.execute` and returns immediately
+- Worker consumes from queue and executes runs
+
+**Test Plan**
+- Local: enqueue job, kill worker mid-run, restart worker; job resumes/retries and ends in a consistent state
+
+**Dependencies:** SIM-018A, SIM-018B
+
+---
+
+### [ ] SIM-018D (P0) Progress/log streaming via SSE backed by Postgres events
+**Goal:** Provide progress bar + log panel using SSE, without requiring WebSockets.
+
+**Deliverables**
+- API endpoint `GET /api/run/[id]/stream` (SSE):
+  - streams `SimEvent` rows from Postgres `events` table
+  - supports `since` cursor (timestamp or last event id) to resume
+- Worker emits enough structured events to drive UI:
+  - phase start/end
+  - agent started/action completed
+  - warnings/errors
+
+**Acceptance Criteria**
+- UI shows progress + logs updating in near-real-time during long runs
+- Reloading the page can resume from stored events (no “lost logs”)
+
+**Test Plan**
+- Start a deep run; verify logs stream for the full duration; refresh page; stream continues from last cursor
+
+**Dependencies:** SIM-018B, SIM-018C
+
+---
+
+### [ ] SIM-018E (P0) Deployment split: Vercel FE + Railway API/worker/Postgres (+ optional Redis)
+**Goal:** Make the deployable shape explicit and reproducible.
+
+**Deliverables**
+- Railway services:
+  - `api` (HTTP)
+  - `worker` (no public ingress)
+  - `postgres`
+  - (optional) `redis` only if later features need it
+- Environment variables / secrets list updated in `.env.example`
+- Networking:
+  - FE (Vercel) talks to Railway `api` only
+  - `api` and `worker` talk to Postgres privately
+
+**Acceptance Criteria**
+- Clean separation of concerns:
+  - Vercel does FE + short API calls
+  - Railway handles all long-running work + DB
+
+**Test Plan**
+- Deploy a staging environment: create run from Vercel, see it executed by Railway worker, view report
+
+**Dependencies:** SIM-018A, SIM-018B, SIM-018C, SIM-018D
+
+---
+
+### [ ] SIM-019 (P1) Add run modes: 2-minute “Quick” vs 10-minute “Deep” (predictable runtime)
+**Goal:** Support two execution budgets with predictable latency/cost while keeping outputs comparable.
+
+**Deliverables**
+- Run mode field (API + UI + storage):
+  - `runMode: quick | deep` (or equivalent) attached to each run
+- Deterministic per-mode configuration (examples; final numbers TBD):
+  - agent count / persona set selection
+  - max LLM tokens or model choice
+  - max “ticks”/steps for social diffusion (if enabled)
+  - time budget guardrails (stop/early-exit with warnings if nearing budget)
+- Report includes which mode ran + any early-stop warnings
+
+**Acceptance Criteria**
+- Quick mode completes in ~2 minutes (target) under normal conditions
+- Deep mode completes in ~10 minutes (target) under normal conditions
+- Same input yields stable “shape” of outputs (metrics + friction list), just higher confidence/detail in Deep mode
+
+**Test Plan**
+- Run the same product twice (quick/deep) and verify:
+  - both complete within targets
+  - deep mode adds more timeline depth / higher-confidence report without schema breakage
+
+**Dependencies:** SIM-018
+
+---
+
+## Milestone M7 — Social Diffusion (Comments/Upvotes Contagion) (P1)
+### [ ] SIM-020 (P1) Add within-run PH-style contagion: comments/upvotes → social proof → conversion uplift
+**Goal:** Simulate “feedback loops” (early upvotes/comments influence later agents) and reflect the dynamic in the report.
+
+**Deliverables**
+- World state + tick-based simulation within a run:
+  - tick timeline (t0..tN) with actions: view, upvote, comment, bounce, signup, pay
+  - global counters: upvotes, comment count, “social proof” score
+  - simple contagion rules (parameterized) that influence later agents’ priors:
+    - more social proof → higher upvote/signup/pay probability
+    - negative comments/trust killers → higher bounce probability
+- Store timeline:
+  - Append tick events into `events` (or a new `world_events` table if needed)
+- Report updates:
+  - “Diffusion timeline” section (key inflection points)
+  - Separate forecast: baseline (no social proof) vs diffusion-adjusted
+  - Paid conversion prediction updated based on diffusion-adjusted intent
+
+**Acceptance Criteria**
+- Deep mode report shows an interpretable contagion timeline (what triggered lift/drop)
+- Output schemas remain valid; UI renders timeline without crashing
+- Calibration logic (actuals → priors) still applies cleanly to final predicted signup/pay/bounce
+
+**Test Plan**
+- Synthetic test input with “high social proof” vs “negative comment” injections and verify predicted metrics shift accordingly
+
+**Dependencies:** SIM-019
+
+---
+
+## Milestone M8 — Persona Management & Ops (No Hardcoding) (P0/P1)
+### [ ] SIM-021 (P0) Move personas out of TS into Markdown files (frontmatter) + strict validation
+**Goal:** Add/edit personas without touching TypeScript code; keep personas detailed and reviewable via Git.
+
+**Deliverables**
+- Persona pack directory (source of truth):
+  - `personas/<persona_id>.md` files with YAML frontmatter + rich body text
+  - Frontmatter includes:
+    - engine mapping fields (id/name/role/context/priorities/redFlags/budgetRange/skepticismLevel/decisionStyle)
+    - extended metadata (age, location, education, monthly income, constraints, tools, etc.)
+- Parser + validator:
+  - Load all persona files at startup
+  - Validate with Zod and fail fast (clear errors)
+  - CLI command: `pnpm personas:validate`
+- Engine integration:
+  - Replace `packages/engine/src/prompts/personas.ts` hardcoded map with a runtime registry loaded from the persona pack
+  - Update shared schema so persona IDs don’t require code changes (e.g. `personaId: string` with a safe regex)
+
+**Acceptance Criteria**
+- Adding a persona requires only adding `personas/<id>.md` and running validation
+- Simulation runs using loaded persona registry
+- Report references persona IDs/names correctly
+
+**Test Plan**
+- Add one new persona file, validate, run a simulation, confirm it appears in outputs and report
+
+**Dependencies:** SIM-018A (worker) recommended, but not required for local
+
+---
+
+### [ ] SIM-021A (P0) Persona registry loader for existing 600 docs (bridge before frontmatter migration)
+**Goal:** Make all current `personas/*.md` runnable as agents now, without waiting for full frontmatter migration.
+
+**Deliverables**
+- Parser for current persona doc format (`## 10) Engine Mapping` section)
+- Registry builder that loads all valid persona docs at startup
+- Validation CLI:
+  - `pnpm personas:validate` prints invalid file list with clear parse errors
+  - non-zero exit code on invalid personas
+- Runtime wiring:
+  - replace hardcoded 5-persona list in orchestrator/prompt layer with registry-backed IDs
+
+**Acceptance Criteria**
+- Every valid persona doc can be loaded into runtime registry
+- Simulation can run with any selected persona IDs from registry
+- No TS code edit required to activate a new persona doc
+
+**Test Plan**
+- Validate entire `personas/` directory
+- Pick one non-core persona ID and run a simulation that includes it; confirm output/report/events include that ID
+
+**Dependencies:** SIM-021
+
+---
+
+### [ ] SIM-021B (P0) De-hardcode personaId schemas + runtime membership validation
+**Goal:** Remove compile-time persona enum bottleneck while preserving safety.
+
+**Deliverables**
+- Shared schema updates:
+  - `personaId` changes from fixed enum to constrained string regex (snake_case)
+  - report/event schemas updated to accept dynamic persona IDs
+- Runtime guardrails:
+  - reject unknown persona IDs at run creation/start (must exist in loaded registry)
+  - clear error messages listing missing IDs
+- Backward compatibility:
+  - existing stored runs with old 5 persona IDs continue to parse
+
+**Acceptance Criteria**
+- Adding a new persona doc does not require changes in `packages/shared/src/schemas/agent-output.ts`
+- Invalid persona IDs fail fast with actionable API error
+
+**Test Plan**
+- API request with unknown persona ID returns 4xx + validation error
+- API request with known non-core persona ID runs successfully end-to-end
+
+**Dependencies:** SIM-021A
+
+---
+
+### [ ] SIM-021C (P0) Run-level persona selection + defaults (quick/deep ready)
+**Goal:** Ensure “each persona works as an agent” by allowing explicit persona set selection per run.
+
+**Deliverables**
+- Run input fields:
+  - `personaIds?: string[]`
+  - optional `personaSet?: quick | deep | custom` (or equivalent)
+- Resolution logic:
+  - if `personaIds` present, use exactly those
+  - else resolve default set from config
+- Persistence:
+  - store resolved persona IDs on run record for auditability
+- UI/API:
+  - API accepts selection fields
+  - run details/report show which personas were actually executed
+
+**Acceptance Criteria**
+- A run can target arbitrary personas from the registry (not only 5 fixed personas)
+- Report/event timeline clearly identifies executed persona list
+
+**Test Plan**
+- Create run with 3 explicit non-core personas, execute, verify exactly 3 outputs are stored
+- Create run with default mode and verify default set is used
+
+**Dependencies:** SIM-021B
+
+---
+
+### [ ] SIM-021D (P0) Large-set orchestration safeguards (batching/concurrency/timeouts)
+**Goal:** Keep multi-persona runs reliable when persona count grows (tens to hundreds).
+
+**Deliverables**
+- Orchestrator controls:
+  - `maxAgentConcurrency`
+  - per-agent timeout
+  - batch execution with progress events
+- Failure policy:
+  - single-agent failure produces fallback output, does not abort whole run
+  - run-level warning summarizing failed/fallback agent count
+- Diagnostics:
+  - per-agent duration, timeout count, fallback reason summary
+
+**Acceptance Criteria**
+- Runs with large persona sets complete without crashing
+- Stream/report remain usable even with partial failures
+
+**Test Plan**
+- Simulate 50+ personas with mocked LLM responses and forced timeouts on a subset; verify run completes with warnings
+
+**Dependencies:** SIM-021C
+
+---
+
+### [ ] SIM-021E (P0) Persona-agentization regression tests + CI gate
+**Goal:** Prevent regressions where persona docs exist but cannot run as agents.
+
+**Deliverables**
+- Automated tests for:
+  - persona parsing/validation
+  - dynamic persona schema acceptance
+  - orchestrator run with selected persona IDs
+- CI step:
+  - fail build if persona validation fails or dynamic persona tests fail
+- Minimal fixtures for deterministic no-LLM test runs
+
+**Acceptance Criteria**
+- PRs that break persona runtime compatibility are blocked by CI
+- Persona pack health is visible in one command
+
+**Test Plan**
+- Break one persona doc intentionally and confirm CI/validation fails
+- Restore file and confirm suite passes
+
+**Dependencies:** SIM-021A, SIM-021B, SIM-021C, SIM-021D
+
+---
+
+### [ ] SIM-022 (P1) Persona sets + run snapshotting (reproducible reports)
+**Goal:** Support curated persona bundles (Quick/Deep) and keep runs reproducible even if personas change later.
+
+**Deliverables**
+- Persona sets config:
+  - Default sets: `quick` and `deep` (IDs list)
+  - Ability for a run to specify a set
+- Snapshot on run start:
+  - Persist the exact persona definitions used (or version hashes) onto the run record
+  - Report renders from the snapshot to avoid “drifting” results
+
+**Acceptance Criteria**
+- Changing a persona file does not change historical reports
+- Quick vs deep runs differ by persona set (and later by diffusion depth)
+
+**Test Plan**
+- Run once, change persona content, re-open old report: unchanged
+
+**Dependencies:** SIM-021, SIM-018B
+
+---
+
+### [ ] SIM-023 (P1) Postgres persona registry + seed/sync (optional runtime editing later)
+**Goal:** Prepare for ops-friendly persona management (activate/deprecate/version) without redeploying code.
+
+**Deliverables**
+- Tables:
+  - `personas` (id, status, version/hash, engine_fields JSONB, metadata JSONB, created_at, updated_at)
+  - `persona_sets` + membership table (optional if sets stay file-based)
+- Seed/sync flow:
+  - CLI: `pnpm personas:sync` to upsert the repo persona pack into Postgres
+  - Mark active/deprecated personas without deleting history
+- Runtime loading:
+  - Prefer Postgres registry if populated; fallback to persona pack files
+  - Cache with TTL; reload on change
+
+**Acceptance Criteria**
+- DB-backed personas can be updated (via sync) without code changes
+- Service can roll back to previous persona versions (by version/hash)
+
+**Test Plan**
+- Sync personas into Postgres, run simulation, verify registry path used
+
+**Dependencies:** SIM-018B, SIM-021
