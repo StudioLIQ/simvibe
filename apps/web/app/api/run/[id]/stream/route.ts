@@ -6,14 +6,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const since = request.nextUrl.searchParams.get('since') ?? undefined;
 
   const encoder = new TextEncoder();
 
   const stream = new ReadableStream({
     async start(controller) {
-      let lastEventCount = 0;
+      let lastEventId: string | undefined = since;
       let pollCount = 0;
-      const maxPolls = 300;
+      const maxPolls = 600; // 5 minutes at 500ms interval
 
       const sendEvent = (data: unknown) => {
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(data)}\n\n`));
@@ -23,27 +24,32 @@ export async function GET(
         try {
           const storage = createStorage(storageConfigFromEnv());
           try {
-            const run = await storage.getRun(id);
+            // Lightweight status check first
+            const status = await storage.getRunStatus(id);
 
-            if (!run) {
+            if (!status) {
               sendEvent({ type: 'error', message: 'Run not found' });
               controller.close();
               return;
             }
 
-            if (run.events.length > lastEventCount) {
-              const newEvents = run.events.slice(lastEventCount);
-              for (const event of newEvents) {
+            // Get events since cursor
+            const events = await storage.getEventsSince(id, lastEventId);
+
+            if (events.length > 0) {
+              for (const event of events) {
                 sendEvent(event);
               }
-              lastEventCount = run.events.length;
+              lastEventId = events[events.length - 1].id;
             }
 
-            if (run.status === 'completed' || run.status === 'failed') {
+            if (status === 'completed' || status === 'failed') {
+              // Fetch report for stream_end
+              const run = await storage.getRun(id);
               sendEvent({
                 type: 'stream_end',
-                status: run.status,
-                report: run.report,
+                status,
+                report: run?.report,
               });
               controller.close();
               return;

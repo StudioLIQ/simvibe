@@ -137,6 +137,14 @@ export class SQLiteStorage implements Storage {
     };
   }
 
+  async getRunStatus(runId: string): Promise<RunStatus | null> {
+    const row = this.db.prepare(`
+      SELECT status FROM runs WHERE id = ?
+    `).get(runId) as { status: RunStatus } | undefined;
+
+    return row?.status ?? null;
+  }
+
   async updateRunStatus(runId: string, status: RunStatus, error?: string): Promise<void> {
     const now = new Date().toISOString();
     const result = this.db.prepare(`
@@ -169,6 +177,32 @@ export class SQLiteStorage implements Storage {
     this.db.prepare(`
       UPDATE runs SET updated_at = ? WHERE id = ?
     `).run(now, runId);
+  }
+
+  async getEventsSince(runId: string, sinceId?: string): Promise<SimEvent[]> {
+    if (sinceId) {
+      // Get the timestamp of the cursor event
+      const cursorRow = this.db.prepare(`
+        SELECT timestamp FROM events WHERE id = ? AND run_id = ?
+      `).get(sinceId, runId) as { timestamp: string } | undefined;
+
+      if (cursorRow) {
+        const rows = this.db.prepare(`
+          SELECT data FROM events
+          WHERE run_id = ? AND timestamp > ?
+          ORDER BY timestamp
+        `).all(runId, cursorRow.timestamp) as { data: string }[];
+
+        return rows.map(r => JSON.parse(r.data));
+      }
+    }
+
+    // No cursor or cursor not found: return all events
+    const rows = this.db.prepare(`
+      SELECT data FROM events WHERE run_id = ? ORDER BY timestamp
+    `).all(runId) as { data: string }[];
+
+    return rows.map(r => JSON.parse(r.data));
   }
 
   async saveAgentOutput(runId: string, output: AgentOutput): Promise<void> {

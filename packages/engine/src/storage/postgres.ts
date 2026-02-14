@@ -109,6 +109,14 @@ export class PostgresStorage implements Storage {
     };
   }
 
+  async getRunStatus(runId: string): Promise<RunStatus | null> {
+    const { rows } = await this.pool.query(
+      `SELECT status FROM runs WHERE id = $1`,
+      [runId]
+    );
+    return rows.length > 0 ? (rows[0].status as RunStatus) : null;
+  }
+
   async updateRunStatus(runId: string, status: RunStatus, error?: string): Promise<void> {
     const now = new Date().toISOString();
     const result = await this.pool.query(
@@ -145,6 +153,32 @@ export class PostgresStorage implements Storage {
       `UPDATE runs SET updated_at = $1 WHERE id = $2`,
       [now, runId]
     );
+  }
+
+  async getEventsSince(runId: string, sinceId?: string): Promise<SimEvent[]> {
+    if (sinceId) {
+      const { rows: cursorRows } = await this.pool.query(
+        `SELECT timestamp FROM events WHERE id = $1 AND run_id = $2`,
+        [sinceId, runId]
+      );
+
+      if (cursorRows.length > 0) {
+        const cursorTs = cursorRows[0].timestamp;
+        const { rows } = await this.pool.query(
+          `SELECT data FROM events
+           WHERE run_id = $1 AND timestamp > $2
+           ORDER BY timestamp`,
+          [runId, cursorTs]
+        );
+        return rows.map(r => typeof r.data === 'string' ? JSON.parse(r.data) : r.data);
+      }
+    }
+
+    const { rows } = await this.pool.query(
+      `SELECT data FROM events WHERE run_id = $1 ORDER BY timestamp`,
+      [runId]
+    );
+    return rows.map(r => typeof r.data === 'string' ? JSON.parse(r.data) : r.data);
   }
 
   async saveAgentOutput(runId: string, output: AgentOutput): Promise<void> {

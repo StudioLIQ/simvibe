@@ -35,6 +35,11 @@ export class MemoryStorage implements Storage {
     return this.runs.get(runId) ?? null;
   }
 
+  async getRunStatus(runId: string): Promise<RunStatus | null> {
+    const run = this.runs.get(runId);
+    return run?.status ?? null;
+  }
+
   async updateRunStatus(runId: string, status: RunStatus, error?: string): Promise<void> {
     const run = this.runs.get(runId);
     if (!run) {
@@ -63,6 +68,22 @@ export class MemoryStorage implements Storage {
     }
     run.events.push(event);
     run.updatedAt = new Date().toISOString();
+  }
+
+  async getEventsSince(runId: string, sinceId?: string): Promise<SimEvent[]> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      return [];
+    }
+
+    if (sinceId) {
+      const idx = run.events.findIndex(e => e.id === sinceId);
+      if (idx >= 0) {
+        return run.events.slice(idx + 1);
+      }
+    }
+
+    return [...run.events];
   }
 
   async saveAgentOutput(runId: string, output: AgentOutput): Promise<void> {

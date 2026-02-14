@@ -32,9 +32,11 @@ export interface Run {
 export interface Storage {
   createRun(input: RunInput): Promise<Run>;
   getRun(runId: string): Promise<Run | null>;
+  getRunStatus(runId: string): Promise<RunStatus | null>;
   updateRunStatus(runId: string, status: RunStatus, error?: string): Promise<void>;
   saveLandingExtract(runId: string, extract: LandingExtract): Promise<void>;
   appendEvent(runId: string, event: SimEvent): Promise<void>;
+  getEventsSince(runId: string, sinceId?: string): Promise<SimEvent[]>;
   saveAgentOutput(runId: string, output: AgentOutput): Promise<void>;
   saveReport(runId: string, report: Report): Promise<void>;
   saveActuals(runId: string, actuals: ActualOutcomes): Promise<void>;

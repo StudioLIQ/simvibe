@@ -661,7 +661,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-018D (P0) Progress/log streaming via SSE backed by Postgres events
+### [x] SIM-018D (P0) Progress/log streaming via SSE backed by Postgres events
 **Goal:** Provide progress bar + log panel using SSE, without requiring WebSockets.
 
 **Deliverables**
@@ -681,6 +681,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Start a deep run; verify logs stream for the full duration; refresh page; stream continues from last cursor
 
 **Dependencies:** SIM-018B, SIM-018C
+
+**Completion notes:**
+- Added `getRunStatus()` to Storage interface: lightweight status check without loading full run
+- Added `getEventsSince(runId, sinceId?)` to Storage interface: cursor-based event retrieval
+- Implemented in all 3 storage backends (SQLite, Postgres, Memory)
+- Stream route accepts `?since=<event_id>` query parameter for resume
+- Cursor-based: tracks last event ID, only fetches new events each poll
+- Increased max poll count to 600 (5 minutes) for longer runs
+- Page refresh resumes from stored events (no lost logs)
+- Test: `pnpm typecheck` passes for all packages
+- Test: `GET /api/run/[id]/stream?since=evt_123` resumes from that event
 
 ---
 
