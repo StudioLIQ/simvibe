@@ -8,6 +8,7 @@ export interface RunModeConfig {
   maxTokensPerAgent: number;
   temperature: number;
   enableDebate: boolean;
+  debateRounds: number;
   timeBudgetMs: number;
   maxAgentConcurrency: number;
   perAgentTimeoutMs: number;
@@ -54,6 +55,7 @@ const QUICK_MODE: RunModeConfig = {
   maxTokensPerAgent: 2048,
   temperature: 0.7,
   enableDebate: false,
+  debateRounds: 0,
   timeBudgetMs: 120_000, // 2 minutes
   maxAgentConcurrency: 5,
   perAgentTimeoutMs: 60_000, // 1 minute per agent
@@ -70,10 +72,11 @@ const DEEP_MODE: RunModeConfig = {
   maxTokensPerAgent: 4096,
   temperature: 0.7,
   enableDebate: true,
+  debateRounds: 2,
   timeBudgetMs: 600_000, // 10 minutes
   maxAgentConcurrency: 10,
   perAgentTimeoutMs: 120_000, // 2 minutes per agent
-  description: 'Deep analysis with 11 personas + debate (~10 min)',
+  description: 'Deep analysis with 11 personas + multi-round debate (~10 min)',
 };
 
 const MODE_CONFIGS: Record<RunMode, RunModeConfig> = {

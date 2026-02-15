@@ -154,6 +154,7 @@ export async function executeRun(
         temperature: orchestratorConfig.llm.temperature ?? modeConfig.temperature,
       },
       enableDebate: orchestratorConfig.enableDebate ?? modeConfig.enableDebate,
+      debateRounds: orchestratorConfig.debateRounds ?? modeConfig.debateRounds,
       personaIds: resolvedPersonaIds,
       timeBudgetMs: modeConfig.timeBudgetMs,
       maxAgentConcurrency: modeConfig.maxAgentConcurrency,

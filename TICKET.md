@@ -1823,3 +1823,61 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Added convenience scripts: `pnpm ci:e2e:quick`, `pnpm ci:e2e:deep`
 - Prerequisite gates (typecheck + personas + demo outputs) must pass before E2E runs
 - Test: `pnpm typecheck` passes for all packages
+
+---
+
+## Milestone M13 — Persona Interaction Depth (P0/P1)
+
+### [x] SIM-045 (P0) Implement multi-round peer-reactive debate in orchestrator
+**Goal:** Make personas react to each other across rounds, not only produce isolated one-shot outputs.
+
+**Deliverables**
+- Add debate round config at run-mode/orchestrator level:
+  - `debateRounds` in orchestrator config
+  - `quick=0`, `deep=2` defaults
+- Execute deep-mode simulation in rounds:
+  - initial action evaluation
+  - debate rounds where each persona receives peer reaction context from prior round
+  - final outputs persisted from last round
+- Emit debate-phase runtime events for visibility:
+  - debate phase start/end
+  - per-round progress messages
+  - per-agent debate actions
+- Ensure web API and worker do not force-disable debate mode.
+
+**Acceptance Criteria**
+- Deep mode shows real debate-phase events with multi-round agent reactions.
+- Persona outputs in deep mode include debate field and stance updates.
+- Existing PH->nad E2E remains green after interaction-depth changes.
+
+**Test Plan**
+- `pnpm typecheck`
+- `PRODUCT_COUNT=2 E2E_RUN_MODE=deep MIN_READY_LAUNCHES=1 pnpm e2e:ph:nad`
+- Manual deep run event check:
+  - debate phase start/end events present
+  - debate agent action events count reflects personas x rounds
+
+**Dependencies:** SIM-044
+
+**Completion notes:**
+- Updated orchestrator to run multi-round debate loop after initial action pass:
+  - round-based `runAgentsBatched(..., phase='debate')`
+  - peer context injection per persona from prior round outputs
+  - stance-shift counting between rounds
+- Added `RunAgentOptions` and prompt options for:
+  - `peerReactionContext`
+  - `debateRound`
+  - `debateTotalRounds`
+- Updated prompt composer to include explicit peer reaction section and stance-update instruction.
+- Run-mode config now carries `debateRounds`:
+  - quick: 0
+  - deep: 2
+- `run-executor` now passes `debateRounds` through to orchestrator.
+- Removed hardcoded `enableDebate: false` from:
+  - `apps/web/app/api/run/[id]/start/route.ts`
+  - `apps/worker/src/index.ts`
+- Fixed demo LLM debate detection to match updated prompt phrasing (`Include the debate phase`).
+- Verified:
+  - `pnpm typecheck` passes
+  - deep E2E passes with launch success
+  - manual deep run shows debate events and debate-filled outputs

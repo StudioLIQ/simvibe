@@ -15,6 +15,7 @@ export interface OrchestratorConfig {
   maxRetries?: number;
   timeoutMs?: number;
   enableDebate?: boolean;
+  debateRounds?: number;
   personaIds?: string[];
   timeBudgetMs?: number;
   maxAgentConcurrency?: number;

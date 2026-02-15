@@ -59,11 +59,12 @@ function buildDemoOutput(systemPrompt: string, userPrompt: string): Record<strin
   const personaName = extractPersonaName(systemPrompt);
   const tagline = extractSection(userPrompt, 'Tagline') || 'Product';
   const description = extractSection(userPrompt, 'Description') || 'No description provided.';
-  const seed = hashString(`${personaName}|${tagline}|${description}`);
+  const peerReactions = extractSection(userPrompt, 'Peer Reactions');
+  const seed = hashString(`${personaName}|${tagline}|${description}|${peerReactions}`);
 
   const frictionCategory = DEMO_FRICTION_CATEGORIES[seed % DEMO_FRICTION_CATEGORIES.length];
   const primaryAction = DEMO_PRIMARY_ACTIONS[seed % DEMO_PRIMARY_ACTIONS.length];
-  const includeDebate = /Include the debate phase\./i.test(userPrompt);
+  const includeDebate = /Include the debate phase/i.test(userPrompt);
 
   // Use unsigned right shift (>>>) to avoid negative results from signed bit shift
   const weights: Record<typeof DEMO_PRIMARY_ACTIONS[number], number> = {
@@ -74,6 +75,23 @@ function buildDemoOutput(systemPrompt: string, userPrompt: string): Record<strin
     SHARE: 0.08 + (((seed >>> 8) % 15) / 100),
     BOUNCE: 0.1 + (((seed >>> 10) % 25) / 100),
   };
+
+  const peerNegativeSignals = (peerReactions.match(/primaryAction=BOUNCE/g) || []).length;
+  const peerPositiveSignals = (
+    (peerReactions.match(/primaryAction=UPVOTE/g) || []).length +
+    (peerReactions.match(/primaryAction=SIGNUP/g) || []).length +
+    (peerReactions.match(/primaryAction=PAY/g) || []).length
+  );
+
+  if (peerReactions.trim().length > 0) {
+    const positiveLift = Math.min(0.18, peerPositiveSignals * 0.03);
+    const negativeDrag = Math.min(0.18, peerNegativeSignals * 0.03);
+    weights.UPVOTE += positiveLift * 0.7;
+    weights.SIGNUP += positiveLift * 0.8;
+    weights.PAY += positiveLift * 0.5;
+    weights.BOUNCE += negativeDrag * 1.1;
+    weights.COMMENT += (peerPositiveSignals + peerNegativeSignals) > 0 ? 0.04 : 0;
+  }
 
   const maxAction = Object.entries(weights).sort((a, b) => b[1] - a[1])[0][0] as typeof DEMO_PRIMARY_ACTIONS[number];
   weights[maxAction] = Math.max(weights[maxAction], weights[primaryAction]);
@@ -120,7 +138,9 @@ function buildDemoOutput(systemPrompt: string, userPrompt: string): Record<strin
       phase: 'debate',
       question: 'What hard evidence most increases trust in this claim?',
       challengedClaim: 'The current copy implies strong outcomes without concrete support.',
-      stanceUpdate: 'Slightly more positive after considering broader market need, but proof gap remains.',
+      stanceUpdate: peerReactions.trim().length > 0
+        ? `Adjusted after peer feedback (${peerPositiveSignals} positive vs ${peerNegativeSignals} negative signals); confidence shifted but proof gap remains decisive.`
+        : 'Slightly more positive after considering broader market need, but proof gap remains.',
     };
   }
 

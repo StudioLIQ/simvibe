@@ -34,7 +34,6 @@ function getOrchestratorConfig(): OrchestratorConfig {
 
   return {
     llm: { provider, apiKey: apiKey || 'demo-mode-key' },
-    enableDebate: false,
   };
 }
 

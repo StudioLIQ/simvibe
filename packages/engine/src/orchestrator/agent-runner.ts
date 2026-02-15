@@ -6,6 +6,13 @@ import { composePrompt } from '../prompts';
 
 const MAX_RETRIES = 3;
 
+export interface RunAgentOptions {
+  includeDebate?: boolean;
+  peerReactionContext?: string;
+  debateRound?: number;
+  debateTotalRounds?: number;
+}
+
 function extractJSON(text: string): string {
   const trimmed = text.trim();
 
@@ -65,13 +72,17 @@ function parseAgentResponse(
 export async function runAgent(
   personaId: PersonaId,
   context: SimulationContext,
-  llmClient: LLMClient
+  llmClient: LLMClient,
+  options: RunAgentOptions = {}
 ): Promise<AgentResult> {
   const startTime = Date.now();
   const { runId, input, landingExtract, config } = context;
 
   const prompt = composePrompt(personaId, input, landingExtract, {
-    includeDebate: config.enableDebate ?? false,
+    includeDebate: options.includeDebate ?? config.enableDebate ?? false,
+    peerReactionContext: options.peerReactionContext,
+    debateRound: options.debateRound,
+    debateTotalRounds: options.debateTotalRounds,
   });
 
   const messages: LLMMessage[] = [

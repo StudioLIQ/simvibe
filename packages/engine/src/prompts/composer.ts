@@ -7,6 +7,13 @@ export interface ComposedPrompt {
   user: string;
 }
 
+export interface ComposePromptOptions {
+  includeDebate?: boolean;
+  peerReactionContext?: string;
+  debateRound?: number;
+  debateTotalRounds?: number;
+}
+
 function formatPersonaPrompt(persona: PersonaDefinition): string {
   return `
 # Your Persona: ${persona.name}
@@ -118,7 +125,7 @@ export function composePrompt(
   personaId: PersonaId,
   input: RunInput,
   extract: LandingExtract,
-  options: { includeDebate?: boolean } = {}
+  options: ComposePromptOptions = {}
 ): ComposedPrompt {
   const persona = getPersona(personaId);
   const isPH = input.platformMode === 'product_hunt';
@@ -129,13 +136,23 @@ ${formatPersonaPrompt(persona)}
 
 ${OUTPUT_JSON_REMINDER}`;
 
+  const hasPeerReactions = !!options.peerReactionContext?.trim();
+  const roundLabel = hasPeerReactions
+    ? `Debate round ${options.debateRound ?? 1}/${options.debateTotalRounds ?? 1}`
+    : 'Initial individual evaluation';
+
   let userPrompt = `Evaluate this product as ${persona.name}.
 
 ${formatRunInput(input)}
 
 ${formatLandingExtract(extract)}
 
-Now provide your evaluation. ${options.includeDebate ? 'Include the debate phase.' : 'Skip the debate phase (set debate to null).'}
+## Evaluation Context
+${roundLabel}
+${hasPeerReactions ? 'You must react to peer feedback and update your stance where needed.' : 'Base your judgment on your own first-pass analysis.'}
+${hasPeerReactions ? `\n\n## Peer Reactions\n${options.peerReactionContext}` : ''}
+
+Now provide your evaluation. ${options.includeDebate ? 'Include the debate phase with a concrete stance update when peers changed your view.' : 'Skip the debate phase (set debate to null).'}
 
 Remember: Output ONLY valid JSON. Start with { and end with }`;
 
