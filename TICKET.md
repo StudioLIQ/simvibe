@@ -2198,7 +2198,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Only visible when launch confirmed successfully
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-014 (P0) Build end-to-end flow script for hackathon demo
+### [x] MND-014 (P0) Build end-to-end flow script for hackathon demo
 **Goal:** Automate proof path: simulate -> publish receipt -> gate -> launch -> verify.
 
 **Deliverables**
@@ -2213,7 +2213,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Dependencies:** MND-013
 
-### [ ] MND-015 (P0) Add hackathon submission checklist + guardrails
+**Completion notes:**
+- `scripts/e2e-monad-flow.ts`: 11-step E2E (create → start → poll → verify report → publish receipt → check gate → readiness → save payload → execute → confirm → verify status)
+- Produces both JSON and Markdown artifacts in `artifacts_runs/`
+- `pnpm e2e:monad` runs against existing server; `pnpm ci:e2e:monad` runs with DEMO_MODE + memory
+- Offline receipt fallback when Monad publisher not configured
+- 11/11 steps pass in demo mode (~4s total)
+- Test: `pnpm typecheck` passes for all packages
+
+### [x] MND-015 (P0) Add hackathon submission checklist + guardrails
 **Goal:** No-miss checklist for required submission fields.
 
 **Deliverables**
@@ -2227,3 +2235,131 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Dry-run checklist execution by non-author teammate.
 
 **Dependencies:** MND-014
+
+**Completion notes:**
+- `SUBMISSION.md` at repo root: 9-field submission checklist + 7-step execution guide
+- Operational guardrails: retry policy table (5 components), duplicate prevention (3 mechanisms), rollback notes (5 scenarios)
+- Emergency fallbacks documented: no Monad RPC, no LLM key, no DB, no gate
+- Quick reference section with all key commands
+- Test: Follow Steps 0-3 in SUBMISSION.md with DEMO_MODE=true
+
+---
+
+## Milestone M15 — Living Report + Multi-Agent Collaboration (P0/P1)
+
+### [ ] MND-016 (P0) Add living-report data model (status/version/revisions)
+**Goal:** Make report continuously editable by agents and humans.
+
+**Deliverables**
+- `report_status`: `open | review | frozen | published`
+- `report_version` counter
+- `report_revisions` storage (author, patch, timestamp, reason)
+
+**Acceptance Criteria**
+- A run can keep evolving report content while status is `open`.
+
+**Dependencies:** MND-004
+
+### [ ] MND-017 (P0) Define report patch protocol + schema validation
+**Goal:** Standardize how external/internal agents submit report updates.
+
+**Deliverables**
+- JSON patch schema (section-scoped)
+- zod validation + rejection codes
+- patch provenance fields (`agentId`, `source`, `confidence`)
+
+**Acceptance Criteria**
+- Invalid patch payloads are rejected deterministically.
+
+**Dependencies:** MND-016
+
+### [ ] MND-018 (P0) Implement patch merge engine + conflict handling
+**Goal:** Merge concurrent agent updates safely.
+
+**Deliverables**
+- section-level merge logic
+- conflict detection (`review` escalation)
+- deterministic merge order
+
+**Acceptance Criteria**
+- Concurrent patches do not corrupt final report snapshot.
+
+**Dependencies:** MND-017
+
+### [ ] MND-019 (P0) Add open-report update APIs
+**Goal:** Allow report evolution via API while `open`.
+
+**Deliverables**
+- `POST /api/run/:id/report/patch`
+- `GET /api/run/:id/report/revisions`
+- status guardrails (`frozen/published` write-block)
+
+**Acceptance Criteria**
+- Patch history and latest snapshot can both be queried.
+
+**Dependencies:** MND-018
+
+### [ ] MND-020 (P1) Build report timeline/diff UI
+**Goal:** Make revision history visible and reviewable.
+
+**Deliverables**
+- report version timeline
+- revision diff viewer
+- conflict/review badge UI
+
+**Acceptance Criteria**
+- User can inspect who changed what between versions.
+
+**Dependencies:** MND-019
+
+### [ ] MND-021 (P0) Add external agent registry and participation config
+**Goal:** Let third-party agents join simulation/report refinement loops.
+
+**Deliverables**
+- `agent_registry` (owner, endpoint, schemaVersion, enabled, reputation)
+- run-level participant config (`participantAgents`)
+- internal persona + external agent unified adapter
+
+**Acceptance Criteria**
+- At least one external agent can submit valid patches.
+
+**Dependencies:** MND-017
+
+### [ ] MND-022 (P0) Implement report lifecycle controls (freeze/unfreeze/publish)
+**Goal:** Control when edits are allowed and when output is final.
+
+**Deliverables**
+- lifecycle transition rules
+- API endpoints for freeze/unfreeze/publish
+- permission checks + audit events
+
+**Acceptance Criteria**
+- `published` reports are immutable.
+
+**Dependencies:** MND-019
+
+### [ ] MND-023 (P0) Bind Monad receipt to report version hash
+**Goal:** Make published report versions verifiable onchain.
+
+**Deliverables**
+- version-hash calculation for frozen snapshot
+- receipt publish uses version-hash payload
+- onchain linkage persisted in DB
+
+**Acceptance Criteria**
+- One published report version maps to one onchain receipt state.
+
+**Dependencies:** MND-022
+
+### [ ] MND-024 (P0) Gate nad.fun launch to frozen/published report only
+**Goal:** Prevent launching from mutable draft reports.
+
+**Deliverables**
+- launch execute precheck: status must be `frozen` or `published`
+- explicit API/UI error for `open/review`
+- E2E coverage for blocked/allowed launch states
+
+**Acceptance Criteria**
+- `open` reports cannot trigger live nad.fun launch.
+
+**Dependencies:** MND-022, MND-023
