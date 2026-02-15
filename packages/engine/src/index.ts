@@ -9,6 +9,7 @@ export * from './executor';
 export * from './config';
 export * from './queue';
 export * from './personas';
+export * from './diffusion';
 export * from './demo';
 export * from './chain';
 

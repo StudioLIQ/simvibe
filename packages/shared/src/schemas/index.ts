@@ -7,3 +7,4 @@ export * from './actual-outcomes';
 export * from './calibration-prior';
 export * from './run-diagnostics';
 export * from './chain-receipt';
+export * from './diffusion';

@@ -7,6 +7,7 @@ import type {
   CalibrationPrior,
   AggregatedMetrics,
   RunMode,
+  DiffusionTimeline,
 } from '@simvibe/shared';
 import { applyCalibration } from '@simvibe/shared';
 import { aggregateOutputs, type AggregationResult } from './aggregator';
@@ -67,7 +68,8 @@ export function generateReport(
   calibrationPrior?: CalibrationPrior | null,
   runMode?: RunMode,
   earlyStopReason?: string,
-  executedPersonaIds?: string[]
+  executedPersonaIds?: string[],
+  diffusion?: DiffusionTimeline
 ): Report {
   const aggregation = aggregateOutputs(outputs);
 
@@ -119,6 +121,7 @@ export function generateReport(
     runMode,
     earlyStopReason,
     executedPersonaIds,
+    diffusion,
   };
 }
 
@@ -172,6 +175,24 @@ export function formatReportMarkdown(report: Report): string {
   lines.push(`\n## Recommended Fixes`);
   for (const fix of report.oneLineFixes.slice(0, 5)) {
     lines.push(`${fix.priority}. **[${fix.source}]** ${fix.fix}`);
+  }
+
+  if (report.diffusion) {
+    lines.push(`\n## Social Diffusion Timeline`);
+    lines.push(`\n**Baseline vs Diffusion-Adjusted Forecast:**`);
+    lines.push(`| Metric | Baseline | Adjusted | Uplift |`);
+    lines.push(`|--------|----------|----------|--------|`);
+    const d = report.diffusion.forecast;
+    lines.push(`| Signups | ${(d.baseline.expectedSignups * 100).toFixed(1)}% | ${(d.diffusionAdjusted.expectedSignups * 100).toFixed(1)}% | ${(d.upliftSignups * 100).toFixed(1)}pp |`);
+    lines.push(`| Pays | ${(d.baseline.expectedPays * 100).toFixed(1)}% | ${(d.diffusionAdjusted.expectedPays * 100).toFixed(1)}% | ${(d.upliftPays * 100).toFixed(1)}pp |`);
+    lines.push(`| Bounce | ${(d.baseline.bounceRate * 100).toFixed(1)}% | ${(d.diffusionAdjusted.bounceRate * 100).toFixed(1)}% | ${(d.upliftBounce * 100).toFixed(1)}pp |`);
+
+    if (report.diffusion.inflectionPoints.length > 0) {
+      lines.push(`\n**Inflection Points:**`);
+      for (const ip of report.diffusion.inflectionPoints) {
+        lines.push(`- Tick ${ip.tick} (${ip.impact}): ${ip.reason}`);
+      }
+    }
   }
 
   lines.push(`\n## Persona Reports`);

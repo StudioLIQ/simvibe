@@ -6,6 +6,7 @@ import { createOrchestrator, type OrchestratorConfig } from '../orchestrator';
 import { generateReport } from '../aggregator';
 import { getRunModeConfig } from '../config';
 import { getPersonaRegistry } from '../personas/registry';
+import { runDiffusionSimulation } from '../diffusion';
 
 export interface ExecuteRunConfig {
   storage: Storage;
@@ -142,14 +143,27 @@ export async function executeRun(
       const calibrationKey = getCalibrationKey(category, pricingModel);
       const calibrationPrior = await storage.getCalibrationPrior(calibrationKey);
 
+      // Run diffusion simulation for deep mode
+      const runMode = run.input.runMode || 'quick';
+      const agentOutputs = result.agentResults.map(r => r.output);
+      let diffusionTimeline;
+      let outputsForReport = agentOutputs;
+
+      if (runMode === 'deep' && agentOutputs.length > 1) {
+        const diffusionResult = runDiffusionSimulation(agentOutputs);
+        diffusionTimeline = diffusionResult.timeline;
+        outputsForReport = diffusionResult.adjustedOutputs;
+      }
+
       const report = generateReport(
         runId,
-        result.agentResults.map(r => r.output),
+        outputsForReport,
         run.variantOf,
         calibrationPrior,
-        run.input.runMode || 'quick',
+        runMode,
         undefined, // earlyStopReason
-        resolvedPersonaIds
+        resolvedPersonaIds,
+        diffusionTimeline
       );
 
       currentPhase.endedAt = new Date().toISOString();

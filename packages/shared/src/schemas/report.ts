@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { PersonaIdSchema, ActionTypeSchema } from './agent-output';
 import { RunModeSchema } from './run-input';
+import { DiffusionTimelineSchema } from './diffusion';
 
 export const TractionBandSchema = z.enum([
   'very_low',
@@ -76,6 +77,7 @@ export const ReportSchema = z.object({
   runMode: RunModeSchema.optional(),
   earlyStopReason: z.string().optional(),
   executedPersonaIds: z.array(PersonaIdSchema).optional(),
+  diffusion: DiffusionTimelineSchema.optional(),
 });
 
 export type TractionBand = z.infer<typeof TractionBandSchema>;
