@@ -15,8 +15,8 @@ const headingFont = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: 'simvi.be - Agentic Market Simulator',
-  description: 'Launch into a synthetic market before you launch into the real one.',
+  title: 'simvi.be - Predict nad.fun Launch Reaction',
+  description: 'Simulate token launch reactions on nad.fun before going live. AI-powered multi-agent behavior engine.',
   icons: {
     icon: '/icon.png',
     shortcut: '/icon.png',

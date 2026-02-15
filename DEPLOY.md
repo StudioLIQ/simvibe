@@ -203,11 +203,24 @@ API_SERVER_ORIGIN=https://api-simvibe.studioliq.com
 
 ---
 
-## 7. Product Hunt 시드 자동화
+## 7. nad.fun 시드 자동화 (+ Legacy PH)
 
 시드 카탈로그: `SEEDING.md`
 
-### 7-1. 수동 1회 시딩
+### 7-1. nad.fun 시딩 (Primary)
+
+```bash
+API_BASE_URL=https://api-simvibe.studioliq.com \
+WEB_BASE_URL=https://simvibe.studioliq.com \
+WAIT_FOR_SERVER_SECONDS=180 \
+SEED_ONLY_MISSING=true \
+SEED_NAMESPACE=nad-demo-v1 \
+PRODUCT_COUNT=8 \
+RUN_MODE=quick \
+pnpm seed:nad:railway
+```
+
+### 7-1b. Legacy PH 시딩 (Compatibility)
 
 ```bash
 API_BASE_URL=https://api-simvibe.studioliq.com \

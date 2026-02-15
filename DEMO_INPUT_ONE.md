@@ -2,38 +2,38 @@
 
 아래 값 그대로 입력하면 데모를 바로 시작할 수 있습니다.
 
-## Product Information
+## Token / Project Info
 - `Tagline`:
-  `Linear-style issue tracker with AI triage for fast product teams`
+  `The first meme-curated culture token on Monad`
 - `Description`:
-  `OrbitBoard is a project execution workspace for product teams that need to move fast. It combines issue tracking, sprint planning, bug triage, and roadmap alignment with AI-assisted prioritization and duplicate detection. Teams can route noisy feedback into clean, actionable tasks, assign owners, and ship in shorter cycles without losing context.`
-- `Pricing Model`: `freemium`
-- `Category`: `Developer Tools`
+  `MonadMemes aggregates and rewards the best community memes on Monad. Holders vote on meme contests, and top creators earn token rewards from a community treasury. Every chain needs its culture layer, and MonadMemes is the cultural heartbeat of Monad.`
+- `Pricing Model`: `free`
+- `Category`: `Meme`
 - `Tags`:
-  `AI, Issue Tracking, Product Management, B2B SaaS`
+  `Meme, Community, Monad, Culture`
 
-## Landing Page
+## Project URL / Content
 - `URL`:
-  `https://linear.app`
-- `Or paste your landing page content`:
+  비워도 됨 (nad.fun 모드에서는 아래 필드로 충분)
+- `Or paste content directly`:
   비워도 됨
 
 ## Platform Mode
-- `Platform Mode`: `Product Hunt`
-- `Product Name`:
-  `OrbitBoard`
-- `PH Tagline`:
-  `AI issue triage for teams that ship fast`
-- `PH Description`:
-  `Turn messy feedback into prioritized tasks automatically. OrbitBoard helps product teams triage, assign, and ship with fewer bottlenecks.`
-- `Topics`:
-  `Developer Tools, Productivity, Artificial Intelligence`
-- `Maker First Comment`:
-  `We built OrbitBoard after watching small teams drown in duplicate bug reports and scattered customer feedback. The goal is simple: fewer manual triage loops, faster decisions, and cleaner sprint execution. I'd love feedback on which part of your planning workflow is still the biggest bottleneck.`
-- `Thumbnail URL` (optional):
-  `https://linear.app/favicon.ico`
-- `Video URL` (optional):
-  비워도 됨
+- `Platform Mode`: `nad.fun` (default)
+- `Token Name`:
+  `MonadMemes`
+- `Token Symbol`:
+  `MMEME`
+- `Launch Thesis`:
+  `Meme culture drives early adoption in every L1 ecosystem. MonadMemes captures that energy by tokenizing meme curation — turning attention into governance power.`
+- `Token Narrative`:
+  `Every chain needs its culture layer. MonadMemes is the cultural heartbeat of Monad — where the best memes get rewarded and the community decides what is funny.`
+- `Distribution Plan`:
+  `Launch via nad.fun with anti-snipe. Seed 200 holders from Monad Discord meme channel. KOL partnerships with 3 CT meme accounts. Weekly meme contest with token prizes.`
+- `Risk Assumptions`:
+  `Meme tokens have high churn risk. No intrinsic utility beyond governance. Dependent on sustained community engagement. Vulnerable to copycat forks.`
+- `Anti-Snipe`: checked
+- `Bundled`: unchecked
 
 ## Simulation Mode
 - 데모 속도 우선: `quick`
@@ -41,3 +41,15 @@
 
 ## Optional (BYOK)
 - Run 화면에서 `Optional: your GEMINI_API_KEY` 칸에 사용자 키 입력 후 시작하면 해당 런만 BYOK로 실행됩니다.
+
+---
+
+## Legacy: Product Hunt Demo Input
+
+PH 모드 테스트가 필요한 경우:
+
+- `Platform Mode`: `Product Hunt (legacy)`
+- `Product Name`: `OrbitBoard`
+- `PH Tagline`: `AI issue triage for teams that ship fast`
+- `PH Description`: `Turn messy feedback into prioritized tasks automatically.`
+- `Tagline`: `Linear-style issue tracker with AI triage for fast product teams`

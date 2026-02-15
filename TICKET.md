@@ -2651,15 +2651,24 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Artifact: `e2e-nad-fun-summary-{mode}` uploaded per matrix leg
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-034 (P0) Rewrite public copy/submission copy to nad.fun positioning
+### [x] MND-034 (P0) Rewrite public copy/submission copy to nad.fun positioning
 **Goal:** Eliminate Product Hunt-first messaging drift.
 
 **Deliverables**
 - Landing, DEMO, DEPLOY, submission snippets updated.
-- One-liner: “Predict nad.fun launch reaction before going live.”
+- One-liner: "Predict nad.fun launch reaction before going live."
 
 **Acceptance Criteria**
 - No primary user-facing copy describes the product as PH-first.
+
+**Completion notes:**
+- Layout metadata: "simvi.be - Predict nad.fun Launch Reaction"
+- Homepage: "Predict nad.fun launch reaction before going live."
+- DEMO.md: seed instructions → `pnpm seed:nad` (PH legacy option noted)
+- DEMO_INPUT_ONE.md: rewritten to nad.fun MonadMemes token; PH in "Legacy" section
+- LOCAL.md: seed and E2E sections → nad.fun first, PH noted as legacy
+- DEPLOY.md: seed section → nad.fun primary, PH in compat sub-section
+- Test: `pnpm typecheck` passes for all packages
 
 **Dependencies:** MND-025
 

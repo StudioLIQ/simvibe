@@ -86,7 +86,7 @@ export default function HomePage() {
           <Image src="/logo.png" alt="simvi.be logo" width={42} height={42} priority />
           <h1 style={{ marginBottom: 0 }}>simvi.be</h1>
         </div>
-        <p>배포 리허설 허브: 누적 리포트 확인과 새 시뮬레이션 실행을 분리했습니다.</p>
+        <p>Predict nad.fun launch reaction before going live.</p>
       </header>
 
       <div className="card" style={{ marginBottom: '1rem' }}>
