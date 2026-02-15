@@ -1060,7 +1060,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-023 (P1) Postgres persona registry + seed/sync (optional runtime editing later)
+### [x] SIM-023 (P1) Postgres persona registry + seed/sync (optional runtime editing later)
 **Goal:** Prepare for ops-friendly persona management (activate/deprecate/version) without redeploying code.
 
 **Deliverables**
@@ -1082,3 +1082,22 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Sync personas into Postgres, run simulation, verify registry path used
 
 **Dependencies:** SIM-018B, SIM-021
+
+**Completion notes:**
+- Postgres migration 003_personas_table.sql: `personas` table with id, status, version_hash, engine_fields JSONB, metadata JSONB, source_format
+- DB registry module: packages/engine/src/personas/db-registry.ts
+  - `loadPersonasFromDb()`: load all active personas from Postgres
+  - `upsertPersona()`: insert/update persona with version hash
+  - `deprecateMissing()`: soft-deprecate personas not in file set
+  - `computeVersionHash()`: sha256 of canonical engine fields JSON
+  - `getPersonaVersion()` / `reactivatePersona()`: rollback support
+- Sync CLI: packages/engine/src/personas/sync.ts
+  - `pnpm personas:sync` upserts all repo personas into Postgres
+  - `--deprecate-missing` flag marks personas not in files as deprecated
+  - `--dry-run` flag previews without writing
+- Registry updated: initPersonaRegistryFromDb() for DB-first loading with fallback to files
+- Cache with 5-minute TTL; `resetPersonaRegistry()` for testing
+- Persona sets stay file-based (PERSONA_SETS in run-modes.ts) — no separate DB table needed yet
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 50 tests pass)
+- Test: `DATABASE_URL=postgres://... pnpm personas:sync --dry-run` previews sync

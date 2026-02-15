@@ -8,6 +8,7 @@
     "typecheck": "tsc --noEmit",
     "db:migrate": "tsx src/storage/run-migrations.ts",
     "personas:validate": "tsx src/personas/validate.ts",
+    "personas:sync": "tsx src/personas/sync.ts",
     "test:personas": "tsx src/personas/test-personas.ts"
   },
   "dependencies": {

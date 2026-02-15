@@ -1,15 +1,18 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import { Pool } from 'pg';
 import { parsePersonaDoc, type PersonaEngineFields, type ParseResult } from './parser';
+import { loadPersonasFromDb } from './db-registry';
 import type { PersonaDefinition } from '../prompts/personas';
 
 /**
- * PersonaRegistry: runtime store of persona definitions loaded from markdown files.
+ * PersonaRegistry: runtime store of persona definitions loaded from markdown files or Postgres.
  * This is the single source of truth for persona data at runtime.
  */
 export class PersonaRegistry {
   private personas: Map<string, PersonaDefinition> = new Map();
   private parseErrors: ParseResult[] = [];
+  private _source: 'db' | 'files' | 'empty' = 'empty';
 
   get size(): number {
     return this.personas.size;
@@ -17,6 +20,10 @@ export class PersonaRegistry {
 
   get errors(): ParseResult[] {
     return this.parseErrors;
+  }
+
+  get source(): 'db' | 'files' | 'empty' {
+    return this._source;
   }
 
   get(id: string): PersonaDefinition | undefined {
@@ -81,25 +88,62 @@ export class PersonaRegistry {
       }
     }
 
+    if (loaded > 0) {
+      this._source = 'files';
+    }
+
     return loaded;
+  }
+
+  /**
+   * Load personas from Postgres database.
+   * Returns the number of successfully loaded personas.
+   */
+  async loadFromDb(pool: Pool): Promise<number> {
+    const dbPersonas = await loadPersonasFromDb(pool);
+
+    for (const [id, def] of dbPersonas) {
+      this.personas.set(id, def);
+    }
+
+    if (dbPersonas.size > 0) {
+      this._source = 'db';
+    }
+
+    return dbPersonas.size;
   }
 }
 
 // Global singleton registry
 let _globalRegistry: PersonaRegistry | null = null;
+let _registryLoadedAt: number = 0;
+
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
 /**
- * Get the global persona registry, loading from the personas/ directory if not yet loaded.
- * Personas are loaded from markdown files (YAML frontmatter or legacy Engine Mapping format).
+ * Get the global persona registry, loading from Postgres (if available) or the
+ * personas/ directory. Caches for CACHE_TTL_MS.
+ *
+ * Priority:
+ *   1. Postgres (if DATABASE_URL is set and DB has active personas)
+ *   2. Persona pack files (personas/*.md)
  */
 export function getPersonaRegistry(): PersonaRegistry {
-  if (_globalRegistry) {
+  const now = Date.now();
+
+  // Return cached registry if within TTL
+  if (_globalRegistry && (now - _registryLoadedAt) < CACHE_TTL_MS) {
     return _globalRegistry;
   }
 
   _globalRegistry = new PersonaRegistry();
+  _registryLoadedAt = now;
 
-  // Try to load from personas/ directory (relative to repo root or package root)
+  // Try Postgres first (synchronous check — async load is deferred)
+  // Note: DB loading is async, so for synchronous access we rely on
+  // priming via initPersonaRegistryFromDb() at startup, or fall through to files.
+
+  // File-based loading (synchronous fallback)
   const possiblePaths = [
     path.resolve(process.cwd(), 'personas'),
     path.resolve(__dirname, '../../../../personas'),
@@ -124,8 +168,46 @@ export function getPersonaRegistry(): PersonaRegistry {
 }
 
 /**
+ * Initialize the global persona registry from Postgres.
+ * Call at worker/service startup to prime the DB-backed registry.
+ * Falls back to file-based loading if DB has no active personas.
+ */
+export async function initPersonaRegistryFromDb(databaseUrl: string): Promise<PersonaRegistry> {
+  const pool = new Pool({
+    connectionString: databaseUrl,
+    max: 2,
+    idleTimeoutMillis: 5000,
+    connectionTimeoutMillis: 3000,
+  });
+
+  try {
+    const registry = new PersonaRegistry();
+    const dbCount = await registry.loadFromDb(pool);
+
+    if (dbCount > 0) {
+      console.log(`[persona-registry] Loaded ${dbCount} personas from Postgres`);
+      _globalRegistry = registry;
+      _registryLoadedAt = Date.now();
+      return registry;
+    }
+
+    console.log(`[persona-registry] No personas in DB, falling back to files`);
+  } catch (error) {
+    console.warn(
+      `[persona-registry] DB load failed, falling back to files: ${error instanceof Error ? error.message : error}`
+    );
+  } finally {
+    await pool.end();
+  }
+
+  // Fallback to file-based
+  return getPersonaRegistry();
+}
+
+/**
  * Reset the global registry (for testing).
  */
 export function resetPersonaRegistry(): void {
   _globalRegistry = null;
+  _registryLoadedAt = 0;
 }
