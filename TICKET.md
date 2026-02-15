@@ -1983,7 +1983,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - `getRun` updated in SQLite + Postgres to read linkage fields
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-005 (P0) Add API endpoint to publish receipt on Monad
+### [x] MND-005 (P0) Add API endpoint to publish receipt on Monad
 **Goal:** Backend route to publish run/report hash onchain.
 
 **Deliverables**
@@ -1999,6 +1999,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - API integration tests for success/failure/idempotent retry.
 
 **Dependencies:** MND-004
+
+**Completion notes:**
+- `packages/engine/src/chain/monad-publisher.ts`: Monad-specific publisher using frozen ABI
+  - `publishReceiptOnMonad()`: computes keccak256(runId), SHA-256 hashes, maps tractionBand → scoreBand
+  - `getMonadPublisherConfig()` / `isMonadPublisherConfigured()`: reads RECEIPT_* env vars
+  - `tractionBandToScoreBand()`: maps TractionBand enum to uint8 (0..4)
+  - Idempotency: checks `hasReceipt(runIdBytes32)` on-chain before publishing
+  - Error normalization: DuplicateRunId, config missing, ethers missing, generic failure
+- `POST /api/run/:id/receipt/publish`: validates run completed + has report, publishes to Monad, persists receipt
+- `GET /api/run/:id/receipt/publish`: returns publisher config status + receipt linkage fields
+- Returns: success, receipt, txHash, chainId, blockNumber, contractAddress, alreadyPublished
+- 503 when Monad config missing (with list of missing env vars)
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-006 (P0) Add report UI action: Publish to Monad
 **Goal:** One-click receipt publish from report page.
