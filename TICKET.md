@@ -2630,7 +2630,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Run metadata line simplified (removed redundant platform display, replaced by badge)
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-033 (P0) Update E2E suite to nad.fun-first critical path
+### [x] MND-033 (P0) Update E2E suite to nad.fun-first critical path
 **Goal:** Ensure CI validates the new core journey end-to-end.
 
 **Deliverables**
@@ -2641,6 +2641,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Main CI lane fails if nad.fun-first flow regresses.
 
 **Dependencies:** MND-031, MND-032
+
+**Completion notes:**
+- `scripts/e2e-nad-fun.ts`: 10-step nad.fun-first E2E (create → start → poll → assert nadFunForecast → readiness → save launch → execute → confirm → verify)
+- `scripts/fixtures/e2e-nad-products.ts`: 3 base scenarios (Meme, DeFi Insurance, Yield Aggregator) with `buildE2ENadScenarios(count, mode)`
+- CI: main lane runs `e2e-nad-fun.ts` (quick 3 products + deep 2 products); legacy PH E2E runs as compat step in quick mode only
+- `ci:e2e:quick` / `ci:e2e:deep` now use nad.fun E2E as primary
+- New scripts: `pnpm e2e:nad:fun`, `pnpm ci:e2e:nad:fun`
+- Artifact: `e2e-nad-fun-summary-{mode}` uploaded per matrix leg
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-034 (P0) Rewrite public copy/submission copy to nad.fun positioning
 **Goal:** Eliminate Product Hunt-first messaging drift.

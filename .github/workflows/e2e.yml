@@ -79,14 +79,30 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - name: Run E2E (${{ matrix.mode }} mode)
-        run: npx tsx scripts/e2e-ph-nad.ts
+      - name: Run nad.fun E2E (${{ matrix.mode }} mode)
+        run: npx tsx scripts/e2e-nad-fun.ts
 
-      - name: Upload E2E summary
+      - name: Upload nad.fun E2E summary
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: e2e-summary-${{ matrix.mode }}
+          name: e2e-nad-fun-summary-${{ matrix.mode }}
+          path: artifacts_runs/e2e-nad-fun-summary.json
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Run legacy PH E2E (compat)
+        if: matrix.mode == 'quick'
+        run: npx tsx scripts/e2e-ph-nad.ts
+        env:
+          PRODUCT_COUNT: "2"
+          MIN_READY_LAUNCHES: "1"
+
+      - name: Upload legacy PH E2E summary
+        if: always() && matrix.mode == 'quick'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-legacy-ph-summary
           path: artifacts_runs/e2e-ph-nad-summary.json
           retention-days: 30
           if-no-files-found: warn
