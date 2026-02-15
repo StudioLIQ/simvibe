@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 
 interface PersonaItem {
   id: string;
@@ -118,7 +118,7 @@ function isSortKey(value: string | null): value is SortKey {
   return value === 'id_asc' || value === 'budget_desc' || value === 'skepticism_desc' || value === 'red_flags_desc';
 }
 
-export default function PersonasPage() {
+function PersonasPageContent() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -549,5 +549,13 @@ export default function PersonasPage() {
         )}
       </div>
     </main>
+  );
+}
+
+export default function PersonasPage() {
+  return (
+    <Suspense fallback={<main className="container"><p className="hint">Loading personas...</p></main>}>
+      <PersonasPageContent />
+    </Suspense>
   );
 }
