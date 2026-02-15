@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 interface PersonaItem {
   id: string;
@@ -51,16 +52,48 @@ function skepticismRank(value: string): number {
   return SKEPTICISM_RANK[value] ?? 1;
 }
 
+function isSortKey(value: string | null): value is SortKey {
+  return value === 'id_asc' || value === 'budget_desc' || value === 'skepticism_desc' || value === 'red_flags_desc';
+}
+
 export default function PersonasPage() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const initializedFromUrl = useRef(false);
+
   const [query, setQuery] = useState('');
   const [skepticismFilter, setSkepticismFilter] = useState('all');
   const [cryptoFilter, setCryptoFilter] = useState('all');
   const [degenFilter, setDegenFilter] = useState('all');
   const [decisionFilter, setDecisionFilter] = useState('all');
   const [sortBy, setSortBy] = useState<SortKey>('id_asc');
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
+  const [urlSyncReady, setUrlSyncReady] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<PersonaApiResponse | null>(null);
+
+  useEffect(() => {
+    if (initializedFromUrl.current) return;
+    initializedFromUrl.current = true;
+
+    const queryParam = searchParams.get('q');
+    const skepticismParam = searchParams.get('skepticism');
+    const cryptoParam = searchParams.get('crypto');
+    const degenParam = searchParams.get('degen');
+    const decisionParam = searchParams.get('decision');
+    const sortParam = searchParams.get('sort');
+
+    if (queryParam) setQuery(queryParam);
+    if (skepticismParam) setSkepticismFilter(normalize(skepticismParam));
+    if (cryptoParam) setCryptoFilter(normalize(cryptoParam));
+    if (degenParam) setDegenFilter(normalize(degenParam));
+    if (decisionParam) setDecisionFilter(normalize(decisionParam));
+    if (isSortKey(sortParam)) setSortBy(sortParam);
+
+    setUrlSyncReady(true);
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
@@ -94,6 +127,35 @@ export default function PersonasPage() {
       cancelled = true;
     };
   }, []);
+
+  const queryString = useMemo(() => {
+    const params = new URLSearchParams();
+    if (query.trim()) params.set('q', query.trim());
+    if (skepticismFilter !== 'all') params.set('skepticism', skepticismFilter);
+    if (cryptoFilter !== 'all') params.set('crypto', cryptoFilter);
+    if (degenFilter !== 'all') params.set('degen', degenFilter);
+    if (decisionFilter !== 'all') params.set('decision', decisionFilter);
+    if (sortBy !== 'id_asc') params.set('sort', sortBy);
+    return params.toString();
+  }, [query, skepticismFilter, cryptoFilter, degenFilter, decisionFilter, sortBy]);
+
+  useEffect(() => {
+    if (!urlSyncReady) return;
+
+    const timer = setTimeout(() => {
+      const current = searchParams.toString();
+      if (current === queryString) return;
+      router.replace(queryString ? `${pathname}?${queryString}` : pathname, { scroll: false });
+    }, 180);
+
+    return () => clearTimeout(timer);
+  }, [urlSyncReady, searchParams, queryString, router, pathname]);
+
+  useEffect(() => {
+    if (copyState === 'idle') return;
+    const timer = setTimeout(() => setCopyState('idle'), 1300);
+    return () => clearTimeout(timer);
+  }, [copyState]);
 
   const personas = response?.personas ?? [];
 
@@ -199,6 +261,16 @@ export default function PersonasPage() {
     setSortBy('id_asc');
   };
 
+  const copyShareLink = async () => {
+    try {
+      const url = `${window.location.origin}${pathname}${queryString ? `?${queryString}` : ''}`;
+      await navigator.clipboard.writeText(url);
+      setCopyState('copied');
+    } catch {
+      setCopyState('error');
+    }
+  };
+
   return (
     <main className="container">
       <header className="header header-hero persona-hero" style={{ marginBottom: '1rem' }}>
@@ -291,9 +363,13 @@ export default function PersonasPage() {
           </div>
 
           <div className="persona-actions">
+            <button type="button" className="btn" onClick={copyShareLink}>Copy Share Link</button>
             <button type="button" className="btn" onClick={clearFilters}>Reset Filters</button>
           </div>
         </div>
+
+        {copyState === 'copied' && <p className="hint">Share link copied.</p>}
+        {copyState === 'error' && <p className="hint">Could not copy link. Copy from the address bar.</p>}
 
         {activeFilters.length > 0 && (
           <div className="persona-active-filters">
@@ -339,6 +415,7 @@ export default function PersonasPage() {
 
         {!loading && !error && filteredPersonas.length > 0 && (
           <div className="persona-list">
+            <p className="hint">Showing {filteredPersonas.length} of {personas.length} personas.</p>
             {filteredPersonas.map((persona) => (
               <article key={persona.id} className="persona-card">
                 <div className="persona-card-head">
