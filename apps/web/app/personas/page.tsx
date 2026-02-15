@@ -37,11 +37,69 @@ const SKEPTICISM_RANK: Record<string, number> = {
   extreme: 5,
 };
 
+interface PersonaPreset {
+  id: string;
+  label: string;
+  hint: string;
+  state: {
+    query: string;
+    skepticismFilter: string;
+    cryptoFilter: string;
+    degenFilter: string;
+    decisionFilter: string;
+    sortBy: SortKey;
+  };
+}
+
+const PERSONA_PRESETS: PersonaPreset[] = [
+  {
+    id: 'high_skepticism',
+    label: 'High Skepticism',
+    hint: 'Filter skeptical evaluators first',
+    state: {
+      query: '',
+      skepticismFilter: 'high_plus',
+      cryptoFilter: 'all',
+      degenFilter: 'all',
+      decisionFilter: 'all',
+      sortBy: 'skepticism_desc',
+    },
+  },
+  {
+    id: 'whale_segment',
+    label: 'Whale Segment',
+    hint: 'High crypto + high degen sorted by budget',
+    state: {
+      query: '',
+      skepticismFilter: 'all',
+      cryptoFilter: 'high_plus',
+      degenFilter: 'high_plus',
+      decisionFilter: 'all',
+      sortBy: 'budget_desc',
+    },
+  },
+  {
+    id: 'risk_audit',
+    label: 'Risk Audit',
+    hint: 'Most red-flag-heavy personas first',
+    state: {
+      query: '',
+      skepticismFilter: 'all',
+      cryptoFilter: 'all',
+      degenFilter: 'all',
+      decisionFilter: 'all',
+      sortBy: 'red_flags_desc',
+    },
+  },
+];
+
 function normalize(value: string): string {
   return value.trim().toLowerCase();
 }
 
 function toLabel(value: string): string {
+  if (value === 'high_plus') return 'High+';
+  if (value === 'all') return 'All';
   return value
     .split('_')
     .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
@@ -50,6 +108,10 @@ function toLabel(value: string): string {
 
 function skepticismRank(value: string): number {
   return SKEPTICISM_RANK[value] ?? 1;
+}
+
+function isHighPlus(value: string): boolean {
+  return skepticismRank(value) >= 3;
 }
 
 function isSortKey(value: string | null): value is SortKey {
@@ -191,9 +253,15 @@ export default function PersonasPage() {
     const normalizedQuery = normalize(query);
 
     const next = personas.filter((persona) => {
-      if (skepticismFilter !== 'all' && persona.skepticismLevel !== skepticismFilter) return false;
-      if (cryptoFilter !== 'all' && persona.cryptoInvestmentExperience !== cryptoFilter) return false;
-      if (degenFilter !== 'all' && persona.degenLevel !== degenFilter) return false;
+      if (skepticismFilter === 'high_plus' && !isHighPlus(persona.skepticismLevel)) return false;
+      if (skepticismFilter !== 'all' && skepticismFilter !== 'high_plus' && persona.skepticismLevel !== skepticismFilter) return false;
+
+      if (cryptoFilter === 'high_plus' && !isHighPlus(persona.cryptoInvestmentExperience)) return false;
+      if (cryptoFilter !== 'all' && cryptoFilter !== 'high_plus' && persona.cryptoInvestmentExperience !== cryptoFilter) return false;
+
+      if (degenFilter === 'high_plus' && !isHighPlus(persona.degenLevel)) return false;
+      if (degenFilter !== 'all' && degenFilter !== 'high_plus' && persona.degenLevel !== degenFilter) return false;
+
       if (decisionFilter !== 'all' && persona.decisionStyle !== decisionFilter) return false;
 
       if (!normalizedQuery) return true;
@@ -252,6 +320,27 @@ export default function PersonasPage() {
     return chips;
   }, [skepticismFilter, cryptoFilter, degenFilter, decisionFilter]);
 
+  const activePresetId = useMemo(() => {
+    const found = PERSONA_PRESETS.find((preset) => {
+      return preset.state.query === query
+        && preset.state.skepticismFilter === skepticismFilter
+        && preset.state.cryptoFilter === cryptoFilter
+        && preset.state.degenFilter === degenFilter
+        && preset.state.decisionFilter === decisionFilter
+        && preset.state.sortBy === sortBy;
+    });
+    return found?.id ?? null;
+  }, [query, skepticismFilter, cryptoFilter, degenFilter, decisionFilter, sortBy]);
+
+  const applyPreset = (preset: PersonaPreset) => {
+    setQuery(preset.state.query);
+    setSkepticismFilter(preset.state.skepticismFilter);
+    setCryptoFilter(preset.state.cryptoFilter);
+    setDegenFilter(preset.state.degenFilter);
+    setDecisionFilter(preset.state.decisionFilter);
+    setSortBy(preset.state.sortBy);
+  };
+
   const clearFilters = () => {
     setQuery('');
     setSkepticismFilter('all');
@@ -295,6 +384,20 @@ export default function PersonasPage() {
           />
         </div>
 
+        <div className="persona-preset-grid">
+          {PERSONA_PRESETS.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              className={`persona-preset-btn ${activePresetId === preset.id ? 'persona-preset-btn--active' : ''}`}
+              onClick={() => applyPreset(preset)}
+            >
+              <span>{preset.label}</span>
+              <small>{preset.hint}</small>
+            </button>
+          ))}
+        </div>
+
         <div className="persona-filter-grid">
           <div className="form-group">
             <label htmlFor="persona-filter-skepticism">Skepticism</label>
@@ -304,6 +407,7 @@ export default function PersonasPage() {
               onChange={(e) => setSkepticismFilter(e.target.value)}
             >
               <option value="all">All</option>
+              <option value="high_plus">High+</option>
               {skepticismOptions.map((value) => (
                 <option key={value} value={value}>{toLabel(value)}</option>
               ))}
@@ -317,6 +421,7 @@ export default function PersonasPage() {
               onChange={(e) => setCryptoFilter(e.target.value)}
             >
               <option value="all">All</option>
+              <option value="high_plus">High+</option>
               {cryptoOptions.map((value) => (
                 <option key={value} value={value}>{toLabel(value)}</option>
               ))}
@@ -330,6 +435,7 @@ export default function PersonasPage() {
               onChange={(e) => setDegenFilter(e.target.value)}
             >
               <option value="all">All</option>
+              <option value="high_plus">High+</option>
               {degenOptions.map((value) => (
                 <option key={value} value={value}>{toLabel(value)}</option>
               ))}

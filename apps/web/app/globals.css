@@ -304,6 +304,48 @@ a:hover {
   margin-bottom: 0.85rem;
 }
 
+.persona-preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.6rem;
+  margin: 0 0 0.9rem;
+}
+
+.persona-preset-btn {
+  text-align: left;
+  border: 1px solid var(--border);
+  border-radius: 0.74rem;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), var(--surface-subtle));
+  padding: 0.62rem 0.7rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.persona-preset-btn span {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.persona-preset-btn small {
+  display: block;
+  margin-top: 0.14rem;
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+.persona-preset-btn:hover {
+  border-color: rgba(240, 90, 40, 0.45);
+  transform: translateY(-1px);
+}
+
+.persona-preset-btn--active {
+  border-color: rgba(240, 90, 40, 0.48);
+  background: linear-gradient(145deg, rgba(255, 237, 222, 0.94), rgba(255, 251, 247, 0.95));
+  box-shadow: 0 10px 16px rgba(240, 90, 40, 0.12);
+}
+
 .persona-filter-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
