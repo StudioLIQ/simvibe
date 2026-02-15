@@ -14,6 +14,8 @@ import type {
   NadLaunchInput,
   LaunchReadiness,
   LaunchRecord,
+  ReportLifecycle,
+  ReportRevision,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 import { runMigrations } from './migrate';
@@ -122,6 +124,14 @@ export class PostgresStorage implements Storage {
       tokenContractAddress: row.token_contract_address ?? undefined,
       nadLaunchUrl: row.nad_launch_url ?? undefined,
       launchConfirmedAt: row.launch_confirmed_at ?? undefined,
+      reportStatus: row.report_status ?? undefined,
+      reportVersion: row.report_version ?? undefined,
+      reportLifecycle: row.report_lifecycle
+        ? (typeof row.report_lifecycle === 'string' ? JSON.parse(row.report_lifecycle) : row.report_lifecycle)
+        : undefined,
+      reportRevisions: row.report_revisions
+        ? (typeof row.report_revisions === 'string' ? JSON.parse(row.report_revisions) : row.report_revisions)
+        : undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
       events: eventRows.map((e) =>
@@ -334,6 +344,59 @@ export class PostgresStorage implements Storage {
     if (result.rowCount === 0) {
       throw new Error(`Run not found: ${runId}`);
     }
+  }
+
+  async saveReportLifecycle(runId: string, lifecycle: ReportLifecycle): Promise<void> {
+    const now = new Date().toISOString();
+    const result = await this.pool.query(
+      `UPDATE runs SET report_lifecycle = $1, report_status = $2, report_version = $3, updated_at = $4
+       WHERE id = $5`,
+      [JSON.stringify(lifecycle), lifecycle.status, lifecycle.version, now, runId]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async getReportLifecycle(runId: string): Promise<ReportLifecycle | null> {
+    const { rows } = await this.pool.query(
+      `SELECT report_lifecycle FROM runs WHERE id = $1`,
+      [runId]
+    );
+
+    if (rows.length === 0 || !rows[0].report_lifecycle) {
+      return null;
+    }
+    const val = rows[0].report_lifecycle;
+    return typeof val === 'string' ? JSON.parse(val) : val;
+  }
+
+  async appendReportRevision(runId: string, revision: ReportRevision): Promise<void> {
+    const now = new Date().toISOString();
+    const result = await this.pool.query(
+      `UPDATE runs SET report_revisions = COALESCE(report_revisions, '[]'::jsonb) || $1::jsonb,
+        updated_at = $2
+       WHERE id = $3`,
+      [JSON.stringify([revision]), now, runId]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async getReportRevisions(runId: string): Promise<ReportRevision[]> {
+    const { rows } = await this.pool.query(
+      `SELECT report_revisions FROM runs WHERE id = $1`,
+      [runId]
+    );
+
+    if (rows.length === 0 || !rows[0].report_revisions) {
+      return [];
+    }
+    const val = rows[0].report_revisions;
+    return typeof val === 'string' ? JSON.parse(val) : val;
   }
 
   async getCalibrationPrior(key: string): Promise<CalibrationPrior | null> {

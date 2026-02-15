@@ -2247,7 +2247,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ## Milestone M15 — Living Report + Multi-Agent Collaboration (P0/P1)
 
-### [ ] MND-016 (P0) Add living-report data model (status/version/revisions)
+### [x] MND-016 (P0) Add living-report data model (status/version/revisions)
 **Goal:** Make report continuously editable by agents and humans.
 
 **Deliverables**
@@ -2259,6 +2259,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - A run can keep evolving report content while status is `open`.
 
 **Dependencies:** MND-004
+
+**Completion notes:**
+- `ReportStatusSchema` (open|review|frozen|published), `ReportRevisionSchema`, `ReportLifecycleSchema` in packages/shared/src/schemas/report-lifecycle.ts
+- Run interface: `reportStatus`, `reportVersion`, `reportLifecycle`, `reportRevisions` fields
+- Storage interface: `saveReportLifecycle`, `getReportLifecycle`, `appendReportRevision`, `getReportRevisions` methods
+- Implemented in all 3 backends (Memory, SQLite, Postgres)
+- Postgres migration `007_report_lifecycle.sql`: 4 columns + index on report_status
+- SQLite auto-migration: adds columns dynamically
+- Report lifecycle initialized to `open` (version 1) when report is first generated in executor
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
 
 ### [ ] MND-017 (P0) Define report patch protocol + schema validation
 **Goal:** Standardize how external/internal agents submit report updates.

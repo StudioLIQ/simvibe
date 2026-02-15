@@ -12,6 +12,9 @@ import type {
   NadLaunchInput,
   LaunchReadiness,
   LaunchRecord,
+  ReportStatus,
+  ReportLifecycle,
+  ReportRevision,
 } from '@simvibe/shared';
 
 export type RunStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed';
@@ -43,6 +46,11 @@ export interface Run {
   tokenContractAddress?: string;
   nadLaunchUrl?: string;
   launchConfirmedAt?: string;
+  // Report lifecycle fields
+  reportStatus?: ReportStatus;
+  reportVersion?: number;
+  reportLifecycle?: ReportLifecycle;
+  reportRevisions?: ReportRevision[];
   variantOf?: string;
   error?: string;
 }
@@ -64,6 +72,11 @@ export interface Storage {
   saveLaunchReadiness(runId: string, readiness: LaunchReadiness): Promise<void>;
   saveLaunchInput(runId: string, input: NadLaunchInput): Promise<void>;
   saveLaunchRecord(runId: string, record: LaunchRecord): Promise<void>;
+  // Report lifecycle methods
+  saveReportLifecycle(runId: string, lifecycle: ReportLifecycle): Promise<void>;
+  getReportLifecycle(runId: string): Promise<ReportLifecycle | null>;
+  appendReportRevision(runId: string, revision: ReportRevision): Promise<void>;
+  getReportRevisions(runId: string): Promise<ReportRevision[]>;
   getCalibrationPrior(key: string): Promise<CalibrationPrior | null>;
   saveCalibrationPrior(prior: CalibrationPrior): Promise<void>;
   listRuns(limit?: number): Promise<Run[]>;

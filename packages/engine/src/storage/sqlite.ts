@@ -13,6 +13,8 @@ import type {
   NadLaunchInput,
   LaunchReadiness,
   LaunchRecord,
+  ReportLifecycle,
+  ReportRevision,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -129,6 +131,19 @@ export class SQLiteStorage implements Storage {
     if (!colNames.has('launch_confirmed_at')) {
       this.db.exec('ALTER TABLE runs ADD COLUMN launch_confirmed_at TEXT');
     }
+    // Add report lifecycle columns if missing (MND-016)
+    if (!colNames.has('report_status')) {
+      this.db.exec("ALTER TABLE runs ADD COLUMN report_status TEXT DEFAULT 'open'");
+    }
+    if (!colNames.has('report_version')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN report_version INTEGER DEFAULT 1');
+    }
+    if (!colNames.has('report_lifecycle')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN report_lifecycle TEXT');
+    }
+    if (!colNames.has('report_revisions')) {
+      this.db.exec("ALTER TABLE runs ADD COLUMN report_revisions TEXT DEFAULT '[]'");
+    }
   }
 
   async createRun(input: RunInput): Promise<Run> {
@@ -177,6 +192,10 @@ export class SQLiteStorage implements Storage {
       token_contract_address: string | null;
       nad_launch_url: string | null;
       launch_confirmed_at: string | null;
+      report_status: string | null;
+      report_version: number | null;
+      report_lifecycle: string | null;
+      report_revisions: string | null;
       variant_of: string | null;
       error: string | null;
     } | undefined;
@@ -216,6 +235,10 @@ export class SQLiteStorage implements Storage {
       tokenContractAddress: row.token_contract_address ?? undefined,
       nadLaunchUrl: row.nad_launch_url ?? undefined,
       launchConfirmedAt: row.launch_confirmed_at ?? undefined,
+      reportStatus: (row.report_status as import('@simvibe/shared').ReportStatus) ?? undefined,
+      reportVersion: row.report_version ?? undefined,
+      reportLifecycle: row.report_lifecycle ? JSON.parse(row.report_lifecycle) : undefined,
+      reportRevisions: row.report_revisions ? JSON.parse(row.report_revisions) : undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
       events: events.map((e) => JSON.parse(e.data)),
@@ -409,6 +432,61 @@ export class SQLiteStorage implements Storage {
     if (result.changes === 0) {
       throw new Error(`Run not found: ${runId}`);
     }
+  }
+
+  async saveReportLifecycle(runId: string, lifecycle: ReportLifecycle): Promise<void> {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      UPDATE runs SET report_lifecycle = ?, report_status = ?, report_version = ?, updated_at = ?
+      WHERE id = ?
+    `).run(JSON.stringify(lifecycle), lifecycle.status, lifecycle.version, now, runId);
+
+    if (result.changes === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async getReportLifecycle(runId: string): Promise<ReportLifecycle | null> {
+    const row = this.db.prepare(`
+      SELECT report_lifecycle FROM runs WHERE id = ?
+    `).get(runId) as { report_lifecycle: string | null } | undefined;
+
+    if (!row || !row.report_lifecycle) {
+      return null;
+    }
+    return JSON.parse(row.report_lifecycle);
+  }
+
+  async appendReportRevision(runId: string, revision: ReportRevision): Promise<void> {
+    const now = new Date().toISOString();
+    // Fetch current revisions, append, and write back
+    const row = this.db.prepare(`
+      SELECT report_revisions FROM runs WHERE id = ?
+    `).get(runId) as { report_revisions: string | null } | undefined;
+
+    if (!row) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+
+    const revisions: ReportRevision[] = row.report_revisions
+      ? JSON.parse(row.report_revisions)
+      : [];
+    revisions.push(revision);
+
+    this.db.prepare(`
+      UPDATE runs SET report_revisions = ?, updated_at = ? WHERE id = ?
+    `).run(JSON.stringify(revisions), now, runId);
+  }
+
+  async getReportRevisions(runId: string): Promise<ReportRevision[]> {
+    const row = this.db.prepare(`
+      SELECT report_revisions FROM runs WHERE id = ?
+    `).get(runId) as { report_revisions: string | null } | undefined;
+
+    if (!row || !row.report_revisions) {
+      return [];
+    }
+    return JSON.parse(row.report_revisions);
   }
 
   async getCalibrationPrior(key: string): Promise<CalibrationPrior | null> {

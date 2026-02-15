@@ -13,6 +13,8 @@ import type {
   NadLaunchInput,
   LaunchReadiness,
   LaunchRecord,
+  ReportLifecycle,
+  ReportRevision,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -185,6 +187,45 @@ export class MemoryStorage implements Storage {
       run.launchConfirmedAt = new Date().toISOString();
     }
     run.updatedAt = new Date().toISOString();
+  }
+
+  async saveReportLifecycle(runId: string, lifecycle: ReportLifecycle): Promise<void> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+    run.reportLifecycle = lifecycle;
+    run.reportStatus = lifecycle.status;
+    run.reportVersion = lifecycle.version;
+    run.updatedAt = new Date().toISOString();
+  }
+
+  async getReportLifecycle(runId: string): Promise<ReportLifecycle | null> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      return null;
+    }
+    return run.reportLifecycle ?? null;
+  }
+
+  async appendReportRevision(runId: string, revision: ReportRevision): Promise<void> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+    if (!run.reportRevisions) {
+      run.reportRevisions = [];
+    }
+    run.reportRevisions.push(revision);
+    run.updatedAt = new Date().toISOString();
+  }
+
+  async getReportRevisions(runId: string): Promise<ReportRevision[]> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      return [];
+    }
+    return run.reportRevisions ?? [];
   }
 
   async getCalibrationPrior(key: string): Promise<CalibrationPrior | null> {

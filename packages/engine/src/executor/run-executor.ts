@@ -1,4 +1,4 @@
-import type { RunDiagnostics, PhaseTiming, PersonaSnapshots } from '@simvibe/shared';
+import type { RunDiagnostics, PhaseTiming, PersonaSnapshots, ReportLifecycle } from '@simvibe/shared';
 import { createInitialDiagnostics, getCalibrationKey } from '@simvibe/shared';
 import type { Storage } from '../storage/types';
 import { createExtractor, type ExtractorConfig } from '../extractor';
@@ -259,6 +259,17 @@ export async function executeRun(
       diagnostics.phaseTimings.push(currentPhase);
 
       await storage.saveReport(runId, report);
+
+      // Initialize report lifecycle as 'open' (editable by agents and humans)
+      const now = new Date().toISOString();
+      const lifecycle: ReportLifecycle = {
+        status: 'open',
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+      };
+      await storage.saveReportLifecycle(runId, lifecycle);
+
       await storage.updateRunStatus(runId, 'completed');
     } else {
       diagnostics.errors.push({
