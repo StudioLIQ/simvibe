@@ -2271,7 +2271,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Test: `pnpm typecheck` passes for all packages
 - Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
 
-### [ ] MND-017 (P0) Define report patch protocol + schema validation
+### [x] MND-017 (P0) Define report patch protocol + schema validation
 **Goal:** Standardize how external/internal agents submit report updates.
 
 **Deliverables**
@@ -2283,6 +2283,16 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Invalid patch payloads are rejected deterministically.
 
 **Dependencies:** MND-016
+
+**Completion notes:**
+- `ReportPatchSchema` in packages/shared/src/schemas/report-patch.ts: section-scoped patches with provenance
+- 12 patchable sections: tractionBand, confidence, metrics, scores, overallScore, frictionList, personaReports, oneLineFixes, warnings, phForecast, launchPack, conversationDynamics
+- 4 patch operations: replace, merge, append, remove_item
+- `PatchProvenanceSchema`: agentId, source, confidence (0-1)
+- 8 rejection codes: REPORT_NOT_FOUND/FROZEN/PUBLISHED, INVALID_SECTION/OPERATION, SCHEMA_VIOLATION, VERSION_CONFLICT, UNAUTHORIZED_AGENT
+- `validateReportPatch()`, `isReportWritable()`, `getStatusRejection()` helpers
+- `PatchResultSchema`: discriminated union (success/failure)
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-018 (P0) Implement patch merge engine + conflict handling
 **Goal:** Merge concurrent agent updates safely.

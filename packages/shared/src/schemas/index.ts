@@ -13,3 +13,4 @@ export * from './conversation';
 export * from './launch-pack';
 export * from './nad-launch';
 export * from './report-lifecycle';
+export * from './report-patch';
