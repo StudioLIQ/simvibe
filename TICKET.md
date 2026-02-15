@@ -909,7 +909,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-021C (P0) Run-level persona selection + defaults (quick/deep ready)
+### [x] SIM-021C (P0) Run-level persona selection + defaults (quick/deep ready)
 **Goal:** Ensure “each persona works as an agent” by allowing explicit persona set selection per run.
 
 **Deliverables**
@@ -934,6 +934,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Create run with default mode and verify default set is used
 
 **Dependencies:** SIM-021B
+
+**Completion notes:**
+- Added `personaIds?: string[]` to RunInputSchema (optional, min 1 if present)
+- Executor resolution: explicit personaIds > mode config defaults
+- Persona IDs validated against registry before simulation starts
+- Added `executedPersonaIds` to Report schema for auditability
+- Report generator passes resolved persona list to report
+- Report's personaReports already shows per-persona results
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

@@ -79,9 +79,14 @@ export async function executeRun(
     currentPhase = { phase: 'simulation', startedAt: new Date().toISOString() };
     const modeConfig = getRunModeConfig(run.input.runMode);
 
+    // Resolve persona IDs: explicit input > mode defaults
+    const resolvedPersonaIds = (run.input.personaIds && run.input.personaIds.length > 0)
+      ? run.input.personaIds
+      : modeConfig.personaIds;
+
     // Validate persona IDs against registry before running
     const registry = getPersonaRegistry();
-    const missingIds = modeConfig.personaIds.filter(id => !registry.has(id));
+    const missingIds = resolvedPersonaIds.filter(id => !registry.has(id));
     if (missingIds.length > 0) {
       throw new Error(
         `Unknown persona IDs: ${missingIds.join(', ')}. ` +
@@ -98,7 +103,7 @@ export async function executeRun(
         temperature: orchestratorConfig.llm.temperature ?? modeConfig.temperature,
       },
       enableDebate: orchestratorConfig.enableDebate ?? modeConfig.enableDebate,
-      personaIds: modeConfig.personaIds,
+      personaIds: resolvedPersonaIds,
       timeBudgetMs: modeConfig.timeBudgetMs,
     };
     const orchestrator = createOrchestrator(modeAwareConfig);
@@ -140,7 +145,9 @@ export async function executeRun(
         result.agentResults.map(r => r.output),
         run.variantOf,
         calibrationPrior,
-        run.input.runMode || 'quick'
+        run.input.runMode || 'quick',
+        undefined, // earlyStopReason
+        resolvedPersonaIds
       );
 
       currentPhase.endedAt = new Date().toISOString();

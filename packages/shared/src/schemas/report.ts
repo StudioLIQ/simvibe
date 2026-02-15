@@ -75,6 +75,7 @@ export const ReportSchema = z.object({
   variantOf: z.string().optional(),
   runMode: RunModeSchema.optional(),
   earlyStopReason: z.string().optional(),
+  executedPersonaIds: z.array(PersonaIdSchema).optional(),
 });
 
 export type TractionBand = z.infer<typeof TractionBandSchema>;

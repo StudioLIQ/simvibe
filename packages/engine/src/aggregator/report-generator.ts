@@ -66,7 +66,8 @@ export function generateReport(
   variantOf?: string,
   calibrationPrior?: CalibrationPrior | null,
   runMode?: RunMode,
-  earlyStopReason?: string
+  earlyStopReason?: string,
+  executedPersonaIds?: string[]
 ): Report {
   const aggregation = aggregateOutputs(outputs);
 
@@ -117,6 +118,7 @@ export function generateReport(
     variantOf,
     runMode,
     earlyStopReason,
+    executedPersonaIds,
   };
 }
 
