@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 type RunStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed';
 
-type PlatformFilter = 'all' | 'nad_fun' | 'generic';
+type PlatformFilter = 'all' | 'nad_fun';
 
 interface RunListItem {
   id: string;
@@ -40,13 +40,13 @@ function getTitle(run: RunListItem): string {
 }
 
 function getPlatformMode(run: RunListItem): string {
-  return run.input?.platformMode || 'generic';
+  return run.input?.platformMode || 'nad_fun';
 }
 
 function getPlatformBadge(mode: string): { label: string; color: string } {
   switch (mode) {
     case 'nad_fun': return { label: 'nad.fun', color: 'var(--accent-primary)' };
-    default: return { label: 'Generic', color: 'var(--text-muted)' };
+    default: return { label: 'nad.fun', color: 'var(--accent-primary)' };
   }
 }
 
@@ -143,7 +143,6 @@ export default function ReportsPage() {
           {([
             { value: 'all' as PlatformFilter, label: 'All' },
             { value: 'nad_fun' as PlatformFilter, label: 'nad.fun' },
-            { value: 'generic' as PlatformFilter, label: 'Generic' },
           ]).map(({ value, label }) => (
             <button
               key={value}

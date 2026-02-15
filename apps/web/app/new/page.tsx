@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import type { PricingModel, RunMode, PlatformMode, PersonaSetName } from '@simvibe/shared';
+import type { PricingModel, RunMode, PersonaSetName } from '@simvibe/shared';
 import { createRun } from '@/lib/api';
 
 const PRICING_MODELS: { value: PricingModel; label: string }[] = [
@@ -31,7 +31,6 @@ export default function HomePage() {
   const [runMode, setRunMode] = useState<RunMode>('quick');
   const [personaSet, setPersonaSet] = useState<PersonaSetName | ''>('');
   const [customPersonaIds, setCustomPersonaIds] = useState('');
-  const [platformMode, setPlatformMode] = useState<PlatformMode>('nad_fun');
   // nad.fun fields
   const [tokenName, setTokenName] = useState('');
   const [tokenSymbol, setTokenSymbol] = useState('');
@@ -77,13 +76,10 @@ export default function HomePage() {
         throw new Error('Description is required');
       }
 
-      const isNadFun = platformMode === 'nad_fun';
-      const hasNadFunFields = isNadFun && (launchThesis.trim() || tokenNarrative.trim() || tokenName.trim());
+      const hasNadFunFields = Boolean(launchThesis.trim() || tokenNarrative.trim() || tokenName.trim());
       if (!url.trim() && !pastedContent.trim() && !hasNadFunFields) {
         throw new Error(
-          isNadFun
-            ? 'Provide a URL, pasted content, or at least one nad.fun field (token name, launch thesis, or token narrative)'
-            : 'Please provide a URL or paste your landing page content'
+          'Provide a URL, pasted content, or at least one nad.fun field (token name, launch thesis, or token narrative)',
         );
       }
 
@@ -91,7 +87,7 @@ export default function HomePage() {
         ? customPersonaIds.split(',').map(id => id.trim()).filter(Boolean)
         : undefined;
 
-      const nadFunSubmission = isNadFun ? {
+      const nadFunSubmission = {
         tokenName: tokenName.trim() || undefined,
         tokenSymbol: tokenSymbol.trim() || undefined,
         launchThesis: launchThesis.trim() || undefined,
@@ -100,7 +96,7 @@ export default function HomePage() {
         riskAssumptions: riskAssumptions.trim() || undefined,
         antiSnipe: antiSnipe || undefined,
         bundled: bundled || undefined,
-      } : undefined;
+      };
 
       const result = await createRun({
         tagline: tagline.trim(),
@@ -113,7 +109,7 @@ export default function HomePage() {
         runMode,
         personaIds: parsedPersonaIds,
         personaSet: personaSet || undefined,
-        platformMode: platformMode !== 'generic' ? platformMode : undefined,
+        platformMode: 'nad_fun',
         nadFunSubmission,
       });
 
@@ -148,9 +144,7 @@ export default function HomePage() {
         )}
 
         <div className="card">
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
-            {platformMode === 'nad_fun' ? 'Token / Project Info' : 'Product Information'}
-          </h2>
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Token / Project Info</h2>
 
           <div className="form-group">
             <label htmlFor="tagline">Tagline *</label>
@@ -159,17 +153,11 @@ export default function HomePage() {
               type="text"
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
-              placeholder={platformMode === 'nad_fun'
-                ? 'e.g., The community-driven DeFi token on Monad'
-                : 'e.g., The AI-powered code review tool for teams'}
+              placeholder="e.g., The community-driven DeFi token on Monad"
               maxLength={200}
               required
             />
-            <p className="hint">
-              {platformMode === 'nad_fun'
-                ? 'A compelling one-liner for your token launch'
-                : 'A compelling one-liner that describes your product'}
-            </p>
+            <p className="hint">A compelling one-liner for your token launch</p>
           </div>
 
           <div className="form-group">
@@ -178,9 +166,7 @@ export default function HomePage() {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={platformMode === 'nad_fun'
-                ? 'Describe your token project: what it does, target community, utility, and what makes it unique...'
-                : 'Describe what your product does, who it\'s for, and what makes it unique...'}
+              placeholder="Describe your token project: what it does, target community, utility, and what makes it unique..."
               maxLength={2000}
               required
             />
@@ -227,31 +213,21 @@ export default function HomePage() {
         </div>
 
         <div className="card">
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
-            {platformMode === 'nad_fun' ? 'Project URL / Content' : 'Landing Page'}
-          </h2>
-          {platformMode === 'nad_fun' && (
-            <p className="hint" style={{ marginBottom: '0.75rem' }}>
-              Optional if you filled in nad.fun launch fields above.
-            </p>
-          )}
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Project URL / Content</h2>
+          <p className="hint" style={{ marginBottom: '0.75rem' }}>
+            Optional if you filled in nad.fun launch fields above.
+          </p>
 
           <div className="form-group">
-            <label htmlFor="url">
-              {platformMode === 'nad_fun' ? 'Project / Token URL' : 'Landing Page URL'}
-            </label>
+            <label htmlFor="url">Project / Token URL</label>
             <input
               id="url"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder={platformMode === 'nad_fun' ? 'https://yourtoken.xyz or nad.fun/token/...' : 'https://yourproduct.com'}
+              placeholder="https://yourtoken.xyz or nad.fun/token/..."
             />
-            <p className="hint">
-              {platformMode === 'nad_fun'
-                ? "We'll extract content from your project page (optional for nad.fun mode)"
-                : "We'll extract content from your landing page"}
-            </p>
+            <p className="hint">We'll extract content from your project page (optional for nad.fun mode)</p>
           </div>
 
           <div className="form-group">
@@ -260,9 +236,7 @@ export default function HomePage() {
               id="pastedContent"
               value={pastedContent}
               onChange={(e) => setPastedContent(e.target.value)}
-              placeholder={platformMode === 'nad_fun'
-                ? 'Paste your token project description, whitepaper excerpt, or community pitch...'
-                : 'Paste the text content from your landing page here if you don\'t have a URL...'}
+              placeholder="Paste your token project description, whitepaper excerpt, or community pitch..."
               style={{ minHeight: '150px' }}
             />
             <p className="hint">Use this if your page is not public or extraction fails</p>
@@ -270,56 +244,8 @@ export default function HomePage() {
         </div>
 
         <div className="card">
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Platform Mode</h2>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-            <label
-              style={{
-                flex: 1,
-                minWidth: '140px',
-                padding: '1rem',
-                border: `2px solid ${platformMode === 'nad_fun' ? 'var(--accent-primary)' : 'var(--border)'}`,
-                borderRadius: '8px',
-                cursor: 'pointer',
-                background: platformMode === 'nad_fun' ? 'var(--accent-primary-soft)' : 'transparent',
-              }}
-            >
-              <input
-                type="radio"
-                name="platformMode"
-                value="nad_fun"
-                checked={platformMode === 'nad_fun'}
-                onChange={() => setPlatformMode('nad_fun')}
-                style={{ display: 'none' }}
-              />
-              <strong>nad.fun</strong>
-              <p className="hint" style={{ margin: '0.25rem 0 0' }}>Token launch reaction sim</p>
-            </label>
-            <label
-              style={{
-                flex: 1,
-                minWidth: '140px',
-                padding: '1rem',
-                border: `2px solid ${platformMode === 'generic' ? 'var(--accent-primary)' : 'var(--border)'}`,
-                borderRadius: '8px',
-                cursor: 'pointer',
-                background: platformMode === 'generic' ? 'var(--accent-primary-soft)' : 'transparent',
-              }}
-            >
-              <input
-                type="radio"
-                name="platformMode"
-                value="generic"
-                checked={platformMode === 'generic'}
-                onChange={() => setPlatformMode('generic')}
-                style={{ display: 'none' }}
-              />
-              <strong>Generic</strong>
-              <p className="hint" style={{ margin: '0.25rem 0 0' }}>Landing page evaluation</p>
-            </label>
-          </div>
-
-          {platformMode === 'nad_fun' && (
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>nad.fun Launch Inputs</h2>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
               <p className="hint" style={{ marginBottom: '1rem' }}>
                 Enter your nad.fun token launch details. You can run without a landing URL if you fill in launch fields.
               </p>
@@ -437,8 +363,7 @@ export default function HomePage() {
                   <span className="hint" style={{ margin: 0 }}>Bundle initial liquidity with token creation</span>
                 </label>
               </div>
-            </div>
-          )}
+          </div>
 
         </div>
 
@@ -548,7 +473,7 @@ export default function HomePage() {
           disabled={loading}
           style={{ width: '100%', marginTop: '1rem' }}
         >
-          {loading ? 'Creating Simulation...' : platformMode === 'nad_fun' ? 'Simulate Launch Reaction' : 'Create World'}
+          {loading ? 'Creating Simulation...' : 'Simulate Launch Reaction'}
         </button>
       </form>
     </main>
