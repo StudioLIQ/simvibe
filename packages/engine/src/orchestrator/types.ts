@@ -1,6 +1,6 @@
 import type { RunInput, LandingExtract, AgentOutput, SimEvent, Report, PersonaId } from '@simvibe/shared';
 
-export type LLMProvider = 'anthropic' | 'openai';
+export type LLMProvider = 'anthropic' | 'openai' | 'gemini';
 
 export interface LLMConfig {
   provider: LLMProvider;

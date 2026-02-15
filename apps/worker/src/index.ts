@@ -43,10 +43,13 @@ function getExtractorConfig(): ExtractorConfig {
 }
 
 function getOrchestratorConfig(): OrchestratorConfig {
-  const provider = (process.env.LLM_PROVIDER as 'anthropic' | 'openai') || 'anthropic';
-  const apiKey = provider === 'anthropic'
-    ? process.env.ANTHROPIC_API_KEY
-    : process.env.OPENAI_API_KEY;
+  const provider = (process.env.LLM_PROVIDER as 'anthropic' | 'openai' | 'gemini') || 'gemini';
+  const apiKeyMap: Record<string, string | undefined> = {
+    anthropic: process.env.ANTHROPIC_API_KEY,
+    openai: process.env.OPENAI_API_KEY,
+    gemini: process.env.GEMINI_API_KEY,
+  };
+  const apiKey = apiKeyMap[provider];
   const demoMode = isDemoMode();
 
   if (!apiKey && !demoMode) {
@@ -54,7 +57,11 @@ function getOrchestratorConfig(): OrchestratorConfig {
   }
 
   return {
-    llm: { provider, apiKey: apiKey || 'demo-mode-key' },
+    llm: {
+      provider,
+      apiKey: apiKey || 'demo-mode-key',
+      model: process.env.LLM_MODEL || undefined,
+    },
   };
 }
 

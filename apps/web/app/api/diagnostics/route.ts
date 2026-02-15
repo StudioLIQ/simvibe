@@ -5,6 +5,7 @@ import {
   getActiveStorageBackend,
   getPersonaRegistry,
   ensurePersonaRegistry,
+  getCostGuardState,
 } from '@simvibe/engine';
 
 /**
@@ -50,9 +51,15 @@ export async function GET() {
       source: registrySource,
       count: registryCount,
     },
+    costGuard: {
+      ...getCostGuardState(),
+      dailyTokenLimit: parseInt(process.env.LLM_DAILY_TOKEN_LIMIT || '0', 10),
+      dailyCostLimitUsd: parseFloat(process.env.LLM_DAILY_COST_LIMIT_USD || '0'),
+    },
     env: {
       DATABASE_URL: maskSecret(process.env.DATABASE_URL),
-      LLM_PROVIDER: process.env.LLM_PROVIDER || 'anthropic',
+      LLM_PROVIDER: process.env.LLM_PROVIDER || 'gemini',
+      LLM_MODEL: process.env.LLM_MODEL || '(default)',
       DEMO_MODE: process.env.DEMO_MODE || 'false',
       PERSONAS_DIR: process.env.PERSONAS_DIR || '(default)',
     },

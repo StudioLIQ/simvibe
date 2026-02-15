@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { LLMConfig } from './types';
 import { isDemoMode } from '../demo';
 
@@ -243,17 +244,194 @@ export class OpenAIClient implements LLMClient {
   }
 }
 
+export class GeminiClient implements LLMClient {
+  private client: GoogleGenerativeAI;
+  private model: string;
+  private maxTokens: number;
+  private temperature: number;
+
+  constructor(config: LLMConfig) {
+    this.client = new GoogleGenerativeAI(config.apiKey);
+    this.model = config.model || 'gemini-2.0-flash';
+    this.maxTokens = config.maxTokens || 4096;
+    this.temperature = config.temperature ?? 0.7;
+  }
+
+  async complete(messages: LLMMessage[]): Promise<LLMResponse> {
+    const systemMessage = messages.find(m => m.role === 'system');
+    const nonSystemMessages = messages.filter(m => m.role !== 'system');
+
+    const model = this.client.getGenerativeModel({
+      model: this.model,
+      systemInstruction: systemMessage?.content,
+      generationConfig: {
+        maxOutputTokens: this.maxTokens,
+        temperature: this.temperature,
+      },
+    });
+
+    const contents = nonSystemMessages.map(m => ({
+      role: m.role === 'assistant' ? 'model' : 'user',
+      parts: [{ text: m.content }],
+    }));
+
+    const result = await model.generateContent({ contents });
+    const response = result.response;
+    const text = response.text();
+    const usage = response.usageMetadata;
+
+    return {
+      content: text,
+      finishReason: response.candidates?.[0]?.finishReason || 'unknown',
+      usage: usage ? {
+        inputTokens: usage.promptTokenCount ?? 0,
+        outputTokens: usage.candidatesTokenCount ?? 0,
+      } : undefined,
+    };
+  }
+}
+
+// --- Cost guard: track token usage and enforce daily budget ---
+
+interface CostGuardConfig {
+  dailyTokenLimit: number;    // max total tokens (input + output) per day
+  dailyCostLimitUsd: number;  // max USD spend per day (0 = unlimited)
+  inputPricePerMToken: number;
+  outputPricePerMToken: number;
+}
+
+interface CostGuardState {
+  inputTokens: number;
+  outputTokens: number;
+  estimatedCostUsd: number;
+  resetAt: number; // epoch ms for next reset
+}
+
+const _costState: CostGuardState = {
+  inputTokens: 0,
+  outputTokens: 0,
+  estimatedCostUsd: 0,
+  resetAt: getNextMidnight(),
+};
+
+function getNextMidnight(): number {
+  const d = new Date();
+  d.setHours(24, 0, 0, 0);
+  return d.getTime();
+}
+
+function resetIfNewDay() {
+  if (Date.now() >= _costState.resetAt) {
+    _costState.inputTokens = 0;
+    _costState.outputTokens = 0;
+    _costState.estimatedCostUsd = 0;
+    _costState.resetAt = getNextMidnight();
+  }
+}
+
+export function getCostGuardState(): Readonly<CostGuardState> {
+  resetIfNewDay();
+  return { ..._costState };
+}
+
+// Known pricing per million tokens (approximate)
+const PRICING: Record<string, { input: number; output: number }> = {
+  'gemini-2.0-flash':     { input: 0.10,  output: 0.40 },
+  'gemini-2.5-flash':     { input: 0.15,  output: 0.60 },
+  'gemini-1.5-pro':       { input: 1.25,  output: 5.00 },
+  'gemini-2.5-pro':       { input: 1.25,  output: 10.00 },
+  'gpt-4o':               { input: 2.50,  output: 10.00 },
+  'gpt-4o-mini':          { input: 0.15,  output: 0.60 },
+  'claude-sonnet-4-20250514': { input: 3.00, output: 15.00 },
+};
+
+function resolvePricing(model: string): { input: number; output: number } {
+  return PRICING[model] || { input: 1.00, output: 4.00 }; // conservative fallback
+}
+
+export class CostGuardedLLMClient implements LLMClient {
+  private inner: LLMClient;
+  private config: CostGuardConfig;
+
+  constructor(inner: LLMClient, config: CostGuardConfig) {
+    this.inner = inner;
+    this.config = config;
+  }
+
+  async complete(messages: LLMMessage[]): Promise<LLMResponse> {
+    resetIfNewDay();
+
+    // Pre-flight check
+    if (this.config.dailyTokenLimit > 0) {
+      const totalTokens = _costState.inputTokens + _costState.outputTokens;
+      if (totalTokens >= this.config.dailyTokenLimit) {
+        throw new Error(
+          `Daily token limit reached (${totalTokens.toLocaleString()} / ${this.config.dailyTokenLimit.toLocaleString()}). Resets at midnight.`
+        );
+      }
+    }
+
+    if (this.config.dailyCostLimitUsd > 0 && _costState.estimatedCostUsd >= this.config.dailyCostLimitUsd) {
+      throw new Error(
+        `Daily cost limit reached ($${_costState.estimatedCostUsd.toFixed(4)} / $${this.config.dailyCostLimitUsd.toFixed(2)}). Resets at midnight.`
+      );
+    }
+
+    const response = await this.inner.complete(messages);
+
+    // Post-flight accounting
+    if (response.usage) {
+      _costState.inputTokens += response.usage.inputTokens;
+      _costState.outputTokens += response.usage.outputTokens;
+      _costState.estimatedCostUsd +=
+        (response.usage.inputTokens / 1_000_000) * this.config.inputPricePerMToken +
+        (response.usage.outputTokens / 1_000_000) * this.config.outputPricePerMToken;
+    }
+
+    return response;
+  }
+}
+
+function parseCostGuardEnv(model: string): CostGuardConfig | null {
+  const dailyTokenLimit = parseInt(process.env.LLM_DAILY_TOKEN_LIMIT || '0', 10);
+  const dailyCostLimitUsd = parseFloat(process.env.LLM_DAILY_COST_LIMIT_USD || '0');
+
+  if (dailyTokenLimit <= 0 && dailyCostLimitUsd <= 0) return null;
+
+  const pricing = resolvePricing(model);
+  return {
+    dailyTokenLimit,
+    dailyCostLimitUsd,
+    inputPricePerMToken: pricing.input,
+    outputPricePerMToken: pricing.output,
+  };
+}
+
 export function createLLMClient(config: LLMConfig): LLMClient {
   if (isDemoMode()) {
     return new DemoLLMClient();
   }
 
+  let client: LLMClient;
   switch (config.provider) {
     case 'anthropic':
-      return new AnthropicClient(config);
+      client = new AnthropicClient(config);
+      break;
     case 'openai':
-      return new OpenAIClient(config);
+      client = new OpenAIClient(config);
+      break;
+    case 'gemini':
+      client = new GeminiClient(config);
+      break;
     default:
       throw new Error(`Unknown LLM provider: ${config.provider}`);
   }
+
+  // Wrap with cost guard if limits are configured
+  const costGuard = parseCostGuardEnv(config.model || '');
+  if (costGuard) {
+    client = new CostGuardedLLMClient(client, costGuard);
+  }
+
+  return client;
 }
