@@ -2294,7 +2294,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - `PatchResultSchema`: discriminated union (success/failure)
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-018 (P0) Implement patch merge engine + conflict handling
+### [x] MND-018 (P0) Implement patch merge engine + conflict handling
 **Goal:** Merge concurrent agent updates safely.
 
 **Deliverables**
@@ -2306,6 +2306,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Concurrent patches do not corrupt final report snapshot.
 
 **Dependencies:** MND-017
+
+**Completion notes:**
+- `applyReportPatch()` in packages/engine/src/report/patch-engine.ts: full merge engine
+- 4 operation types: replace (whole section or path), merge (deep object merge), append (array push), remove_item (array splice or key delete)
+- Conflict detection: `detectConflict()` checks same-section edits within current version → escalates lifecycle to `review`
+- Optimistic concurrency: `expectedVersion` parameter prevents lost updates (VERSION_CONFLICT rejection)
+- Schema validation: updated report validated against ReportSchema after patch; SCHEMA_VIOLATION rejection if invalid
+- Status guards: frozen/published reports reject all patches
+- Each successful patch creates a ReportRevision and bumps version
+- Exported from `@simvibe/engine` via report/index.ts
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-019 (P0) Add open-report update APIs
 **Goal:** Allow report evolution via API while `open`.
