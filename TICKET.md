@@ -2610,7 +2610,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Outputs: `artifacts_runs/nad-seed-summary.json` and `artifacts_runs/nad-seed-report-links.md`
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-032 (P1) Add report list filters for nad.fun/legacy mode
+### [x] MND-032 (P1) Add report list filters for nad.fun/legacy mode
 **Goal:** Improve visibility during transition from PH to nad.fun focus.
 
 **Deliverables**
@@ -2621,6 +2621,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Users can isolate nad.fun reports in one click.
 
 **Dependencies:** MND-029
+
+**Completion notes:**
+- `/reports` page: pill-style filter buttons for All / nad.fun / PH (legacy) / Generic
+- Platform badge per run: colored pill showing "nad.fun" (accent), "PH (legacy)" (dim), "Generic" (muted)
+- Title display: shows token name + symbol for nad.fun runs (e.g., "MonadMemes ($MMEME)")
+- Filter state persists during session via `platformFilter` state
+- Run metadata line simplified (removed redundant platform display, replaced by badge)
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-033 (P0) Update E2E suite to nad.fun-first critical path
 **Goal:** Ensure CI validates the new core journey end-to-end.

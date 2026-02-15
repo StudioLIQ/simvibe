@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState } from 'react';
 
 type RunStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed';
 
+type PlatformFilter = 'all' | 'nad_fun' | 'product_hunt' | 'generic';
+
 interface RunListItem {
   id: string;
   status: RunStatus;
@@ -16,6 +18,10 @@ interface RunListItem {
     tags?: string[];
     phSubmission?: {
       productName?: string;
+    };
+    nadFunSubmission?: {
+      tokenName?: string;
+      tokenSymbol?: string;
     };
   };
   report?: {
@@ -30,9 +36,24 @@ function isSeeded(run: RunListItem): boolean {
 }
 
 function getTitle(run: RunListItem): string {
+  const nadName = run.input?.nadFunSubmission?.tokenName?.trim();
+  const nadSymbol = run.input?.nadFunSubmission?.tokenSymbol?.trim();
+  if (nadName) return nadSymbol ? `${nadName} ($${nadSymbol})` : nadName;
   const phName = run.input?.phSubmission?.productName?.trim();
   if (phName) return phName;
   return run.input?.tagline || run.id;
+}
+
+function getPlatformMode(run: RunListItem): string {
+  return run.input?.platformMode || 'generic';
+}
+
+function getPlatformBadge(mode: string): { label: string; color: string } {
+  switch (mode) {
+    case 'nad_fun': return { label: 'nad.fun', color: 'var(--accent-primary)' };
+    case 'product_hunt': return { label: 'PH (legacy)', color: 'var(--text-dim)' };
+    default: return { label: 'Generic', color: 'var(--text-muted)' };
+  }
 }
 
 export default function ReportsPage() {
@@ -41,6 +62,7 @@ export default function ReportsPage() {
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [seededOnly, setSeededOnly] = useState(false);
+  const [platformFilter, setPlatformFilter] = useState<PlatformFilter>('all');
 
   useEffect(() => {
     let cancelled = false;
@@ -83,6 +105,10 @@ export default function ReportsPage() {
       .filter((run) => run.status === 'completed' && run.report)
       .filter((run) => (seededOnly ? isSeeded(run) : true))
       .filter((run) => {
+        if (platformFilter === 'all') return true;
+        return getPlatformMode(run) === platformFilter;
+      })
+      .filter((run) => {
         if (!normalizedQuery) return true;
         const title = getTitle(run).toLowerCase();
         const tags = (run.input?.tags || []).join(' ').toLowerCase();
@@ -93,7 +119,7 @@ export default function ReportsPage() {
         const bTime = new Date(b.createdAt).getTime();
         return bTime - aTime;
       });
-  }, [runs, query, seededOnly]);
+  }, [runs, query, seededOnly, platformFilter]);
 
   return (
     <main className="container">
@@ -121,6 +147,33 @@ export default function ReportsPage() {
           />
         </div>
 
+        <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+          {([
+            { value: 'all' as PlatformFilter, label: 'All' },
+            { value: 'nad_fun' as PlatformFilter, label: 'nad.fun' },
+            { value: 'product_hunt' as PlatformFilter, label: 'PH (legacy)' },
+            { value: 'generic' as PlatformFilter, label: 'Generic' },
+          ]).map(({ value, label }) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setPlatformFilter(value)}
+              style={{
+                padding: '0.35rem 0.75rem',
+                borderRadius: '1rem',
+                border: `1px solid ${platformFilter === value ? 'var(--accent-primary)' : 'var(--border)'}`,
+                background: platformFilter === value ? 'var(--accent-primary-soft)' : 'transparent',
+                color: platformFilter === value ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                fontSize: '0.85rem',
+                fontWeight: platformFilter === value ? 600 : 400,
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
         <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
           <input
             type="checkbox"
@@ -145,6 +198,7 @@ export default function ReportsPage() {
               const score = run.report?.overallScore;
               const traction = run.report?.tractionBand || '-';
               const tags = run.input?.tags || [];
+              const badge = getPlatformBadge(getPlatformMode(run));
 
               return (
                 <div
@@ -158,9 +212,24 @@ export default function ReportsPage() {
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start' }}>
                     <div>
-                      <div style={{ fontWeight: 700, marginBottom: '0.2rem' }}>{getTitle(run)}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.2rem' }}>
+                        <span style={{ fontWeight: 700 }}>{getTitle(run)}</span>
+                        <span
+                          style={{
+                            fontSize: '0.7rem',
+                            padding: '0.1rem 0.4rem',
+                            borderRadius: '0.75rem',
+                            border: `1px solid ${badge.color}`,
+                            color: badge.color,
+                            fontWeight: 600,
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {badge.label}
+                        </span>
+                      </div>
                       <div className="hint" style={{ marginBottom: '0.3rem' }}>
-                        {run.id} · {new Date(run.createdAt).toLocaleString()} · mode: {run.input?.runMode || '-'} · platform: {run.input?.platformMode || 'generic'}
+                        {run.id} · {new Date(run.createdAt).toLocaleString()} · mode: {run.input?.runMode || '-'}
                       </div>
                       {tags.length > 0 && (
                         <div className="hint" style={{ marginBottom: '0.2rem' }}>tags: {tags.slice(0, 8).join(', ')}</div>
