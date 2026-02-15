@@ -15,10 +15,12 @@
     "ci:personas": "pnpm personas:validate && pnpm test:personas",
     "smoke": "npx tsx scripts/smoke-test.ts",
     "smoke:launch": "npx tsx scripts/smoke-launch.ts",
+    "e2e:ph:nad": "npx tsx scripts/e2e-ph-nad.ts",
     "test:demo": "DEMO_MODE=true npx tsx scripts/test-demo-outputs.ts",
     "test:readiness": "pnpm --filter @simvibe/engine test:readiness",
     "ci:smoke": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/smoke-test.ts",
     "ci:smoke:launch": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/smoke-launch.ts",
+    "ci:e2e:ph:nad": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/e2e-ph-nad.ts",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },

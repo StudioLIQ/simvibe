@@ -1719,3 +1719,96 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Smoke output includes runId, readiness verdict, tx hash, launch status, event count
 - Test: `pnpm typecheck` passes for all packages
 - Test: `pnpm test:readiness` passes (28 tests)
+
+---
+
+## Milestone M12 — Product Hunt Batch E2E Hardening (P0/P1)
+
+### [x] SIM-042 (P0) Add multi-product E2E: Product Hunt report -> nad.fun launch pipeline
+**Goal:** Prove the full value path for multiple products, not just a single smoke run.
+
+**Deliverables**
+- New batch E2E script that runs N products end-to-end:
+  - create PH-mode run
+  - complete simulation
+  - assert report + PH forecast + launch pack
+  - fetch launch-pack JSON/markdown
+  - prepare nad.fun launch payload
+  - execute + confirm + status check (for ready runs)
+  - assert 403 gating for not-ready runs
+- Artifact output with per-product runId, score, readiness, launch status.
+- Config knobs via env:
+  - `PRODUCT_COUNT`
+  - `E2E_RUN_MODE` (quick|deep)
+  - `MIN_READY_LAUNCHES`
+  - `E2E_OUTPUT_PATH`
+
+**Acceptance Criteria**
+- Batch E2E fails fast on any schema/endpoint regression.
+- At least `MIN_READY_LAUNCHES` runs complete to launch success.
+- Output artifact is written for audit/share.
+
+**Test Plan**
+- `pnpm e2e:ph:nad` (internal server mode)
+- `PRODUCT_COUNT=2 MIN_READY_LAUNCHES=1 pnpm e2e:ph:nad`
+
+**Dependencies:** SIM-041
+
+**Completion notes:**
+- Added `scripts/e2e-ph-nad.ts` for multi-product PH -> report -> launch E2E.
+- Added `scripts/fixtures/e2e-products.ts` with deterministic synthetic PH product scenarios.
+- Added scripts:
+  - `pnpm e2e:ph:nad`
+  - `pnpm ci:e2e:ph:nad`
+- Validates:
+  - report presence + `phForecast` + `launchPack`
+  - `/launch-pack` endpoint in JSON + markdown
+  - readiness and launch execution/confirmation/status flow
+  - launch gate blocking path (`403`) when not ready
+- Writes summary JSON: `artifacts_runs/e2e-ph-nad-summary.json`
+
+---
+
+### [x] SIM-043 (P0) Fix memory storage singleton for Next API route isolation
+**Goal:** Ensure `DATABASE_URL=memory://` behaves consistently across route handlers during E2E/dev runs.
+
+**Deliverables**
+- Use process-global singleton for memory backend (not module-local only).
+- Ensure all routes (`/api/run`, `/api/run/:id/start`, etc.) see the same in-memory data.
+
+**Acceptance Criteria**
+- create -> start -> poll works in memory mode without intermittent "Run not found".
+
+**Test Plan**
+- Run batch E2E with `DEMO_MODE=true DATABASE_URL=memory://`.
+
+**Dependencies:** SIM-042
+
+**Completion notes:**
+- Updated `packages/engine/src/storage/index.ts`:
+  - memory backend now resolved through `globalThis` singleton key
+  - sqlite fallback-to-memory path also uses same singleton
+- Verified with:
+  - `pnpm e2e:ph:nad` (3 scenarios, all launch success)
+  - `pnpm typecheck`
+
+---
+
+### [ ] SIM-044 (P1) Add CI matrix gate for quick/deep batch E2E + artifact retention
+**Goal:** Prevent mode-specific regressions and preserve launch-path evidence from CI runs.
+
+**Deliverables**
+- CI workflow matrix:
+  - `E2E_RUN_MODE=quick` + `PRODUCT_COUNT=3`
+  - `E2E_RUN_MODE=deep` + `PRODUCT_COUNT=2`
+- Upload `artifacts_runs/e2e-ph-nad-summary.json` as CI artifact.
+- Fail CI when `MIN_READY_LAUNCHES` threshold is not met.
+
+**Acceptance Criteria**
+- PR-level visibility for both quick/deep launchability.
+- Evidence artifact downloadable from CI for review.
+
+**Test Plan**
+- Trigger workflow on branch and verify both matrix legs + artifact upload.
+
+**Dependencies:** SIM-042, SIM-043

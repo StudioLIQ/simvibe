@@ -13,7 +13,19 @@ function requireStorageModule<T>(modulePath: string): T {
   return nodeRequire(modulePath) as T;
 }
 
-let _memorySingleton: MemoryStorage | null = null;
+const MEMORY_SINGLETON_KEY = '__simvibe_memory_storage_singleton__';
+
+function getMemorySingleton(): MemoryStorage {
+  const scope = globalThis as typeof globalThis & {
+    [MEMORY_SINGLETON_KEY]?: MemoryStorage;
+  };
+
+  if (!scope[MEMORY_SINGLETON_KEY]) {
+    scope[MEMORY_SINGLETON_KEY] = new MemoryStorage();
+  }
+
+  return scope[MEMORY_SINGLETON_KEY]!;
+}
 
 export interface StorageConfig {
   type: 'memory' | 'sqlite' | 'postgres';
@@ -67,8 +79,7 @@ export function createStorage(config: StorageConfig): Storage {
             `  Or set DATABASE_URL=postgres://... for production.`
           );
           _activeBackend = 'memory (fallback from sqlite)';
-          if (!_memorySingleton) _memorySingleton = new MemoryStorage();
-          return _memorySingleton;
+          return getMemorySingleton();
         }
 
         throw new Error(
@@ -81,10 +92,7 @@ export function createStorage(config: StorageConfig): Storage {
     case 'memory':
     default:
       _activeBackend = 'memory';
-      if (!_memorySingleton) {
-        _memorySingleton = new MemoryStorage();
-      }
-      return _memorySingleton;
+      return getMemorySingleton();
   }
 }
 

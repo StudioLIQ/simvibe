@@ -30,6 +30,7 @@ pnpm-debug.log*
 
 # Testing
 coverage/
+artifacts_runs/
 
 # Turbo
 .turbo/
