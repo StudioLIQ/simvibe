@@ -102,6 +102,8 @@ export default function ReportsPage() {
           <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>&larr; 허브</Link>
           <span style={{ color: 'var(--text-dim)' }}>·</span>
           <Link href="/new" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>새 시뮬레이션</Link>
+          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <Link href="/personas" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Persona 목록</Link>
         </div>
         <h1>누적 리포트</h1>
         <p>완료된 런의 리포트를 한 곳에서 확인합니다.</p>

@@ -25,6 +25,7 @@ function countSeededRuns(runs: RunLite[]): number {
 
 export default function HomePage() {
   const [runs, setRuns] = useState<RunLite[]>([]);
+  const [personaCount, setPersonaCount] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -41,6 +42,19 @@ export default function HomePage() {
         }
       } catch {
         // Keep landing usable even if list loading fails.
+      }
+
+      try {
+        const diagnosticsRes = await fetch('/api/diagnostics');
+        if (diagnosticsRes.ok) {
+          const diagnostics = await diagnosticsRes.json();
+          const count = diagnostics?.personaRegistry?.count;
+          if (!cancelled && typeof count === 'number') {
+            setPersonaCount(count);
+          }
+        }
+      } catch {
+        // Keep landing usable even if diagnostics fails.
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -80,7 +94,7 @@ export default function HomePage() {
         {loading ? (
           <p className="hint">최근 런 집계 불러오는 중...</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
             <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.65rem', padding: '0.75rem' }}>
               <div className="hint">누적 런</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{summary.totalRuns}</div>
@@ -93,13 +107,17 @@ export default function HomePage() {
               <div className="hint">시드 감지</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{summary.seededRuns}</div>
             </div>
+            <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.65rem', padding: '0.75rem' }}>
+              <div className="hint">Persona 수</div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{personaCount ?? '-'}</div>
+            </div>
           </div>
         )}
       </div>
 
       <div className="card" style={{ marginBottom: '1rem' }}>
         <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>빠른 이동</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
           <Link
             href="/reports"
             style={{
@@ -128,6 +146,23 @@ export default function HomePage() {
           >
             <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>새 시뮬레이션 시작</div>
             <p className="hint" style={{ margin: 0 }}>Product Hunt/Generic 입력으로 새 런을 생성합니다.</p>
+          </Link>
+
+          <Link
+            href="/personas"
+            style={{
+              display: 'block',
+              border: '1px solid var(--border)',
+              borderRadius: '0.75rem',
+              padding: '1rem',
+              background: 'var(--surface-card)',
+              textDecoration: 'none',
+            }}
+          >
+            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Persona 목록</div>
+            <p className="hint" style={{ margin: 0 }}>
+              전체 Persona를 검색/확인합니다. 현재 {personaCount ?? '-'}개 로드됨
+            </p>
           </Link>
         </div>
       </div>

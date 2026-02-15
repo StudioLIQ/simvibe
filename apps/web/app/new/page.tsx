@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -39,6 +39,28 @@ export default function HomePage() {
   const [makerFirstComment, setMakerFirstComment] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  const [personaCount, setPersonaCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadPersonaCount = async () => {
+      try {
+        const res = await fetch('/api/diagnostics');
+        if (!res.ok) return;
+        const data = await res.json();
+        const count = data?.personaRegistry?.count;
+        if (!cancelled && typeof count === 'number') {
+          setPersonaCount(count);
+        }
+      } catch {
+        // no-op
+      }
+    };
+    void loadPersonaCount();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -113,6 +135,8 @@ export default function HomePage() {
           <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>&larr; 허브</Link>
           <span style={{ color: 'var(--text-dim)' }}>·</span>
           <Link href="/reports" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>누적 리포트</Link>
+          <span style={{ color: 'var(--text-dim)' }}>·</span>
+          <Link href="/personas" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Persona 목록</Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.25rem' }}>
           <Image src="/logo.png" alt="simvi.be logo" width={36} height={36} />
@@ -427,6 +451,18 @@ export default function HomePage() {
 
         <div className="card">
           <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Persona Configuration</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
+            <p className="hint" style={{ margin: 0 }}>
+              현재 로드된 Persona: <strong style={{ color: 'var(--accent-primary)' }}>{personaCount ?? '-'}</strong>
+            </p>
+            <Link
+              href="/personas"
+              className="btn"
+              style={{ padding: '0.45rem 0.75rem', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+            >
+              Persona 목록 보기
+            </Link>
+          </div>
           <p className="hint" style={{ marginBottom: '1rem' }}>
             Override persona selection (optional). Defaults to mode-specific set.
           </p>
