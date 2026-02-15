@@ -157,6 +157,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [isSavingLaunch, setIsSavingLaunch] = useState(false);
   const [launchError, setLaunchError] = useState<string | null>(null);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [executionPlan, setExecutionPlan] = useState<{ mode: string; deepLinkUrl?: string; txData?: unknown } | null>(null);
   const [editingLaunch, setEditingLaunch] = useState({
     name: '',
     symbol: '',
@@ -404,6 +406,55 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       setLaunchError(err instanceof Error ? err.message : 'Failed to save launch data');
     } finally {
       setIsSavingLaunch(false);
+    }
+  };
+
+  const executeLaunch = async () => {
+    setIsExecuting(true);
+    setLaunchError(null);
+
+    try {
+      const response = await fetch(`/api/run/${id}/launch/execute`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to prepare launch execution');
+      }
+
+      setExecutionPlan(data.plan);
+      setLaunchRecord(data.launchRecord);
+
+      // If deep-link mode, open in new tab
+      if (data.plan.mode === 'deep_link' && data.plan.deepLinkUrl) {
+        window.open(data.plan.deepLinkUrl, '_blank');
+      }
+    } catch (err) {
+      setLaunchError(err instanceof Error ? err.message : 'Failed to execute launch');
+    } finally {
+      setIsExecuting(false);
+    }
+  };
+
+  const confirmLaunchTx = async (txHash: string, status: 'submitted' | 'success' | 'failed' = 'submitted') => {
+    try {
+      const response = await fetch(`/api/run/${id}/launch/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txHash, status }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to confirm launch');
+      }
+
+      setLaunchRecord(data.launchRecord);
+    } catch (err) {
+      setLaunchError(err instanceof Error ? err.message : 'Failed to confirm launch');
     }
   };
 
@@ -1234,14 +1285,126 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 fontSize: '0.8rem',
               }}>
                 <div style={{ color: '#888' }}>
-                  Launch Record: <span style={{ color: '#a5a5ff' }}>{launchRecord.status}</span>
+                  Launch Record: <span style={{
+                    color: launchRecord.status === 'success' ? '#86efac' :
+                           launchRecord.status === 'failed' ? '#fca5a5' :
+                           launchRecord.status === 'submitted' ? '#fcd34d' : '#a5a5ff',
+                  }}>{launchRecord.status.toUpperCase()}</span>
                 </div>
                 <div style={{ color: '#666', marginTop: '0.25rem' }}>
                   Idempotency Key: {launchRecord.idempotencyKey}
                 </div>
+                {launchRecord.txHash && (
+                  <div style={{ color: '#666', marginTop: '0.25rem' }}>
+                    TX Hash: <code style={{ color: '#a78bfa', fontSize: '0.75rem' }}>{launchRecord.txHash}</code>
+                  </div>
+                )}
+                {launchRecord.tokenAddress && (
+                  <div style={{ color: '#666', marginTop: '0.25rem' }}>
+                    Token: <code style={{ color: '#22c55e', fontSize: '0.75rem' }}>{launchRecord.tokenAddress}</code>
+                  </div>
+                )}
+                {launchRecord.error && (
+                  <div style={{ color: '#fca5a5', marginTop: '0.25rem' }}>
+                    Error: {launchRecord.error}
+                  </div>
+                )}
                 <div style={{ color: '#666', marginTop: '0.25rem' }}>
                   Created: {new Date(launchRecord.createdAt).toLocaleString()}
                 </div>
+              </div>
+            )}
+
+            {/* Execute Launch */}
+            {launchRecord && (launchRecord.status === 'draft' || launchRecord.status === 'confirmed') && (
+              <div style={{ marginTop: '1rem' }}>
+                <button
+                  onClick={executeLaunch}
+                  disabled={isExecuting || launchReadiness?.status === 'not_ready'}
+                  className="btn"
+                  style={{
+                    width: '100%',
+                    background: '#4c1d95',
+                    color: '#c4b5fd',
+                    padding: '0.75rem',
+                    fontSize: '0.875rem',
+                    opacity: launchReadiness?.status === 'not_ready' ? 0.5 : 1,
+                  }}
+                >
+                  {isExecuting ? 'Preparing...' : 'Execute Launch on nad.fun'}
+                </button>
+              </div>
+            )}
+
+            {/* Execution Plan Result */}
+            {executionPlan && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                background: '#0a1a0a',
+                borderRadius: '0.5rem',
+                border: '1px solid #1a3a1a',
+              }}>
+                <div style={{ fontSize: '0.8rem', color: '#86efac', marginBottom: '0.5rem' }}>
+                  Execution Mode: <strong>{executionPlan.mode === 'deep_link' ? 'Deep Link' : 'Contract Call'}</strong>
+                </div>
+                {executionPlan.mode === 'deep_link' && executionPlan.deepLinkUrl && (
+                  <div>
+                    <a
+                      href={executionPlan.deepLinkUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#0ea5e9', fontSize: '0.8rem', textDecoration: 'underline' }}
+                    >
+                      Open nad.fun Create Page
+                    </a>
+                    <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                      Complete the launch on nad.fun, then paste your tx hash below.
+                    </p>
+                  </div>
+                )}
+                {executionPlan.mode === 'contract_call' && (
+                  <p style={{ fontSize: '0.7rem', color: '#666' }}>
+                    Sign the transaction with your connected wallet. Once confirmed, paste the tx hash below.
+                  </p>
+                )}
+
+                {/* TX Hash Input */}
+                {launchRecord?.status !== 'success' && (
+                  <div style={{ marginTop: '0.75rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#888', marginBottom: '0.25rem' }}>
+                      Transaction Hash
+                    </label>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <input
+                        type="text"
+                        id="txHashInput"
+                        placeholder="0x..."
+                        style={{
+                          flex: 1,
+                          padding: '0.5rem',
+                          fontSize: '0.8rem',
+                          border: '1px solid #333',
+                          borderRadius: '0.375rem',
+                          background: '#0a0a0a',
+                          color: '#ededed',
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          const input = document.getElementById('txHashInput') as HTMLInputElement;
+                          if (input?.value) {
+                            confirmLaunchTx(input.value, 'submitted');
+                          }
+                        }}
+                        className="btn"
+                        style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                      >
+                        Confirm TX
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

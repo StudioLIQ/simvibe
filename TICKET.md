@@ -1620,7 +1620,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-039 (P0) Integrate nad.fun execution path (wallet-signed, non-custodial)
+### [x] SIM-039 (P0) Integrate nad.fun execution path (wallet-signed, non-custodial)
 **Goal:** Actually execute token launch from stored payload with user wallet signature.
 
 **Deliverables**
@@ -1641,6 +1641,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Dry-run testnet execution with mocked signer and one real staging wallet flow.
 
 **Dependencies:** SIM-038
+
+**Completion notes:**
+- Launch executor in packages/engine/src/launch/executor.ts: `prepareLaunchExecution()` returns unsigned tx data or deep-link
+- Mode A (deep_link): builds nad.fun/create URL with query params when NAD_TOKEN_FACTORY_ADDRESS not configured
+- Mode B (contract_call): returns TokenFactory ABI fragment + encoded params for client-side wallet signing
+- `nadLaunchConfigFromEnv()`: reads NAD_TOKEN_FACTORY_ADDRESS, NAD_CHAIN_ID, NAD_RPC_URL, NAD_LAUNCH_FEE_MON
+- POST /api/run/[id]/launch/execute: validates readiness, prevents re-execution (409), returns execution plan
+- POST /api/run/[id]/launch/confirm: client reports txHash + status (submitted/success/failed)
+- `updateLaunchRecordWithTx()`, `confirmLaunchRecord()`, `failLaunchRecord()` helpers for state transitions
+- Report UI: "Execute Launch on nad.fun" button, execution plan display, TX hash input + confirm
+- .env.example updated with NAD_* and LAUNCH_* config vars
+- No private key custody: all signing happens client-side
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 
