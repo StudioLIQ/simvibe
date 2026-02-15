@@ -1,5 +1,5 @@
 import type { RunInput, LandingExtract, PersonaId } from '@simvibe/shared';
-import { WORLD_PROTOCOL, PH_PROTOCOL_EXTENSION, OUTPUT_JSON_REMINDER } from './world-protocol';
+import { WORLD_PROTOCOL, PH_PROTOCOL_EXTENSION, NAD_FUN_PROTOCOL_EXTENSION, OUTPUT_JSON_REMINDER } from './world-protocol';
 import { getPersona, type PersonaDefinition } from './personas';
 
 export interface ComposedPrompt {
@@ -133,9 +133,12 @@ export function composePrompt(
 ): ComposedPrompt {
   const persona = getPersona(personaId);
   const isPH = input.platformMode === 'product_hunt';
+  const isNadFun = input.platformMode === 'nad_fun';
+
+  const platformExtension = isPH ? PH_PROTOCOL_EXTENSION : isNadFun ? NAD_FUN_PROTOCOL_EXTENSION : '';
 
   const systemPrompt = `${WORLD_PROTOCOL}
-${isPH ? PH_PROTOCOL_EXTENSION : ''}
+${platformExtension}
 ${formatPersonaPrompt(persona)}
 
 ${OUTPUT_JSON_REMINDER}`;
