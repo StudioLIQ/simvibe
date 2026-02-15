@@ -1,59 +1,140 @@
-# simvibe 배포 가이드 (WEB=Vercel, API/Worker/DB=Railway)
+# simvi.be 배포 런북 (Vercel + Railway)
 
-이 문서는 아래 운영 도메인 기준으로, 배포를 처음부터 끝까지 따라할 수 있게 정리한 실전 가이드입니다.
+마지막 업데이트: 2026-02-15
 
-- FE(웹): `https://simvibe.studioliq.com` (Vercel)
-- API: `https://api-simvibe.studioliq.com` (Railway)
+이 문서는 현재 코드 기준의 실제 운영 절차를 정리한 배포 기준 문서다.
 
----
-
-## 0. 최종 아키텍처
+## 1) 운영 아키텍처
 
 ```text
-[User Browser]
-  -> https://simvibe.studioliq.com  (Vercel, Next.js web)
-       -> /api/* 는 API_SERVER_ORIGIN 으로 rewrite
-          -> https://api-simvibe.studioliq.com/api/*
-
-[Railway]
-  1) Postgres
-  2) API 서비스    (Next.js @simvibe/web, API 전용)
-  3) Worker 서비스 (apps/worker, pg-boss 소비)
+[User]
+  -> Vercel Web (apps/web)
+       -> /api/* rewrite
+            -> Railway API (apps/web Next server, route handlers)
+                 -> Postgres (Railway)
+                 -> pg-boss queue
+                      -> Railway Worker (apps/worker)
 ```
 
-핵심:
-- WEB은 Vercel에서만 배포
-- API/Worker/Postgres는 Railway에서 운영
-- API와 Worker는 같은 Postgres(`DATABASE_URL`)를 공유
+핵심 원칙:
+- 운영 DB는 반드시 `Postgres` (`DATABASE_URL=postgres://...`).
+- API/Worker는 같은 `DATABASE_URL`을 공유.
+- Web은 Vercel에서 `/api/*`를 Railway API로 프록시(`API_SERVER_ORIGIN`).
+- 계약(Receipt/Gate/NAD on-chain)은 옵션. 미설정 시 오프체인 경로로 동작.
 
 ---
 
-## 1. 사전 준비
+## 2) 배포 전 필수 체크 (로컬)
 
-1. GitHub 저장소 최신 반영
-2. Railway 프로젝트 생성 권한
-3. Vercel 프로젝트 생성 권한
-4. Gemini API Key
-5. DNS 관리 권한 (`studioliq.com`)
+Node/pnpm:
+- Node `>=18` (권장 20/22)
+- pnpm `>=9`
+
+필수 검증:
+
+```bash
+pnpm typecheck
+pnpm ci:smoke
+pnpm ci:smoke:launch
+pnpm ci:e2e:ph:nad
+pnpm ci:e2e:nad:fun
+pnpm ci:e2e:monad
+pnpm ci:e2e:services
+```
+
+주의:
+- `ci:e2e:services`는 Docker 필요(Postgres 컨테이너 기동).
+- launch 실행은 report lifecycle이 `frozen` 또는 `published`여야 통과한다.
 
 ---
 
-## 2. Railway 설정 (API + Worker + Postgres)
+## 3) 환경변수 기준
 
-## 2-1. Postgres 생성
+기준 샘플: `.env.example`
 
-1. Railway 프로젝트에서 `New` -> `Database` -> `PostgreSQL`
-2. 생성 후 `DATABASE_URL` 확인
+### 3-1. API 서비스 (Railway, 필수)
 
-## 2-2. API 서비스 생성
+```env
+DATABASE_URL=postgres://...
+NODE_ENV=production
+DEMO_MODE=false
 
-1. `New` -> `GitHub Repo`로 현재 저장소 연결
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=...
+# 또는 ANTHROPIC_API_KEY / OPENAI_API_KEY
+
+EXTRACTOR_PROVIDER=jina
+# JINA_API_KEY=... (선택)
+# FIRECRAWL_API_KEY=... (firecrawl 선택 시 필수)
+
+LLM_DAILY_TOKEN_LIMIT=2000000
+LLM_DAILY_COST_LIMIT_USD=5.00
+```
+
+### 3-2. Worker 서비스 (Railway, 필수)
+
+```env
+DATABASE_URL=postgres://...
+NODE_ENV=production
+DEMO_MODE=false
+
+LLM_PROVIDER=gemini
+GEMINI_API_KEY=...
+EXTRACTOR_PROVIDER=jina
+
+WORKER_PORT=8080
+WORKER_RUN_TIMEOUT_MS=600000
+
+LLM_DAILY_TOKEN_LIMIT=2000000
+LLM_DAILY_COST_LIMIT_USD=5.00
+```
+
+### 3-3. Web 서비스 (Vercel, 필수)
+
+```env
+API_SERVER_ORIGIN=https://api-simvibe.example.com
+NODE_ENV=production
+```
+
+보안 권장:
+- Vercel에는 API/DB/지갑 비밀키를 두지 않는다.
+- API/Worker에만 LLM/DB/체인 키를 둔다.
+
+### 3-4. 옵션 (체인/런치)
+
+Receipt publish (Monad):
+- `RECEIPT_CONTRACT_ADDRESS`
+- `RECEIPT_RPC_URL`
+- `RECEIPT_PUBLISHER_KEY`
+- `RECEIPT_CHAIN_ID` (선택)
+
+nad.fun launch 설정:
+- `NAD_TOKEN_FACTORY_ADDRESS`
+- `NAD_CHAIN_ID`
+- `NAD_RPC_URL`
+- `NAD_CREATE_BASE_URL`
+- `NAD_LAUNCH_FEE_MON`
+
+Readiness 정책:
+- `LAUNCH_FORCE_OVERRIDE` (운영에서는 `false` 권장)
+- `LAUNCH_MIN_OVERALL_SCORE` 등 (`packages/engine/src/launch/readiness-gate.ts` 참고)
+
+---
+
+## 4) Railway 배포
+
+### 4-1. Postgres 생성
+1. Railway Project -> `New` -> `Database` -> PostgreSQL
+2. `DATABASE_URL` 확보
+
+### 4-2. API 서비스 생성
+1. `New` -> GitHub Repo 연결
 2. Service 이름: `simvibe-api` (권장)
 3. Root Directory: `/`
 4. Build Command:
 
 ```bash
-pnpm install --frozen-lockfile && pnpm build
+pnpm install --frozen-lockfile && pnpm --filter @simvibe/web build
 ```
 
 5. Start Command:
@@ -62,245 +143,161 @@ pnpm install --frozen-lockfile && pnpm build
 pnpm --filter @simvibe/web start --port $PORT
 ```
 
-## 2-3. Worker 서비스 생성
+6. 환경변수(3-1) 설정
 
-1. `New` -> `GitHub Repo`로 동일 저장소 연결
+### 4-3. Worker 서비스 생성
+1. `New` -> GitHub Repo 연결
 2. Service 이름: `simvibe-worker` (권장)
-3. Root Directory: `/`
-4. Dockerfile Path: `apps/worker/Dockerfile`
-5. Public Domain은 불필요
+3. Dockerfile Path: `apps/worker/Dockerfile`
+4. Public Domain 불필요 (내부 서비스로 운영)
+5. 환경변수(3-2) 설정
 
-## 2-4. Railway 환경변수
-
-### API 서비스
-
-```env
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-NODE_ENV=production
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=<YOUR_GEMINI_KEY>
-LLM_DAILY_TOKEN_LIMIT=2000000
-LLM_DAILY_COST_LIMIT_USD=5.00
-EXTRACTOR_PROVIDER=pasted
-```
-
-참고:
-- 운영에서 URL 추출을 쓰려면 `EXTRACTOR_PROVIDER=jina`로 변경
-- 필요 시 `JINA_API_KEY` 추가
-
-### Worker 서비스
-
-```env
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-NODE_ENV=production
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=<YOUR_GEMINI_KEY>
-LLM_DAILY_TOKEN_LIMIT=2000000
-LLM_DAILY_COST_LIMIT_USD=5.00
-EXTRACTOR_PROVIDER=pasted
-WORKER_PORT=8080
-WORKER_RUN_TIMEOUT_MS=600000
-```
-
----
-
-## 3. Railway 도메인 연결 (API)
-
-Railway `simvibe-api` 서비스에서:
-
-1. `Settings` -> `Domains`
-2. `api-simvibe.studioliq.com` 연결
-3. Railway 안내대로 DNS(CNAME/TXT) 반영
-4. SSL 발급 완료 확인
+### 4-4. API 도메인 연결
+예: `api-simvibe.example.com`
 
 검증:
-- `https://api-simvibe.studioliq.com/api/diagnostics`
+- `https://api-simvibe.example.com/api/diagnostics`
+- `storage.activeBackend=postgres` 확인
 
 ---
 
-## 4. DB 마이그레이션 + 페르소나 동기화 (필수)
+## 5) 초기화 작업 (필수, 최초 1회)
 
-최초 1회 실행:
+API 서비스 환경으로 one-off 실행:
 
 ```bash
 pnpm db:migrate
 pnpm personas:sync
 ```
 
-실행 위치:
-- Railway API 서비스 Shell/One-off command
-- 또는 로컬에서 Railway `DATABASE_URL` 지정 후 실행
-
-예시(로컬):
-
-```bash
-DATABASE_URL='<RAILWAY_POSTGRES_URL>' pnpm db:migrate
-DATABASE_URL='<RAILWAY_POSTGRES_URL>' pnpm personas:sync
-```
+검증:
+- 마이그레이션 성공 로그
+- `personas:sync` 성공 로그
 
 ---
 
-## 5. Vercel 설정 (WEB)
+## 6) Vercel 배포 (Web)
 
-## 5-1. 프로젝트 생성
-
-1. Vercel에서 GitHub 저장소 Import
-2. Framework: Next.js
-3. Root Directory: `apps/web`
-
-Build 설정:
-- Install Command:
+1. Project Import (repo)
+2. Root Directory: `apps/web`
+3. Install Command:
 
 ```bash
 cd ../.. && pnpm install --frozen-lockfile
 ```
 
-- Build Command:
+4. Build Command:
 
 ```bash
 cd ../.. && pnpm --filter @simvibe/web build
 ```
 
-(프로젝트 설정에 따라 기본 Next 빌드가 동작하면 위 커맨드는 생략 가능)
+5. 환경변수(3-3) 설정
+6. 도메인 연결(예: `simvibe.example.com`)
 
-## 5-2. Vercel 환경변수
+검증:
+- `https://simvibe.example.com` 접속
+- 브라우저 DevTools에서 `/api/*` 요청이 `API_SERVER_ORIGIN`으로 프록시되는지 확인
 
-```env
-DATABASE_URL=<RAILWAY_POSTGRES_EXTERNAL_URL>
-NODE_ENV=production
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=<YOUR_GEMINI_KEY>
-LLM_DAILY_TOKEN_LIMIT=2000000
-LLM_DAILY_COST_LIMIT_USD=5.00
-EXTRACTOR_PROVIDER=pasted
-API_SERVER_ORIGIN=https://api-simvibe.studioliq.com
+---
+
+## 7) 배포 직후 검증
+
+### 7-1. 서비스 헬스
+- API: `GET /api/diagnostics`
+- Worker: 로그에서 `Worker consuming jobs from pg-boss queue` 확인
+
+### 7-2. 런 실행 플로우
+1. `POST /api/run` -> `runId`
+2. `POST /api/run/:id/start` -> `queued=true`
+3. `GET /api/run/:id` polling -> `queued -> running -> completed`
+
+### 7-3. launch 플로우 (중요)
+launch execute 전 필수:
+- `POST /api/run/:id/report/lifecycle` with `targetStatus=frozen`
+
+그 후:
+1. `GET /api/run/:id/launch`
+2. `POST /api/run/:id/launch`
+3. `POST /api/run/:id/launch/execute`
+4. `POST /api/run/:id/launch/confirm`
+5. `GET /api/run/:id/launch/status`
+
+---
+
+## 8) 운영용 E2E
+
+### 8-1. 메모리 모드(빠른 회귀)
+```bash
+pnpm ci:smoke
+pnpm ci:smoke:launch
+pnpm ci:e2e:ph:nad
+pnpm ci:e2e:nad:fun
+pnpm ci:e2e:monad
 ```
 
-중요:
-- `API_SERVER_ORIGIN`이 정확해야 `/api/*`가 Railway API로 프록시됩니다.
+### 8-2. 실제 서비스 연결 E2E
+```bash
+pnpm ci:e2e:services
+```
 
-## 5-3. Vercel 도메인 연결
+이 테스트는 다음을 한 번에 검증한다:
+- API enqueue
+- pg-boss 큐 전달
+- Worker 실행
+- report patch/lifecycle
+- launch execute/confirm
+- receipt 저장
 
-1. Vercel 프로젝트 `Settings` -> `Domains`
-2. `simvibe.studioliq.com` 연결
-3. DNS 반영 + SSL 확인
-
----
-
-## 6. 배포 후 검증 체크리스트
-
-1. API 진단
-- `https://api-simvibe.studioliq.com/api/diagnostics`
-- `storage.activeBackend=postgres` 확인
-
-2. WEB 접속
-- `https://simvibe.studioliq.com`
-- 월드 생성 -> 시뮬레이션 시작 -> 리포트 조회
-
-3. Worker 동작
-- Worker 로그에서 job consume 시작 로그 확인
-- run 실행 시 처리 로그 확인
+결과 파일:
+- `artifacts_runs/e2e-services-flow-summary.json`
 
 ---
 
-## 7. nad.fun 시드 자동화 (+ Legacy PH)
+## 9) 시딩 (옵션)
 
-시드 카탈로그: `SEEDING.md`
-
-### 7-1. nad.fun 시딩 (Primary)
+nad.fun 데모 시딩:
 
 ```bash
-API_BASE_URL=https://api-simvibe.studioliq.com \
-WEB_BASE_URL=https://simvibe.studioliq.com \
-WAIT_FOR_SERVER_SECONDS=180 \
+API_BASE_URL=https://api-simvibe.example.com \
+WEB_BASE_URL=https://simvibe.example.com \
 SEED_ONLY_MISSING=true \
-SEED_NAMESPACE=nad-demo-v1 \
+WAIT_FOR_SERVER_SECONDS=180 \
 PRODUCT_COUNT=8 \
 RUN_MODE=quick \
 pnpm seed:nad:railway
 ```
 
-### 7-1b. Legacy PH 시딩 (Compatibility)
+Legacy PH 시딩:
 
 ```bash
-API_BASE_URL=https://api-simvibe.studioliq.com \
-WEB_BASE_URL=https://simvibe.studioliq.com \
-WAIT_FOR_SERVER_SECONDS=180 \
+API_BASE_URL=https://api-simvibe.example.com \
+WEB_BASE_URL=https://simvibe.example.com \
 SEED_ONLY_MISSING=true \
-SEED_NAMESPACE=ph-demo-v1 \
+WAIT_FOR_SERVER_SECONDS=180 \
 PRODUCT_COUNT=7 \
 RUN_MODE=quick \
 pnpm seed:ph:railway
 ```
 
-### 7-2. 자동 시딩 (Railway Job/Cron)
+---
+
+## 10) 장애 대응 순서
+
+1. API `GET /api/diagnostics`
+2. `DATABASE_URL`/Postgres 연결 확인
+3. Worker 로그(큐 소비, 실행 실패) 확인
+4. Vercel `API_SERVER_ORIGIN` 확인
+5. launch 403이면 report lifecycle 상태(`open/review/frozen/published`) 먼저 확인
+
+---
+
+## 11) 롤백
+
+원칙:
+- DB는 유지하고, API/Web/Worker를 이전 릴리스로 롤백
+- 롤백 후 즉시 `ci:smoke`, `ci:smoke:launch` 최소 검증
 
 권장:
-- 배포 직후 1회 실행
-- 필요 시 1일 1회 재실행
-- `SEED_ONLY_MISSING=true`로 중복 방지
-
----
-
-## 8. 해커톤 제출 대응 (Token Contract Address / Must be live on Nad.fun)
-
-해커톤 제출 폼에서 아래 요구가 있으면, 이 순서로 준비하는 것이 안전합니다.
-
-### 8-1. Token Contract Address 필드
-
-권장 값:
-- `nad.fun`에서 실제 launch 성공 후 생성된 토큰 컨트랙트 주소
-
-금지 값:
-- 로컬/임시 컨트랙트 주소
-- launch 실패 상태의 미확정 주소
-
-### 8-2. Must be live on Nad.fun 대응
-
-최소 증빙 3종:
-1. `nad.fun` 토큰 페이지 URL
-2. launch tx hash (Monad explorer 링크)
-3. token contract address
-
-`simvi.be` report에서 위 3개를 한 섹션에 노출하면 심사자가 즉시 검증할 수 있습니다.
-
-### 8-3. 제출 직전 권장 절차
-
-1. 시뮬레이션 완료 + 리포트 확정
-2. 필요 시 `Publish to Monad`로 receipt 기록
-3. `Launch on nad.fun` 실행 + confirm
-4. report에서 `Token Contract Address`/launch tx/nad.fun URL 확인
-5. 해커톤 폼에 동일 값 입력
-
-### 8-4. 실수 방지 팁
-
-1. 제출용 launch runId를 데모 runId와 분리
-2. launch confirm은 idempotent 처리 유지
-3. 주소 형식 검증(`0x` + 40 hex) 후 저장
-4. 제출 직전 증빙 링크/스크린샷 백업
-
----
-
-## 9. 비용/안정성 운영 팁
-
-1. 비용 제한은 항상 켜두기
-- `LLM_DAILY_TOKEN_LIMIT`
-- `LLM_DAILY_COST_LIMIT_USD`
-
-2. 데모 안정성 우선이면 추출기 `pasted`
-- 외부 추출기 의존성 감소
-
-3. 장애 최다 원인
-- Vercel의 `API_SERVER_ORIGIN` 오타
-- Railway API 도메인 SSL 미완료
-- 마이그레이션/페르소나 sync 누락
-
----
-
-## 10. 장애 대응 순서
-
-1. API `/api/diagnostics` 확인
-2. Railway Postgres 연결 확인 (`DATABASE_URL`)
-3. Worker 로그(큐 소비/에러) 확인
-4. Vercel 환경변수 `API_SERVER_ORIGIN` 재확인
-5. DNS/SSL 상태 확인
+- 릴리스마다 `artifacts_runs/*summary.json` 보관
+- 배포 태그/커밋 해시를 운영 기록에 남길 것
