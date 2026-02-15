@@ -2318,7 +2318,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Exported from `@simvibe/engine` via report/index.ts
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-019 (P0) Add open-report update APIs
+### [x] MND-019 (P0) Add open-report update APIs
 **Goal:** Allow report evolution via API while `open`.
 
 **Deliverables**
@@ -2330,6 +2330,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Patch history and latest snapshot can both be queried.
 
 **Dependencies:** MND-018
+
+**Completion notes:**
+- `POST /api/run/[id]/report/patch`: validates payload → loads report/lifecycle/revisions → applies patch → persists all 3
+  - 400: invalid payload, 403: frozen/published, 404: run/report not found, 409: version conflict
+  - Returns: newVersion, revisionId, conflict info (if escalated to review)
+- `GET /api/run/[id]/report/revisions`: returns lifecycle + full revision history + count
+- Status guardrails: open/review → writable, frozen/published → rejected with actionable code
+- Optional optimistic concurrency via `expectedVersion` query param
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-020 (P1) Build report timeline/diff UI
 **Goal:** Make revision history visible and reviewable.
