@@ -35,8 +35,11 @@ import {
 // --- Config helpers ---
 
 function getExtractorConfig(): ExtractorConfig {
+  const demoMode = isDemoMode();
   return {
-    provider: (process.env.EXTRACTOR_PROVIDER as 'firecrawl' | 'jina' | 'pasted') || 'jina',
+    provider: demoMode
+      ? 'pasted'
+      : (process.env.EXTRACTOR_PROVIDER as 'firecrawl' | 'jina' | 'pasted') || 'jina',
     firecrawlApiKey: process.env.FIRECRAWL_API_KEY,
     jinaApiKey: process.env.JINA_API_KEY,
   };

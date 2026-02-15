@@ -13,20 +13,38 @@ import {
   type OrchestratorConfig,
 } from '@simvibe/engine';
 
+interface StartRunBody {
+  runtimeOverrides?: {
+    llmProvider?: 'gemini';
+    geminiApiKey?: string;
+    llmModel?: string;
+  };
+}
+
+interface RuntimeOverrides {
+  llmProvider?: 'gemini';
+  geminiApiKey?: string;
+  llmModel?: string;
+}
+
 function getExtractorConfig(): ExtractorConfig {
+  const demoMode = isDemoMode();
   return {
-    provider: (process.env.EXTRACTOR_PROVIDER as 'firecrawl' | 'jina' | 'pasted') || 'jina',
+    provider: demoMode
+      ? 'pasted'
+      : (process.env.EXTRACTOR_PROVIDER as 'firecrawl' | 'jina' | 'pasted') || 'jina',
     firecrawlApiKey: process.env.FIRECRAWL_API_KEY,
     jinaApiKey: process.env.JINA_API_KEY,
   };
 }
 
-function getOrchestratorConfig(): OrchestratorConfig {
-  const provider = (process.env.LLM_PROVIDER as 'anthropic' | 'openai' | 'gemini') || 'gemini';
+function getOrchestratorConfig(overrides?: RuntimeOverrides): OrchestratorConfig {
+  const providerOverride = overrides?.geminiApiKey ? 'gemini' : overrides?.llmProvider;
+  const provider = providerOverride || (process.env.LLM_PROVIDER as 'anthropic' | 'openai' | 'gemini') || 'gemini';
   const apiKeyMap: Record<string, string | undefined> = {
     anthropic: process.env.ANTHROPIC_API_KEY,
     openai: process.env.OPENAI_API_KEY,
-    gemini: process.env.GEMINI_API_KEY,
+    gemini: overrides?.geminiApiKey || process.env.GEMINI_API_KEY,
   };
   const apiKey = apiKeyMap[provider];
   const demoMode = isDemoMode();
@@ -39,7 +57,7 @@ function getOrchestratorConfig(): OrchestratorConfig {
     llm: {
       provider,
       apiKey: apiKey || 'demo-mode-key',
-      model: process.env.LLM_MODEL || undefined,
+      model: overrides?.llmModel || process.env.LLM_MODEL || undefined,
     },
   };
 }
@@ -49,6 +67,20 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  let runtimeOverrides: RuntimeOverrides | undefined;
+
+  try {
+    const body = await request.json() as StartRunBody;
+    if (body?.runtimeOverrides) {
+      runtimeOverrides = {
+        llmProvider: body.runtimeOverrides.llmProvider,
+        geminiApiKey: body.runtimeOverrides.geminiApiKey?.trim() || undefined,
+        llmModel: body.runtimeOverrides.llmModel?.trim() || undefined,
+      };
+    }
+  } catch {
+    // Body is optional for backward compatibility with existing clients.
+  }
 
   const storageConfig = storageConfigFromEnv();
   const storage = createStorage(storageConfig);
@@ -87,9 +119,11 @@ export async function POST(
     }
 
     const queueConfig = queueConfigFromEnv();
+    const hasByokGemini = !!runtimeOverrides?.geminiApiKey;
+    const shouldForceInline = hasByokGemini;
 
     // Async mode: enqueue to pg-boss, return immediately
-    if (queueConfig.type === 'pgboss') {
+    if (queueConfig.type === 'pgboss' && !shouldForceInline) {
       await storage.updateRunStatus(id, 'queued');
 
       const queue = createJobQueue(queueConfig);
@@ -120,13 +154,15 @@ export async function POST(
     const result = await executeRun(id, {
       storage,
       extractorConfig: getExtractorConfig(),
-      orchestratorConfig: getOrchestratorConfig(),
+      orchestratorConfig: getOrchestratorConfig(runtimeOverrides),
     });
 
     return NextResponse.json({
       success: result.success,
       durationMs: result.durationMs,
       error: result.error,
+      usedByokGemini: hasByokGemini,
+      forcedInline: queueConfig.type === 'pgboss' && shouldForceInline,
     });
   } catch (error) {
     console.error('Error starting run:', error);

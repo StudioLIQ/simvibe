@@ -38,6 +38,8 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
   const [phase, setPhase] = useState<string>('loading');
   const [error, setError] = useState<string | null>(null);
   const [isStarting, setIsStarting] = useState(false);
+  const [geminiApiKey, setGeminiApiKey] = useState('');
+  const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const eventSourceRef = useRef<EventSource | null>(null);
   const eventsEndRef = useRef<HTMLDivElement>(null);
@@ -76,8 +78,21 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
     try {
       connectToStream();
 
+      const payload = geminiApiKey.trim()
+        ? {
+            runtimeOverrides: {
+              llmProvider: 'gemini',
+              geminiApiKey: geminiApiKey.trim(),
+            },
+          }
+        : undefined;
+
       const response = await fetch(`/api/run/${id}/start`, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload || {}),
       });
 
       if (!response.ok) {
@@ -192,13 +207,46 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
             )}
           </div>
           {run.status === 'pending' && (
-            <button
-              className="btn btn-primary"
-              onClick={startSimulation}
-              disabled={isStarting}
-            >
-              {isStarting ? 'Starting...' : 'Start Simulation'}
-            </button>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', width: 'min(100%, 420px)' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <input
+                  type={showGeminiKey ? 'text' : 'password'}
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  placeholder="Optional: your GEMINI_API_KEY"
+                  autoComplete="off"
+                  spellCheck={false}
+                  style={{
+                    flex: 1,
+                    fontFamily: 'monospace',
+                    fontSize: '0.8rem',
+                    padding: '0.5rem 0.625rem',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    background: 'var(--surface-card)',
+                    color: 'var(--text-secondary)',
+                  }}
+                />
+                <button
+                  type="button"
+                  className="btn"
+                  onClick={() => setShowGeminiKey((v) => !v)}
+                  style={{ padding: '0.5rem 0.75rem' }}
+                >
+                  {showGeminiKey ? 'Hide' : 'Show'}
+                </button>
+              </div>
+              <p className="hint" style={{ margin: 0 }}>
+                Optional BYOK mode. If entered, this run uses your Gemini key instead of server default.
+              </p>
+              <button
+                className="btn btn-primary"
+                onClick={startSimulation}
+                disabled={isStarting}
+              >
+                {isStarting ? 'Starting...' : 'Start Simulation'}
+              </button>
+            </div>
           )}
           {run.status === 'completed' && run.report && (
             <Link href={`/run/${id}/report`} className="btn btn-primary">

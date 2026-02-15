@@ -86,7 +86,7 @@ function encodeCreateTokenData(input: NadLaunchInput): string {
 /**
  * Build a nad.fun deep-link URL for the create flow.
  */
-function buildDeepLink(input: NadLaunchInput): string {
+function buildDeepLink(input: NadLaunchInput, baseUrl: string): string {
   const params = new URLSearchParams();
   params.set('name', input.name);
   params.set('symbol', input.symbol);
@@ -98,7 +98,7 @@ function buildDeepLink(input: NadLaunchInput): string {
   if (input.antiSnipe) params.set('antiSnipe', 'true');
   if (input.bundled) params.set('bundled', 'true');
 
-  return `https://nad.fun/create?${params.toString()}`;
+  return `${baseUrl}?${params.toString()}`;
 }
 
 /**
@@ -137,7 +137,7 @@ export function prepareLaunchExecution(
   return {
     mode: 'deep_link',
     chainId: cfg.chainId || 0,
-    deepLinkUrl: buildDeepLink(input),
+    deepLinkUrl: buildDeepLink(input, cfg.createBaseUrl),
     config: {
       tokenFactoryAddress: cfg.tokenFactoryAddress,
       chainId: cfg.chainId,

@@ -10,6 +10,8 @@ export interface NadLaunchConfig {
   launchFeeMon: string;
   /** RPC URL for the target chain */
   rpcUrl: string;
+  /** Base URL for nad.fun create flow deep-link mode */
+  createBaseUrl: string;
   /** Whether nad.fun launch is enabled */
   enabled: boolean;
 }
@@ -19,6 +21,7 @@ export function nadLaunchConfigFromEnv(): NadLaunchConfig {
   const chainId = parseInt(process.env.NAD_CHAIN_ID || '0', 10);
   const launchFeeMon = process.env.NAD_LAUNCH_FEE_MON || '0';
   const rpcUrl = process.env.NAD_RPC_URL || '';
+  const createBaseUrl = process.env.NAD_CREATE_BASE_URL || 'https://nad.fun/create';
   const enabled = !!(tokenFactoryAddress && chainId && rpcUrl);
 
   return {
@@ -26,6 +29,7 @@ export function nadLaunchConfigFromEnv(): NadLaunchConfig {
     chainId,
     launchFeeMon,
     rpcUrl,
+    createBaseUrl,
     enabled,
   };
 }

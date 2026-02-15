@@ -21,6 +21,27 @@ export interface ExecuteRunResult {
   error?: string;
 }
 
+function buildSyntheticLandingContent(input: {
+  tagline: string;
+  description: string;
+  phSubmission?: {
+    productName?: string;
+    phTagline?: string;
+    phDescription?: string;
+    makerFirstComment?: string;
+  };
+}): string {
+  let syntheticContent = `${input.tagline}\n\n${input.description}`;
+  if (input.phSubmission) {
+    const ph = input.phSubmission;
+    if (ph.productName) syntheticContent += `\n\nProduct: ${ph.productName}`;
+    if (ph.phTagline) syntheticContent += `\nPH Tagline: ${ph.phTagline}`;
+    if (ph.phDescription) syntheticContent += `\n${ph.phDescription}`;
+    if (ph.makerFirstComment) syntheticContent += `\n\nMaker Comment:\n${ph.makerFirstComment}`;
+  }
+  return syntheticContent;
+}
+
 /**
  * Build a persona snapshot from the registry for the given persona IDs.
  * Captures the exact definitions used at run time so historical reports don't drift.
@@ -79,22 +100,19 @@ export async function executeRun(
     // Phase 1: Extraction
     currentPhase = { phase: 'extraction', startedAt: new Date().toISOString() };
     const extractor = createExtractor(extractorConfig);
+    const syntheticContent = buildSyntheticLandingContent(run.input);
 
     let landingExtract;
-    if (run.input.url) {
+    if (extractorConfig.provider === 'pasted') {
+      // Demo/local mode: intentionally skip remote URL extraction calls.
+      landingExtract = await extractor.parseContent(
+        run.input.pastedContent || syntheticContent
+      );
+    } else if (run.input.url) {
       landingExtract = await extractor.extract(run.input.url);
     } else if (run.input.pastedContent) {
       landingExtract = await extractor.parseContent(run.input.pastedContent);
     } else {
-      // Build synthetic content from available fields
-      let syntheticContent = `${run.input.tagline}\n\n${run.input.description}`;
-      if (run.input.phSubmission) {
-        const ph = run.input.phSubmission;
-        if (ph.productName) syntheticContent += `\n\nProduct: ${ph.productName}`;
-        if (ph.phTagline) syntheticContent += `\nPH Tagline: ${ph.phTagline}`;
-        if (ph.phDescription) syntheticContent += `\n${ph.phDescription}`;
-        if (ph.makerFirstComment) syntheticContent += `\n\nMaker Comment:\n${ph.makerFirstComment}`;
-      }
       landingExtract = await extractor.parseContent(syntheticContent);
     }
 
