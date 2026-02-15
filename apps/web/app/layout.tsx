@@ -17,6 +17,11 @@ const headingFont = Space_Grotesk({
 export const metadata: Metadata = {
   title: 'simvi.be - Agentic Market Simulator',
   description: 'Launch into a synthetic market before you launch into the real one.',
+  icons: {
+    icon: '/icon.png',
+    shortcut: '/icon.png',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({

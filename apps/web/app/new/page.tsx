@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import type { PricingModel, RunMode, PlatformMode, PersonaSetName } from '@simvibe/shared';
 import { createRun } from '@/lib/api';
@@ -113,7 +114,10 @@ export default function HomePage() {
           <span style={{ color: 'var(--text-dim)' }}>·</span>
           <Link href="/reports" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>누적 리포트</Link>
         </div>
-        <h1>새 시뮬레이션</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.25rem' }}>
+          <Image src="/logo.png" alt="simvi.be logo" width={36} height={36} />
+          <h1 style={{ marginBottom: 0 }}>새 시뮬레이션</h1>
+        </div>
         <p>새 제품/메시지 입력으로 시뮬레이션 런을 생성합니다.</p>
       </header>
 

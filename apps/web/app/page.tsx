@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
 interface RunLite {
@@ -67,7 +68,10 @@ export default function HomePage() {
   return (
     <main className="container">
       <header className="header" style={{ marginBottom: '1.25rem' }}>
-        <h1>simvi.be</h1>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.25rem' }}>
+          <Image src="/logo.png" alt="simvi.be logo" width={42} height={42} priority />
+          <h1 style={{ marginBottom: 0 }}>simvi.be</h1>
+        </div>
         <p>배포 리허설 허브: 누적 리포트 확인과 새 시뮬레이션 실행을 분리했습니다.</p>
       </header>
 
