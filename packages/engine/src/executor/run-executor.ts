@@ -85,9 +85,16 @@ export async function executeRun(
     } else if (run.input.pastedContent) {
       landingExtract = await extractor.parseContent(run.input.pastedContent);
     } else {
-      landingExtract = await extractor.parseContent(
-        `${run.input.tagline}\n\n${run.input.description}`
-      );
+      // Build synthetic content from available fields
+      let syntheticContent = `${run.input.tagline}\n\n${run.input.description}`;
+      if (run.input.phSubmission) {
+        const ph = run.input.phSubmission;
+        if (ph.productName) syntheticContent += `\n\nProduct: ${ph.productName}`;
+        if (ph.phTagline) syntheticContent += `\nPH Tagline: ${ph.phTagline}`;
+        if (ph.phDescription) syntheticContent += `\n${ph.phDescription}`;
+        if (ph.makerFirstComment) syntheticContent += `\n\nMaker Comment:\n${ph.makerFirstComment}`;
+      }
+      landingExtract = await extractor.parseContent(syntheticContent);
     }
 
     currentPhase.endedAt = new Date().toISOString();
@@ -214,7 +221,9 @@ export async function executeRun(
         resolvedPersonaIds,
         diffusionTimeline,
         resolvedSetName,
-        personaSnapshots
+        personaSnapshots,
+        run.input.platformMode,
+        run.input.phSubmission
       );
 
       currentPhase.endedAt = new Date().toISOString();

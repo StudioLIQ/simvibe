@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { PersonaIdSchema, ActionTypeSchema } from './agent-output';
-import { RunModeSchema } from './run-input';
+import { RunModeSchema, PlatformModeSchema } from './run-input';
 import { DiffusionTimelineSchema } from './diffusion';
 import { PersonaSetNameSchema, PersonaSnapshotsSchema } from './persona-snapshot';
 
@@ -56,6 +56,27 @@ export const ScoreBreakdownSchema = z.object({
   conversionReadiness: z.number().min(0).max(100),
 });
 
+export const MomentumRiskSchema = z.object({
+  flag: z.string(),
+  severity: z.enum(['low', 'medium', 'high']),
+  detail: z.string(),
+});
+
+export const PHForecastSchema = z.object({
+  upvotesByWindow: z.object({
+    firstHour: z.number().min(0),
+    first4Hours: z.number().min(0),
+    first24Hours: z.number().min(0),
+  }),
+  commentVelocity: z.object({
+    expectedComments24h: z.number().min(0),
+    peakHour: z.number().int().min(0).max(23),
+  }),
+  momentumRisks: z.array(MomentumRiskSchema),
+  makerCommentImpact: z.enum(['none', 'weak', 'moderate', 'strong']).optional(),
+  topicFitScore: z.number().min(0).max(1).optional(),
+});
+
 export const ReportSchema = z.object({
   runId: z.string(),
   generatedAt: z.string().datetime(),
@@ -81,8 +102,12 @@ export const ReportSchema = z.object({
   personaSet: PersonaSetNameSchema.optional(),
   personaSnapshots: PersonaSnapshotsSchema.optional(),
   diffusion: DiffusionTimelineSchema.optional(),
+  platformMode: PlatformModeSchema.optional(),
+  phForecast: PHForecastSchema.optional(),
 });
 
+export type MomentumRisk = z.infer<typeof MomentumRiskSchema>;
+export type PHForecast = z.infer<typeof PHForecastSchema>;
 export type TractionBand = z.infer<typeof TractionBandSchema>;
 export type ConfidenceLevel = z.infer<typeof ConfidenceLevelSchema>;
 export type FrictionItem = z.infer<typeof FrictionItemSchema>;

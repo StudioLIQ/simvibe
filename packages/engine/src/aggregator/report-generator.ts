@@ -7,12 +7,16 @@ import type {
   CalibrationPrior,
   AggregatedMetrics,
   RunMode,
+  PlatformMode,
+  PHSubmission,
+  PHForecast,
   DiffusionTimeline,
   PersonaSetName,
   PersonaSnapshots,
 } from '@simvibe/shared';
 import { applyCalibration } from '@simvibe/shared';
 import { aggregateOutputs, type AggregationResult } from './aggregator';
+import { computePHForecast } from './ph-forecast';
 
 function createPersonaReport(output: AgentOutput): PersonaReport {
   const actionProbabilities: Partial<Record<ActionType, number>> = {};
@@ -73,7 +77,9 @@ export function generateReport(
   executedPersonaIds?: string[],
   diffusion?: DiffusionTimeline,
   personaSet?: PersonaSetName,
-  personaSnapshots?: PersonaSnapshots
+  personaSnapshots?: PersonaSnapshots,
+  platformMode?: PlatformMode,
+  phSubmission?: PHSubmission
 ): Report {
   const aggregation = aggregateOutputs(outputs);
 
@@ -107,6 +113,12 @@ export function generateReport(
     warnings.push(`Calibration applied based on ${calibrated.sampleCount} previous actual outcomes (key: ${calibrated.priorKey})`);
   }
 
+  // PH-specific forecast
+  let phForecast: PHForecast | undefined;
+  if (platformMode === 'product_hunt') {
+    phForecast = computePHForecast(outputs, calibratedMetrics, phSubmission);
+  }
+
   return {
     runId,
     generatedAt: new Date().toISOString(),
@@ -128,6 +140,8 @@ export function generateReport(
     personaSet,
     personaSnapshots,
     diffusion,
+    platformMode,
+    phForecast,
   };
 }
 
@@ -197,6 +211,33 @@ export function formatReportMarkdown(report: Report): string {
       lines.push(`\n**Inflection Points:**`);
       for (const ip of report.diffusion.inflectionPoints) {
         lines.push(`- Tick ${ip.tick} (${ip.impact}): ${ip.reason}`);
+      }
+    }
+  }
+
+  if (report.phForecast) {
+    const ph = report.phForecast;
+    lines.push(`\n## Product Hunt Forecast`);
+    lines.push(`\n### Expected Upvotes by Window`);
+    lines.push(`| Window | Expected |`);
+    lines.push(`|--------|----------|`);
+    lines.push(`| First hour | ${ph.upvotesByWindow.firstHour} |`);
+    lines.push(`| First 4 hours | ${ph.upvotesByWindow.first4Hours} |`);
+    lines.push(`| First 24 hours | ${ph.upvotesByWindow.first24Hours} |`);
+    lines.push(`\n### Comment Velocity`);
+    lines.push(`- Expected comments (24h): ${ph.commentVelocity.expectedComments24h}`);
+    lines.push(`- Peak activity hour: ${ph.commentVelocity.peakHour}:00 PT`);
+    if (ph.makerCommentImpact) {
+      lines.push(`\n### Maker Comment Impact: **${ph.makerCommentImpact.toUpperCase()}**`);
+    }
+    if (ph.topicFitScore !== undefined) {
+      lines.push(`### Topic Fit Score: ${(ph.topicFitScore * 100).toFixed(0)}%`);
+    }
+    if (ph.momentumRisks.length > 0) {
+      lines.push(`\n### Momentum Risks`);
+      for (const risk of ph.momentumRisks) {
+        const icon = risk.severity === 'high' ? '[HIGH]' : risk.severity === 'medium' ? '[MED]' : '[LOW]';
+        lines.push(`- ${icon} **${risk.flag}**: ${risk.detail}`);
       }
     }
   }

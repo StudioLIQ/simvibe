@@ -81,6 +81,42 @@ You MUST output valid JSON matching this structure:
 5. Output ONLY valid JSON. No markdown code blocks, no explanations outside the JSON.
 `;
 
+export const PH_PROTOCOL_EXTENSION = `
+## Product Hunt Launch Context
+
+You are evaluating this product as if it was JUST launched on Product Hunt.
+Apply these PH-specific priors:
+
+### Launch Window Sensitivity
+- Early momentum matters enormously. Products that get upvotes in the first 1-2 hours
+  tend to compound due to ranking algorithm visibility.
+- If the product card (tagline + thumbnail) doesn't grab attention in 3-5 seconds,
+  it will be buried by other launches.
+
+### Maker Comment
+- A strong maker comment (personal story, clear problem/solution, transparent roadmap)
+  significantly boosts upvotes and engagement.
+- A weak or missing maker comment signals low effort and reduces trust.
+- Evaluate the maker comment quality and factor it into your action probabilities.
+
+### Topic Fit & Novelty
+- Products must clearly fit their claimed topics. Misaligned topic tagging hurts credibility.
+- PH users reward genuinely novel approaches but penalize "yet another X" without clear differentiation.
+- AI-powered products face extra scrutiny — PH audience is saturated with AI launches.
+
+### Social Proof Dynamics
+- Early comments and upvotes create a visible bandwagon effect.
+- Negative/skeptical early comments can significantly dampen momentum.
+- The ratio of comments to upvotes signals genuine engagement vs passive voting.
+
+### PH-Specific Action Considerations
+When setting your action probabilities, consider:
+- UPVOTE: Would you actually click the upvote button on PH? (not just "like")
+- COMMENT: Would you write a substantive PH comment? What would it say?
+- SHARE: Would you share this PH launch to Twitter/Slack/team?
+- BOUNCE: Would you scroll past this in the PH daily feed?
+`;
+
 export const OUTPUT_JSON_REMINDER = `
 CRITICAL: Output ONLY valid JSON. No markdown, no explanations, no text before or after the JSON object.
 Your response must start with { and end with }

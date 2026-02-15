@@ -1303,7 +1303,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-030 (P0) Introduce PH mode simulation semantics (ranking-window + social proof)
+### [x] SIM-030 (P0) Introduce PH mode simulation semantics (ranking-window + social proof)
 **Goal:** Model Product Hunt launch dynamics, not generic landing-page evaluation only.
 
 **Deliverables**
@@ -1326,6 +1326,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Run A/B with only maker comment changed and verify directional shift in momentum metrics.
 
 **Dependencies:** SIM-029, SIM-020
+
+**Completion notes:**
+- `PH_PROTOCOL_EXTENSION` in world-protocol.ts: PH-specific priors (launch window, maker comment, topic fit, social proof dynamics)
+- Composer: injects PH protocol into system prompt + phSubmission fields into user prompt when `platformMode === 'product_hunt'`
+- `PHForecastSchema` + `MomentumRiskSchema` in report.ts: upvotesByWindow (1h/4h/24h), commentVelocity, momentumRisks, makerCommentImpact, topicFitScore
+- `computePHForecast()` in aggregator/ph-forecast.ts: models upvote timeline, comment velocity, maker comment quality, topic fit, 7 risk detectors
+- Report generator: produces `phForecast` when platformMode is product_hunt; markdown includes PH Forecast section
+- Executor: passes platformMode + phSubmission through to report; builds synthetic landing from PH fields when no URL
+- Test: weak vs strong maker comment yields different forecast (PASS), timeline ordering correct (PASS)
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
 
 ---
 
@@ -1438,3 +1449,145 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Add test that validates generated demo action arrays against `ActionProbabilitySchema`.
 
 **Dependencies:** SIM-034
+
+---
+
+## Milestone M11 — Report-to-Launch Bridge (simvi.be -> nad.fun) (P0/P1)
+
+### [ ] SIM-036 (P0) Define Nad Launch schema + persistence on run
+**Goal:** Make each simulation report directly translatable into a nad.fun launch payload.
+
+**Deliverables**
+- Shared schemas:
+  - `NadLaunchInput` (name, symbol, image, description, x, telegram, website, antiSnipe, bundled)
+  - `LaunchReadiness` (ready|not_ready, blockers, confidence, recommendedActions)
+  - `LaunchRecord` (status, txHash, tokenAddress, createdAt, error)
+- Storage:
+  - persist `launch_readiness`, `launch_input`, `launch_record` on run
+- API:
+  - `GET /api/run/:id/launch` returns readiness + draft launch payload
+  - `POST /api/run/:id/launch` stores user-confirmed payload (no tx yet)
+
+**Acceptance Criteria**
+- Any completed run can return a deterministic launch draft payload.
+- Schema validation rejects malformed launch params with actionable errors.
+
+**Test Plan**
+- Create run -> complete -> call launch GET/POST -> verify stored payload roundtrip.
+
+**Dependencies:** SIM-032
+
+---
+
+### [ ] SIM-037 (P0) Build launch-readiness gate from report metrics
+**Goal:** Prevent low-quality simulations from launching directly to nad.fun.
+
+**Deliverables**
+- Deterministic readiness policy derived from report:
+  - minimum overall score threshold
+  - max allowed uncertainty/disagreement
+  - fallback-agent count must be 0 (or explicitly overridden)
+  - required proof/clarity checks from friction categories
+- Policy config in code + env overrides.
+- Report section: “Launch Readiness for nad.fun” with pass/fail reasons.
+
+**Acceptance Criteria**
+- Same report always yields same readiness decision.
+- UI clearly explains why launch is blocked and what to fix first.
+
+**Test Plan**
+- Fixture tests for pass/fail boundary conditions and override path.
+
+**Dependencies:** SIM-036, SIM-035
+
+---
+
+### [ ] SIM-038 (P0) Add report CTA: “Launch on nad.fun” with guarded UX
+**Goal:** Convert simulation insight into one-click launch flow from report page.
+
+**Deliverables**
+- Report page launch panel:
+  - readiness badge
+  - blocker checklist
+  - editable nad launch payload form
+  - confirm modal with irreversible-action warning
+- Disabled state when readiness=not_ready (with explicit unblock steps).
+- Persist user edits before launch execution.
+
+**Acceptance Criteria**
+- User can prepare launch payload without leaving report context.
+- Blocked launches cannot bypass gate without explicit override flag.
+
+**Test Plan**
+- UI flow test: ready run enables launch button, not-ready run shows blockers only.
+
+**Dependencies:** SIM-037
+
+---
+
+### [ ] SIM-039 (P0) Integrate nad.fun execution path (wallet-signed, non-custodial)
+**Goal:** Actually execute token launch from stored payload with user wallet signature.
+
+**Deliverables**
+- Launch executor module:
+  - mode A: deep-link or API handoff to nad.fun create flow (if available)
+  - mode B: direct contract call via configured TokenFactory ABI/address
+- Required env/config:
+  - `NAD_TOKEN_FACTORY_ADDRESS`
+  - `NAD_CHAIN_ID`
+  - optional `NAD_LAUNCH_FEE_MON` default guardrail
+- Save tx hash + status on run; show retry-safe idempotency key.
+
+**Acceptance Criteria**
+- Launch action produces a verifiable tx hash or explicit error reason.
+- No private key custody on server for user launch transactions.
+
+**Test Plan**
+- Dry-run testnet execution with mocked signer and one real staging wallet flow.
+
+**Dependencies:** SIM-038
+
+---
+
+### [ ] SIM-040 (P1) Post-launch tracking: token/campaign status back into report
+**Goal:** Close the loop from simulation -> launch -> market response.
+
+**Deliverables**
+- Poller/endpoint to sync launch state:
+  - pending, confirmed, failed
+  - token address + basic market status fields
+- Report widget: “Launch Status on nad.fun”
+- Store timeline events (`launch_submitted`, `launch_confirmed`, `launch_failed`).
+
+**Acceptance Criteria**
+- Report page shows current launch state without manual DB inspection.
+- Failed launches include recoverable next action guidance.
+
+**Test Plan**
+- Simulated tx state transitions reflect correctly in UI and API.
+
+**Dependencies:** SIM-039
+
+---
+
+### [ ] SIM-041 (P0) Add E2E smoke: simulate -> readiness -> launch-prep -> launch-exec
+**Goal:** Guard the full value path end-to-end.
+
+**Deliverables**
+- Scripted smoke flow:
+  - create run
+  - complete simulation
+  - fetch readiness + launch draft
+  - submit launch payload
+  - execute launch (mock or staging)
+  - assert tx status persisted
+- CI job for mock path; manual checklist for staging wallet path.
+
+**Acceptance Criteria**
+- Regression in any step fails CI/mock smoke.
+- Smoke output includes runId, readiness verdict, tx hash/status.
+
+**Test Plan**
+- Break launch schema or executor and verify smoke fails deterministically.
+
+**Dependencies:** SIM-039, SIM-040

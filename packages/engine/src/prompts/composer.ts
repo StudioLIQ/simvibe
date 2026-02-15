@@ -1,5 +1,5 @@
 import type { RunInput, LandingExtract, PersonaId } from '@simvibe/shared';
-import { WORLD_PROTOCOL, OUTPUT_JSON_REMINDER } from './world-protocol';
+import { WORLD_PROTOCOL, PH_PROTOCOL_EXTENSION, OUTPUT_JSON_REMINDER } from './world-protocol';
 import { getPersona, type PersonaDefinition } from './personas';
 
 export interface ComposedPrompt {
@@ -67,6 +67,20 @@ ${input.pricingModel}
     }
   }
 
+  if (input.phSubmission) {
+    const ph = input.phSubmission;
+    text += `\n## Product Hunt Listing\n`;
+    if (ph.productName) text += `**Product Name:** ${ph.productName}\n`;
+    if (ph.phTagline) text += `**PH Tagline:** ${ph.phTagline}\n`;
+    if (ph.phDescription) text += `**PH Description:** ${ph.phDescription}\n`;
+    if (ph.topics && ph.topics.length > 0) text += `**Topics:** ${ph.topics.join(', ')}\n`;
+    if (ph.makerFirstComment) text += `\n### Maker First Comment\n${ph.makerFirstComment}\n`;
+    if (ph.mediaAssets) {
+      if (ph.mediaAssets.thumbnailUrl) text += `**Thumbnail:** ${ph.mediaAssets.thumbnailUrl}\n`;
+      if (ph.mediaAssets.videoUrl) text += `**Video:** ${ph.mediaAssets.videoUrl}\n`;
+    }
+  }
+
   return text;
 }
 
@@ -107,9 +121,10 @@ export function composePrompt(
   options: { includeDebate?: boolean } = {}
 ): ComposedPrompt {
   const persona = getPersona(personaId);
+  const isPH = input.platformMode === 'product_hunt';
 
   const systemPrompt = `${WORLD_PROTOCOL}
-
+${isPH ? PH_PROTOCOL_EXTENSION : ''}
 ${formatPersonaPrompt(persona)}
 
 ${OUTPUT_JSON_REMINDER}`;
