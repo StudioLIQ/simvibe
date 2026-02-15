@@ -137,6 +137,10 @@ export async function POST(
           expireInSeconds: 600,
         });
 
+        if (!jobId) {
+          throw new Error(`Failed to enqueue ${JOB_RUN_EXECUTE} job`);
+        }
+
         return NextResponse.json({
           queued: true,
           runId: id,

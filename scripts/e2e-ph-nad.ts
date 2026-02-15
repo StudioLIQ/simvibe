@@ -241,6 +241,19 @@ async function runScenario(
     throw new Error(`Run ${runId} launch payload save failed`);
   }
 
+  const freezeLifecycle = await requestJSON(`${baseUrl}/api/run/${runId}/report/lifecycle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      targetStatus: 'frozen',
+      actor: 'e2e:ph_nad',
+      reason: 'Freeze report before launch execution',
+    }),
+  });
+  if (!freezeLifecycle.success || freezeLifecycle.lifecycle?.status !== 'frozen') {
+    throw new Error(`Run ${runId} report lifecycle freeze failed`);
+  }
+
   if (readiness === 'not_ready') {
     const blockedExec = await requestJSON(`${baseUrl}/api/run/${runId}/launch/execute`, { method: 'POST' }, true);
     if (blockedExec._httpStatus !== 403) {

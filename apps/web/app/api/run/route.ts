@@ -59,7 +59,6 @@ export async function POST(request: NextRequest) {
 
     try {
       const run = await storage.createRun(validation.data);
-      await storage.close();
 
       return NextResponse.json({
         runId: run.id,

@@ -37,6 +37,8 @@ export class PgBossJobQueue implements JobQueue {
     data: RunExecutePayload,
     options?: EnqueueOptions
   ): Promise<string | null> {
+    await this.boss.createQueue(name);
+
     const jobId = await this.boss.send(name, data, {
       retryLimit: options?.retryLimit ?? DEFAULT_RETRY_LIMIT,
       retryDelay: options?.retryDelay ?? 5,
@@ -47,6 +49,8 @@ export class PgBossJobQueue implements JobQueue {
   }
 
   async work(name: string, handler: JobHandler<RunExecutePayload>): Promise<void> {
+    await this.boss.createQueue(name);
+
     await this.boss.work<RunExecutePayload>(
       name,
       { batchSize: 1 },

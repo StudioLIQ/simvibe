@@ -254,7 +254,21 @@ async function runScenario(
     throw new Error(`Run ${runId} launch payload save failed`);
   }
 
-  // Step 7: Handle not_ready path
+  // Step 7: Freeze report lifecycle before execution gate
+  const freezeLifecycle = await requestJSON(`${baseUrl}/api/run/${runId}/report/lifecycle`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      targetStatus: 'frozen',
+      actor: 'e2e:nad_fun',
+      reason: 'Freeze report before launch execution',
+    }),
+  });
+  if (!freezeLifecycle.success || freezeLifecycle.lifecycle?.status !== 'frozen') {
+    throw new Error(`Run ${runId} report lifecycle freeze failed`);
+  }
+
+  // Step 8: Handle not_ready path
   if (readiness === 'not_ready') {
     const blockedExec = await requestJSON(`${baseUrl}/api/run/${runId}/launch/execute`, { method: 'POST' }, true);
     if (blockedExec._httpStatus !== 403) {
@@ -274,13 +288,13 @@ async function runScenario(
     };
   }
 
-  // Step 8: Execute launch
+  // Step 9: Execute launch
   const execute = await requestJSON(`${baseUrl}/api/run/${runId}/launch/execute`, { method: 'POST' });
   if (!execute.success || !execute.plan) {
     throw new Error(`Run ${runId} launch execute failed`);
   }
 
-  // Step 9: Confirm launch (submitted -> success)
+  // Step 10: Confirm launch (submitted -> success)
   const hex = chooseHexChar(index);
   const txHash = makeHex(hex, 64);
   const tokenAddress = makeHex(hex === 'f' ? 'e' : hex, 40);
@@ -303,7 +317,7 @@ async function runScenario(
     throw new Error(`Run ${runId} launch success confirm failed`);
   }
 
-  // Step 10: Verify final status + events
+  // Step 11: Verify final status + events
   const status = await requestJSON(`${baseUrl}/api/run/${runId}/launch/status`);
   if (status.launchRecord?.status !== 'success') {
     throw new Error(`Run ${runId} launch status not success`);

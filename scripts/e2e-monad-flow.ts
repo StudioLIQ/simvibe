@@ -12,11 +12,16 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { spawn, type ChildProcess } from 'node:child_process';
 
-const API_BASE_URL = process.env.API_BASE_URL || process.env.BASE_URL || 'http://localhost:5555';
+const ROOT_DIR = path.resolve(process.cwd());
+const DEFAULT_PORT = Number(process.env.E2E_PORT || '5555');
+const DEFAULT_BASE_URL = `http://localhost:${DEFAULT_PORT}`;
+const API_BASE_URL = (process.env.API_BASE_URL || process.env.BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '');
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLL_ATTEMPTS = 120;
 const OUTPUT_DIR = process.env.E2E_OUTPUT_PATH || path.join(process.cwd(), 'artifacts_runs');
+const STARTUP_TIMEOUT_MS = 120000;
 
 interface StepResult {
   step: string;
@@ -63,6 +68,10 @@ function fail(step: string, msg: string): never {
   process.exit(1);
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function step(name: string, fn: () => Promise<string | void>) {
   const start = Date.now();
   try {
@@ -76,6 +85,88 @@ async function step(name: string, fn: () => Promise<string | void>) {
     results.push({ step: name, ok: false, durationMs: dur, detail: msg });
     fail(name, msg);
   }
+}
+
+async function waitForDiagnostics(baseUrl: string, timeoutMs: number) {
+  const start = Date.now();
+  let lastError = 'not started';
+
+  while (Date.now() - start < timeoutMs) {
+    try {
+      const resp = await fetch(`${baseUrl}/api/diagnostics`);
+      if (resp.ok) {
+        const data = await resp.json();
+        if (data.storage?.activeBackend) {
+          return;
+        }
+      } else {
+        lastError = `HTTP ${resp.status}`;
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
+    await sleep(1000);
+  }
+
+  throw new Error(`Timed out waiting for diagnostics (${timeoutMs}ms): ${lastError}`);
+}
+
+async function stopServer(child?: ChildProcess) {
+  if (!child || child.exitCode !== null || child.killed) return;
+
+  await new Promise<void>((resolve) => {
+    const timer = setTimeout(() => {
+      child.kill('SIGKILL');
+      resolve();
+    }, 5000);
+
+    child.once('exit', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+
+    child.kill('SIGTERM');
+  });
+}
+
+async function ensureServer(): Promise<{ baseUrl: string; child?: ChildProcess }> {
+  if (process.env.API_BASE_URL || process.env.BASE_URL) {
+    await waitForDiagnostics(API_BASE_URL, STARTUP_TIMEOUT_MS);
+    return { baseUrl: API_BASE_URL };
+  }
+
+  const args = ['--filter', '@simvibe/web', 'dev', '--port', String(DEFAULT_PORT)];
+  const env = {
+    ...process.env,
+    DEMO_MODE: process.env.DEMO_MODE || 'true',
+    DATABASE_URL: process.env.DATABASE_URL || 'memory://',
+  };
+
+  log(`Starting internal Next server on ${API_BASE_URL}`);
+  const child = spawn('pnpm', args, {
+    cwd: ROOT_DIR,
+    env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  });
+
+  child.stdout?.on('data', (chunk: Buffer | string) => {
+    if (process.env.E2E_VERBOSE_SERVER === 'true') {
+      process.stdout.write(`[web] ${chunk.toString()}`);
+    }
+  });
+  child.stderr?.on('data', (chunk: Buffer | string) => {
+    if (process.env.E2E_VERBOSE_SERVER === 'true') {
+      process.stderr.write(`[web:err] ${chunk.toString()}`);
+    }
+  });
+  child.once('exit', (code) => {
+    if (code !== 0) {
+      log(`Internal server exited early with code=${code}`);
+    }
+  });
+
+  await waitForDiagnostics(API_BASE_URL, STARTUP_TIMEOUT_MS);
+  return { baseUrl: API_BASE_URL, child };
 }
 
 function buildArtifact(): E2EArtifact {
@@ -191,11 +282,13 @@ function writeArtifact() {
 }
 
 async function main() {
-  log(`API: ${API_BASE_URL}`);
+  const { baseUrl, child } = await ensureServer();
+  log(`API: ${baseUrl}`);
 
-  // Step 1: Create run
-  await step('1. Create run', async () => {
-    const resp = await fetch(`${API_BASE_URL}/api/run`, {
+  try {
+    // Step 1: Create run
+    await step('1. Create run', async () => {
+      const resp = await fetch(`${baseUrl}/api/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -208,151 +301,171 @@ async function main() {
         runMode: 'quick',
       }),
     });
-    if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
-    const data = await resp.json();
-    runId = data.id || data.runId;
-    artifact.runId = runId;
-    return `runId=${runId}`;
-  });
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
+      const data = await resp.json();
+      runId = data.id || data.runId;
+      artifact.runId = runId;
+      return `runId=${runId}`;
+    });
 
-  // Step 2: Start simulation
-  await step('2. Start simulation', async () => {
-    const resp = await fetch(`${API_BASE_URL}/api/run/${runId}/start`, { method: 'POST' });
-    if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
-    return 'started';
-  });
+    // Step 2: Start simulation
+    await step('2. Start simulation', async () => {
+      const resp = await fetch(`${baseUrl}/api/run/${runId}/start`, { method: 'POST' });
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
+      return 'started';
+    });
 
-  // Step 3: Poll until completed
-  await step('3. Poll until completed', async () => {
-    for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
-      const resp = await fetch(`${API_BASE_URL}/api/run/${runId}`);
+    // Step 3: Poll until completed
+    await step('3. Poll until completed', async () => {
+      for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
+        const resp = await fetch(`${baseUrl}/api/run/${runId}`);
+        if (!resp.ok) throw new Error(`${resp.status}`);
+        const data = await resp.json();
+        const status = data.run?.status || data.status;
+        if (status === 'completed') return `completed in ${i + 1} polls`;
+        if (status === 'failed') throw new Error(`Run failed: ${data.run?.error || data.error}`);
+        await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+      }
+      throw new Error('Timed out waiting for completion');
+    });
+
+    // Step 4: Verify report
+    await step('4. Verify report', async () => {
+      const resp = await fetch(`${baseUrl}/api/run/${runId}`);
       if (!resp.ok) throw new Error(`${resp.status}`);
       const data = await resp.json();
-      const status = data.run?.status || data.status;
-      if (status === 'completed') return `completed in ${i + 1} polls`;
-      if (status === 'failed') throw new Error(`Run failed: ${data.run?.error || data.error}`);
-      await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
-    }
-    throw new Error('Timed out waiting for completion');
-  });
+      const report = data.run?.report || data.report;
+      if (!report) throw new Error('No report found');
+      if (!report.overallScore) throw new Error('No overall score');
+      return `score=${report.overallScore}, band=${report.tractionBand}`;
+    });
 
-  // Step 4: Verify report
-  await step('4. Verify report', async () => {
-    const resp = await fetch(`${API_BASE_URL}/api/run/${runId}`);
-    if (!resp.ok) throw new Error(`${resp.status}`);
-    const data = await resp.json();
-    const report = data.run?.report || data.report;
-    if (!report) throw new Error('No report found');
-    if (!report.overallScore) throw new Error('No overall score');
-    return `score=${report.overallScore}, band=${report.tractionBand}`;
-  });
-
-  // Step 5: Publish receipt to Monad (or offline)
-  await step('5. Publish receipt', async () => {
-    // Try Monad publish first
-    const monadResp = await fetch(`${API_BASE_URL}/api/run/${runId}/receipt/publish`, { method: 'POST' });
-    if (monadResp.ok) {
-      const data = await monadResp.json();
-      if (data.success && data.txHash) {
-        artifact.receiptPublished = true;
-        artifact.receiptTxHash = data.txHash;
-        artifact.receiptChainId = data.chainId;
-        artifact.receiptContractAddress = data.contractAddress;
-        return `on-chain: tx=${data.txHash}`;
+    // Step 5: Publish receipt to Monad (or offline)
+    await step('5. Publish receipt', async () => {
+      // Try Monad publish first
+      const monadResp = await fetch(`${baseUrl}/api/run/${runId}/receipt/publish`, { method: 'POST' });
+      if (monadResp.ok) {
+        const data = await monadResp.json();
+        if (data.success && data.txHash) {
+          artifact.receiptPublished = true;
+          artifact.receiptTxHash = data.txHash;
+          artifact.receiptChainId = data.chainId;
+          artifact.receiptContractAddress = data.contractAddress;
+          return `on-chain: tx=${data.txHash}`;
+        }
       }
-    }
-    // Fallback to offline receipt
-    const offResp = await fetch(`${API_BASE_URL}/api/run/${runId}/receipt`, { method: 'POST' });
-    if (!offResp.ok) throw new Error(`${offResp.status}: ${await offResp.text()}`);
-    const offData = await offResp.json();
-    artifact.receiptPublished = !!offData.receipt;
-    return `offline receipt: runHash=${offData.receipt?.runHash?.slice(0, 16)}...`;
-  });
-
-  // Step 6: Check gate status
-  await step('6. Check gate status', async () => {
-    const resp = await fetch(`${API_BASE_URL}/api/run/${runId}/receipt/publish`);
-    if (!resp.ok) return 'gate check skipped (endpoint unavailable)';
-    const data = await resp.json();
-    artifact.gateConfigured = data.configured || false;
-    return `configured=${data.configured}`;
-  });
-
-  // Step 7: Fetch launch readiness
-  await step('7. Fetch launch readiness', async () => {
-    const resp = await fetch(`${API_BASE_URL}/api/run/${runId}/launch`);
-    if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
-    const data = await resp.json();
-    const status = data.readiness?.status || 'unknown';
-    return `readiness=${status}, confidence=${data.readiness?.confidence || 0}`;
-  });
-
-  // Step 8: Save launch payload
-  await step('8. Save launch payload', async () => {
-    const resp = await fetch(`${API_BASE_URL}/api/run/${runId}/launch`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: 'AI Code Review',
-        symbol: 'AICR',
-        description: 'AI Code Review token launched via simvi.be simulation',
-        website: 'https://example.com',
-        antiSnipe: false,
-        bundled: false,
-      }),
+      // Fallback to offline receipt
+      const offResp = await fetch(`${baseUrl}/api/run/${runId}/receipt`, { method: 'POST' });
+      if (!offResp.ok) throw new Error(`${offResp.status}: ${await offResp.text()}`);
+      const offData = await offResp.json();
+      artifact.receiptPublished = !!offData.receipt;
+      return `offline receipt: runHash=${offData.receipt?.runHash?.slice(0, 16)}...`;
     });
-    if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
-    return 'payload saved';
-  });
 
-  // Step 9: Execute launch
-  await step('9. Execute launch', async () => {
-    const resp = await fetch(`${API_BASE_URL}/api/run/${runId}/launch/execute`, { method: 'POST' });
-    // 403 = blocked by gate (expected if not ready), otherwise process normally
-    if (resp.status === 403) {
+    // Step 6: Check gate status
+    await step('6. Check gate status', async () => {
+      const resp = await fetch(`${baseUrl}/api/run/${runId}/receipt/publish`);
+      if (!resp.ok) return 'gate check skipped (endpoint unavailable)';
       const data = await resp.json();
-      return `blocked: ${data.error}`;
-    }
-    if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
-    const data = await resp.json();
-    return `mode=${data.plan?.mode || 'unknown'}`;
-  });
-
-  // Step 10: Confirm launch (mock)
-  await step('10. Confirm launch (mock)', async () => {
-    const mockTxHash = '0x' + 'a'.repeat(64);
-    const mockToken = '0x' + 'b'.repeat(40);
-    const resp = await fetch(`${API_BASE_URL}/api/run/${runId}/launch/confirm`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        txHash: mockTxHash,
-        tokenAddress: mockToken,
-        status: 'success',
-      }),
+      artifact.gateConfigured = data.configured || false;
+      return `configured=${data.configured}`;
     });
-    if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
-    const data = await resp.json();
-    artifact.launchStatus = data.launchRecord?.status;
-    artifact.launchTxHash = mockTxHash;
-    artifact.tokenContractAddress = mockToken;
-    return `status=${data.launchRecord?.status}, token=${mockToken}`;
-  });
 
-  // Step 11: Verify final status
-  await step('11. Verify final status', async () => {
-    const resp = await fetch(`${API_BASE_URL}/api/run/${runId}/launch/status`);
-    if (!resp.ok) throw new Error(`${resp.status}`);
-    const data = await resp.json();
-    if (data.launchRecord?.status !== 'success') throw new Error(`Expected success, got ${data.launchRecord?.status}`);
-    if (!data.launchRecord?.tokenAddress) throw new Error('No token address');
-    artifact.gateReady = data.monadGate?.ready ?? null;
-    return `status=success, events=${data.events?.length || 0}`;
-  });
+    // Step 7: Fetch launch readiness
+    await step('7. Fetch launch readiness', async () => {
+      const resp = await fetch(`${baseUrl}/api/run/${runId}/launch`);
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
+      const data = await resp.json();
+      const status = data.readiness?.status || 'unknown';
+      return `readiness=${status}, confidence=${data.readiness?.confidence || 0}`;
+    });
 
-  artifact.success = true;
-  writeArtifact();
-  process.exit(0);
+    // Step 8: Save launch payload
+    await step('8. Save launch payload', async () => {
+      const resp = await fetch(`${baseUrl}/api/run/${runId}/launch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'AI Code Review',
+          symbol: 'AICR',
+          description: 'AI Code Review token launched via simvi.be simulation',
+          website: 'https://example.com',
+          antiSnipe: false,
+          bundled: false,
+        }),
+      });
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
+      return 'payload saved';
+    });
+
+    // Step 9: Freeze report lifecycle to satisfy launch gate
+    await step('9. Freeze report lifecycle', async () => {
+      const resp = await fetch(`${baseUrl}/api/run/${runId}/report/lifecycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetStatus: 'frozen',
+          actor: 'e2e:monad',
+          reason: 'Freeze report before launch execution',
+        }),
+      });
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
+      const data = await resp.json();
+      if (data.lifecycle?.status !== 'frozen') throw new Error('Lifecycle status is not frozen');
+      return 'frozen';
+    });
+
+    // Step 10: Execute launch
+    await step('10. Execute launch', async () => {
+      const resp = await fetch(`${baseUrl}/api/run/${runId}/launch/execute`, { method: 'POST' });
+      // 403 = blocked by gate (expected if not ready), otherwise process normally
+      if (resp.status === 403) {
+        const data = await resp.json();
+        return `blocked: ${data.error}`;
+      }
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
+      const data = await resp.json();
+      return `mode=${data.plan?.mode || 'unknown'}`;
+    });
+
+    // Step 11: Confirm launch (mock)
+    await step('11. Confirm launch (mock)', async () => {
+      const mockTxHash = '0x' + 'a'.repeat(64);
+      const mockToken = '0x' + 'b'.repeat(40);
+      const resp = await fetch(`${baseUrl}/api/run/${runId}/launch/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          txHash: mockTxHash,
+          tokenAddress: mockToken,
+          status: 'success',
+        }),
+      });
+      if (!resp.ok) throw new Error(`${resp.status}: ${await resp.text()}`);
+      const data = await resp.json();
+      artifact.launchStatus = data.launchRecord?.status;
+      artifact.launchTxHash = mockTxHash;
+      artifact.tokenContractAddress = mockToken;
+      return `status=${data.launchRecord?.status}, token=${mockToken}`;
+    });
+
+    // Step 12: Verify final status
+    await step('12. Verify final status', async () => {
+      const resp = await fetch(`${baseUrl}/api/run/${runId}/launch/status`);
+      if (!resp.ok) throw new Error(`${resp.status}`);
+      const data = await resp.json();
+      if (data.launchRecord?.status !== 'success') throw new Error(`Expected success, got ${data.launchRecord?.status}`);
+      if (!data.launchRecord?.tokenAddress) throw new Error('No token address');
+      artifact.gateReady = data.monadGate?.ready ?? null;
+      return `status=success, events=${data.events?.length || 0}`;
+    });
+
+    artifact.success = true;
+    writeArtifact();
+    process.exit(0);
+  } finally {
+    await stopServer(child);
+  }
 }
 
 main().catch(err => {

@@ -1,4 +1,4 @@
-export const JOB_RUN_EXECUTE = 'run.execute';
+export const JOB_RUN_EXECUTE = 'run_execute';
 
 export interface RunExecutePayload {
   runId: string;

@@ -5,12 +5,21 @@ export { runMigrations } from './migrate';
 import type { Storage } from './types';
 import { MemoryStorage } from './memory';
 
-function requireStorageModule<T>(modulePath: string): T {
+declare const require: NodeJS.Require;
+
+function requirePostgresModule(): typeof import('./postgres') {
+  return require('./postgres') as typeof import('./postgres');
+}
+
+function requireSQLiteModule(): typeof import('./sqlite') {
+  return require('./sqlite') as typeof import('./sqlite');
+}
+
+function requireStorageModule<T>(loader: () => T): T {
   // Use runtime require to avoid eagerly loading native modules in environments
-  // that do not need them (e.g., memory:// mode in Next.js routes).
-  // eslint-disable-next-line no-eval
-  const nodeRequire = eval('require') as NodeJS.Require;
-  return nodeRequire(modulePath) as T;
+  // that do not need them (e.g., memory:// mode). Keep literal requires so
+  // Next.js can still trace and bundle these modules for server routes.
+  return loader();
 }
 
 const MEMORY_SINGLETON_KEY = '__simvibe_memory_storage_singleton__';
@@ -46,7 +55,7 @@ export function createStorage(config: StorageConfig): Storage {
         throw new Error('Postgres storage requires postgresUrl (DATABASE_URL)');
       }
       try {
-        const { PostgresStorage } = requireStorageModule<typeof import('./postgres')>('./postgres');
+        const { PostgresStorage } = requireStorageModule(requirePostgresModule);
         _activeBackend = 'postgres';
         return new PostgresStorage(config.postgresUrl);
       } catch (err) {
@@ -62,7 +71,7 @@ export function createStorage(config: StorageConfig): Storage {
         throw new Error('SQLite storage requires sqlitePath');
       }
       try {
-        const { SQLiteStorage } = requireStorageModule<typeof import('./sqlite')>('./sqlite');
+        const { SQLiteStorage } = requireStorageModule(requireSQLiteModule);
         _activeBackend = 'sqlite';
         return new SQLiteStorage(config.sqlitePath);
       } catch (err) {
