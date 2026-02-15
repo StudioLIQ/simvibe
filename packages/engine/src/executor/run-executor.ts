@@ -166,6 +166,13 @@ export async function executeRun(
     diagnostics.llmCalls = result.agentResults.length;
     diagnostics.fallbacksUsed = result.agentResults.filter(r => r.output.isFallback).length;
 
+    if (result.earlyStopReason) {
+      diagnostics.agentWarnings.push({
+        agentId: 'orchestrator',
+        warning: `Early stop: ${result.earlyStopReason}`,
+      });
+    }
+
     for (const agentResult of result.agentResults) {
       await storage.saveAgentOutput(runId, agentResult.output);
       if (agentResult.output.isFallback) {
@@ -203,7 +210,7 @@ export async function executeRun(
         run.variantOf,
         calibrationPrior,
         runMode,
-        undefined, // earlyStopReason
+        result.earlyStopReason,
         resolvedPersonaIds,
         diffusionTimeline,
         resolvedSetName,

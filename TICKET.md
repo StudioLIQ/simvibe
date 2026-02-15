@@ -1199,7 +1199,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-027 (P1) Implement real time-budget guardrails + early-stop reporting
+### [x] SIM-027 (P1) Implement real time-budget guardrails + early-stop reporting
 **Goal:** Make `timeBudgetMs` effective and surface early-stop reason in report/events.
 
 **Problem observed**
@@ -1218,6 +1218,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Report and timeline explicitly explain partial execution.
 
 **Dependencies:** SIM-019, SIM-021D
+
+**Completion notes:**
+- Orchestrator `runAgentsBatched()` now checks elapsed time against `timeBudgetMs` before each batch
+- Reserve 10% of budget (min 10s) for report generation phase
+- On budget exhaustion: stops launching new batches, emits warning events, sets `earlyStopReason`
+- `earlyStopReason` added to `SimulationResult` type and flows through to report via executor
+- Diagnostics include early-stop warning when triggered
+- Events: `time_budget_stop` AGENT_MESSAGE, PHASE_END includes `earlyStopReason` payload
+- RUN_COMPLETED includes `totalRequested` vs `agentCount` for visibility
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
 
 ---
 

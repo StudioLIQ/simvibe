@@ -44,5 +44,6 @@ export interface SimulationResult {
   events: SimEvent[];
   report?: Report;
   error?: string;
+  earlyStopReason?: string;
   durationMs: number;
 }

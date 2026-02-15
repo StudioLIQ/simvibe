@@ -44,6 +44,7 @@ export class Orchestrator {
     const startTime = Date.now();
     const events: SimEvent[] = [];
     const agentResults: AgentResult[] = [];
+    let earlyStopReason: string | undefined;
 
     const context: SimulationContext = {
       runId,
@@ -108,16 +109,19 @@ export class Orchestrator {
         message: `Starting action phase - ${personaIds.length} agents, concurrency ${maxConcurrency}`,
       }));
 
-      // Run agents in batches with concurrency control
-      const results = await this.runAgentsBatched(
+      // Run agents in batches with concurrency control + time budget
+      const batchResult = await this.runAgentsBatched(
         personaIds,
         context,
         maxConcurrency,
         perAgentTimeout,
         runId,
-        emit
+        emit,
+        startTime,
+        this.config.timeBudgetMs
       );
-      agentResults.push(...results);
+      agentResults.push(...batchResult.results);
+      earlyStopReason = batchResult.earlyStopReason;
 
       const fallbackCount = agentResults.filter(r => r.output.isFallback).length;
       const timeoutCount = agentResults.filter(r =>
@@ -126,16 +130,28 @@ export class Orchestrator {
 
       await emit(createSimEvent(runId, 'PHASE_END', {
         phase: 'action',
-        message: 'Action phase complete',
-        payload: { fallbackCount, timeoutCount },
+        message: earlyStopReason ? `Action phase stopped early: ${earlyStopReason}` : 'Action phase complete',
+        payload: { fallbackCount, timeoutCount, earlyStopReason },
       }));
 
+      if (earlyStopReason) {
+        await emit(createSimEvent(runId, 'AGENT_MESSAGE', {
+          phase: 'action',
+          message: `Time budget warning: ${earlyStopReason}`,
+          payload: { type: 'time_budget_warning' },
+        }));
+      }
+
       await emit(createSimEvent(runId, 'RUN_COMPLETED', {
-        message: 'Simulation completed successfully',
+        message: earlyStopReason
+          ? `Simulation completed with early stop: ${earlyStopReason}`
+          : 'Simulation completed successfully',
         payload: {
           agentCount: agentResults.length,
+          totalRequested: personaIds.length,
           fallbackCount,
           timeoutCount,
+          earlyStopReason,
           durationMs: Date.now() - startTime,
         },
       }));
@@ -144,6 +160,7 @@ export class Orchestrator {
         runId,
         agentResults,
         events,
+        earlyStopReason,
         durationMs: Date.now() - startTime,
       };
 
@@ -166,8 +183,9 @@ export class Orchestrator {
   }
 
   /**
-   * Run agents in batches with concurrency control and per-agent timeouts.
+   * Run agents in batches with concurrency control, per-agent timeouts, and time budget.
    * Single-agent failures produce fallback outputs rather than aborting the run.
+   * Stops launching new batches if the time budget is nearly exhausted.
    */
   private async runAgentsBatched(
     personaIds: PersonaId[],
@@ -175,12 +193,40 @@ export class Orchestrator {
     maxConcurrency: number,
     perAgentTimeoutMs: number,
     runId: string,
-    emit: (event: SimEvent) => Promise<void>
-  ): Promise<AgentResult[]> {
+    emit: (event: SimEvent) => Promise<void>,
+    runStartTime: number,
+    timeBudgetMs?: number
+  ): Promise<{ results: AgentResult[]; earlyStopReason?: string }> {
     const results: AgentResult[] = [];
     const totalBatches = Math.ceil(personaIds.length / maxConcurrency);
+    let earlyStopReason: string | undefined;
+
+    // Reserve 10% of budget (min 10s) for report generation
+    const budgetReserveMs = timeBudgetMs ? Math.max(timeBudgetMs * 0.1, 10_000) : 0;
 
     for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+      // Check time budget before launching a new batch
+      if (timeBudgetMs) {
+        const elapsed = Date.now() - runStartTime;
+        const remaining = timeBudgetMs - elapsed;
+
+        if (remaining <= budgetReserveMs) {
+          const completedAgents = results.length;
+          const totalAgents = personaIds.length;
+          earlyStopReason = `Time budget nearly exhausted (${Math.round(elapsed / 1000)}s / ${Math.round(timeBudgetMs / 1000)}s). ` +
+            `Completed ${completedAgents}/${totalAgents} agents. ` +
+            `Skipped batches ${batchIdx + 1}-${totalBatches}.`;
+
+          await emit(createSimEvent(runId, 'AGENT_MESSAGE', {
+            phase: 'action',
+            message: `Time budget warning: stopping before batch ${batchIdx + 1}/${totalBatches} — ${Math.round(remaining / 1000)}s remaining`,
+            payload: { type: 'time_budget_stop', elapsed, remaining, completedAgents, totalAgents },
+          }));
+
+          break;
+        }
+      }
+
       const batchStart = batchIdx * maxConcurrency;
       const batchPersonaIds = personaIds.slice(batchStart, batchStart + maxConcurrency);
 
@@ -231,7 +277,7 @@ export class Orchestrator {
       results.push(...batchResults);
     }
 
-    return results;
+    return { results, earlyStopReason };
   }
 
   /**
