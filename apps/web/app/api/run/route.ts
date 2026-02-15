@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateRunInput } from '@simvibe/shared';
-import { createStorage, storageConfigFromEnv } from '@simvibe/engine';
+import { createStorage, storageConfigFromEnv, ensurePersonaRegistry, validatePersonaIds } from '@simvibe/engine';
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,6 +12,22 @@ export async function POST(request: NextRequest) {
         { error: `Invalid input: ${validation.error}` },
         { status: 400 }
       );
+    }
+
+    // Validate persona IDs against registry before creating the run
+    if (validation.data.personaIds && validation.data.personaIds.length > 0) {
+      await ensurePersonaRegistry();
+      const check = validatePersonaIds(validation.data.personaIds);
+      if (!check.valid) {
+        return NextResponse.json(
+          {
+            error: `Unknown persona IDs: ${check.missing.join(', ')}`,
+            availablePersonas: check.available,
+            totalAvailable: check.total,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const storage = createStorage(storageConfigFromEnv());

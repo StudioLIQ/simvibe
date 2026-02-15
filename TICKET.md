@@ -1169,7 +1169,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-026 (P1) Enforce fail-fast persona ID validation at API boundary
+### [x] SIM-026 (P1) Enforce fail-fast persona ID validation at API boundary
 **Goal:** Return actionable 4xx before run creation/enqueue when persona IDs are unknown.
 
 **Problem observed**
@@ -1187,6 +1187,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - API response is deterministic and user-actionable.
 
 **Dependencies:** SIM-021B, SIM-024
+
+**Completion notes:**
+- New `validatePersonaIds()` helper in registry.ts: checks IDs against loaded registry, returns missing IDs + sample of available
+- `POST /api/run`: validates personaIds before creating run, returns 400 with missing IDs + available sample
+- `POST /api/run/[id]/start`: validates personaIds before enqueue/execution, returns 400 similarly
+- Both routes call `ensurePersonaRegistry()` to load DB-first if Postgres is configured
+- Executor-side validation kept as defense-in-depth (unchanged)
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
 
 ---
 

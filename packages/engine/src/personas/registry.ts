@@ -240,6 +240,28 @@ export async function ensurePersonaRegistry(): Promise<PersonaRegistry> {
 }
 
 /**
+ * Validate that all requested persona IDs exist in the current registry.
+ * Returns null if valid, or an error object if invalid.
+ */
+export function validatePersonaIds(
+  personaIds: string[]
+): { valid: true } | { valid: false; missing: string[]; available: string[]; total: number } {
+  const registry = getPersonaRegistry();
+  const missing = personaIds.filter(id => !registry.has(id));
+
+  if (missing.length === 0) {
+    return { valid: true };
+  }
+
+  return {
+    valid: false,
+    missing,
+    available: registry.getAllIds().slice(0, 10),
+    total: registry.size,
+  };
+}
+
+/**
  * Reset the global registry (for testing).
  */
 export function resetPersonaRegistry(): void {

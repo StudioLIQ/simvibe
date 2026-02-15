@@ -7,6 +7,7 @@ import {
   queueConfigFromEnv,
   JOB_RUN_EXECUTE,
   ensurePersonaRegistry,
+  validatePersonaIds,
   type ExtractorConfig,
   type OrchestratorConfig,
 } from '@simvibe/engine';
@@ -59,6 +60,22 @@ export async function POST(
         { error: `Run already ${run.status}` },
         { status: 400 }
       );
+    }
+
+    // Validate persona IDs against registry before enqueue/execution
+    await ensurePersonaRegistry();
+    if (run.input.personaIds && run.input.personaIds.length > 0) {
+      const check = validatePersonaIds(run.input.personaIds);
+      if (!check.valid) {
+        return NextResponse.json(
+          {
+            error: `Unknown persona IDs: ${check.missing.join(', ')}`,
+            availablePersonas: check.available,
+            totalAvailable: check.total,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     const queueConfig = queueConfigFromEnv();
