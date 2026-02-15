@@ -9,3 +9,4 @@ export * from './run-diagnostics';
 export * from './chain-receipt';
 export * from './diffusion';
 export * from './persona-snapshot';
+export * from './conversation';

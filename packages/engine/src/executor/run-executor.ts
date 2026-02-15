@@ -7,6 +7,7 @@ import { generateReport } from '../aggregator';
 import { getRunModeConfig, getPersonaSetIds } from '../config';
 import { getPersonaRegistry } from '../personas/registry';
 import { runDiffusionSimulation } from '../diffusion';
+import { generateConversationDynamics } from '../interactions';
 
 export interface ExecuteRunConfig {
   storage: Storage;
@@ -211,6 +212,12 @@ export async function executeRun(
         outputsForReport = diffusionResult.adjustedOutputs;
       }
 
+      // Generate conversation dynamics for runs with 10+ personas or deep mode
+      let conversationDynamics;
+      if (agentOutputs.length >= 10 || runMode === 'deep') {
+        conversationDynamics = generateConversationDynamics(agentOutputs);
+      }
+
       const report = generateReport(
         runId,
         outputsForReport,
@@ -223,7 +230,8 @@ export async function executeRun(
         resolvedSetName,
         personaSnapshots,
         run.input.platformMode,
-        run.input.phSubmission
+        run.input.phSubmission,
+        conversationDynamics
       );
 
       currentPhase.endedAt = new Date().toISOString();

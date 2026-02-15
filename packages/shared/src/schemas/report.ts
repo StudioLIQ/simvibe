@@ -3,6 +3,7 @@ import { PersonaIdSchema, ActionTypeSchema } from './agent-output';
 import { RunModeSchema, PlatformModeSchema } from './run-input';
 import { DiffusionTimelineSchema } from './diffusion';
 import { PersonaSetNameSchema, PersonaSnapshotsSchema } from './persona-snapshot';
+import { ConversationDynamicsSchema } from './conversation';
 
 export const TractionBandSchema = z.enum([
   'very_low',
@@ -104,6 +105,7 @@ export const ReportSchema = z.object({
   diffusion: DiffusionTimelineSchema.optional(),
   platformMode: PlatformModeSchema.optional(),
   phForecast: PHForecastSchema.optional(),
+  conversationDynamics: ConversationDynamicsSchema.optional(),
 });
 
 export type MomentumRisk = z.infer<typeof MomentumRiskSchema>;

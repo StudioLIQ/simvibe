@@ -1340,15 +1340,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-031 (P0) Model organic agent interactions as threaded comments
-**Goal:** Ensure “many persona agents reacting organically” is explicit and inspectable.
+### [x] SIM-031 (P0) Model organic agent interactions as threaded comments
+**Goal:** Ensure "many persona agents reacting organically" is explicit and inspectable.
 
 **Deliverables**
 - Add threaded interaction layer:
   - `comment_created`, `reply_created`, `sentiment_shift` events
   - per-persona influence weights (who moves whom)
 - Persist thread graph in run data.
-- Report section: “Conversation Dynamics”
+- Report section: "Conversation Dynamics"
   - top persuasive comments
   - cascade triggers (positive/negative)
   - disagreement resolution map
@@ -1361,6 +1361,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Inject one skeptical/high-influence persona and verify measurable downstream impact on actions.
 
 **Dependencies:** SIM-030, SIM-021D
+
+**Completion notes:**
+- ConversationDynamics schema in packages/shared/src/schemas/conversation.ts:
+  - ThreadComment, InfluenceEdge, SentimentShift, CascadeTrigger, topPersuasiveComments, disagreementResolution
+- COMMENT_CREATED, REPLY_CREATED, SENTIMENT_SHIFT event types + `interaction` phase added to SimEvent
+- Thread generator in packages/engine/src/interactions/thread-generator.ts:
+  - Builds persona profiles from agent outputs (sentiment, influence weight, concerns)
+  - Phase 1: initial comments from each persona, Phase 2: reply generation based on influence + engagement thresholds
+  - Computes influence edges, sentiment shifts, cascade triggers, top persuasive comments, disagreement resolution
+- Executor: runs conversation dynamics for deep mode or 10+ persona runs
+- Report: includes conversationDynamics field; markdown formatter renders Conversation Dynamics section
+- Test: 12 personas → 101 comments (12 root + 89 replies), 89 influence edges, 11 sentiment shifts, 12 cascades
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

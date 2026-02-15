@@ -11,6 +11,7 @@ import type {
   PHSubmission,
   PHForecast,
   DiffusionTimeline,
+  ConversationDynamics,
   PersonaSetName,
   PersonaSnapshots,
 } from '@simvibe/shared';
@@ -79,7 +80,8 @@ export function generateReport(
   personaSet?: PersonaSetName,
   personaSnapshots?: PersonaSnapshots,
   platformMode?: PlatformMode,
-  phSubmission?: PHSubmission
+  phSubmission?: PHSubmission,
+  conversationDynamics?: ConversationDynamics
 ): Report {
   const aggregation = aggregateOutputs(outputs);
 
@@ -142,6 +144,7 @@ export function generateReport(
     diffusion,
     platformMode,
     phForecast,
+    conversationDynamics,
   };
 }
 
@@ -238,6 +241,40 @@ export function formatReportMarkdown(report: Report): string {
       for (const risk of ph.momentumRisks) {
         const icon = risk.severity === 'high' ? '[HIGH]' : risk.severity === 'medium' ? '[MED]' : '[LOW]';
         lines.push(`- ${icon} **${risk.flag}**: ${risk.detail}`);
+      }
+    }
+  }
+
+  if (report.conversationDynamics && report.conversationDynamics.comments.length > 0) {
+    const cd = report.conversationDynamics;
+    lines.push(`\n## Conversation Dynamics`);
+    lines.push(`Total interactions: ${cd.comments.length} (${cd.comments.filter(c => c.parentId === null).length} comments, ${cd.comments.filter(c => c.parentId !== null).length} replies)`);
+
+    if (cd.topPersuasiveComments.length > 0) {
+      lines.push(`\n### Top Persuasive Comments`);
+      for (const tc of cd.topPersuasiveComments.slice(0, 3)) {
+        lines.push(`- **${tc.personaId}** (influence: ${tc.influenceScore}): "${tc.content}"`);
+      }
+    }
+
+    if (cd.cascadeTriggers.length > 0) {
+      lines.push(`\n### Cascade Triggers`);
+      for (const ct of cd.cascadeTriggers.slice(0, 3)) {
+        lines.push(`- [${ct.impact.toUpperCase()}] ${ct.description}`);
+      }
+    }
+
+    if (cd.sentimentShifts.length > 0) {
+      lines.push(`\n### Sentiment Shifts`);
+      for (const ss of cd.sentimentShifts) {
+        lines.push(`- ${ss.personaId} shifted ${ss.direction} (triggered by ${ss.triggeredBy}, magnitude: ${ss.magnitude.toFixed(2)})`);
+      }
+    }
+
+    if (cd.disagreementResolution.length > 0) {
+      lines.push(`\n### Disagreement Resolution`);
+      for (const dr of cd.disagreementResolution) {
+        lines.push(`- **${dr.topic}**: ${dr.initialDisagreement.join(' vs ')} -> resolved ${dr.resolvedToward}`);
       }
     }
   }
