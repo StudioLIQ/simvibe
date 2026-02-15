@@ -2384,7 +2384,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - `isAuthorizedPatcher()`: validates agent authorization for report patches
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-022 (P0) Implement report lifecycle controls (freeze/unfreeze/publish)
+### [x] MND-022 (P0) Implement report lifecycle controls (freeze/unfreeze/publish)
 **Goal:** Control when edits are allowed and when output is final.
 
 **Deliverables**
@@ -2396,6 +2396,16 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - `published` reports are immutable.
 
 **Dependencies:** MND-019
+
+**Completion notes:**
+- `transitionLifecycle()` in packages/engine/src/report/lifecycle.ts: enforces valid transitions
+- Transition rules: open→review/frozen, review→open/frozen, frozen→open/published, published→(none)
+- `POST /api/run/[id]/report/lifecycle`: performs transition, persists lifecycle + audit event
+- `GET /api/run/[id]/report/lifecycle`: returns current status + allowed transitions
+- Each transition emits SimEvent with actor, reason, from/to status, version
+- Report page: Freeze, Review, Unfreeze, Publish buttons per status; "Published reports are immutable" for published
+- 409 error with allowed transitions when invalid transition attempted
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-023 (P0) Bind Monad receipt to report version hash
 **Goal:** Make published report versions verifiable onchain.

@@ -181,6 +181,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [reportLifecycle, setReportLifecycle] = useState<ReportLifecycle | null>(null);
   const [reportRevisions, setReportRevisions] = useState<ReportRevision[]>([]);
   const [showRevisions, setShowRevisions] = useState(false);
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [lifecycleError, setLifecycleError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchRun();
@@ -442,6 +444,27 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       }
     } catch (err) {
       console.error('Error fetching report revisions:', err);
+    }
+  };
+
+  const transitionLifecycle = async (targetStatus: string) => {
+    setIsTransitioning(true);
+    setLifecycleError(null);
+    try {
+      const response = await fetch(`/api/run/${id}/report/lifecycle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ targetStatus, actor: 'user' }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'Transition failed');
+      }
+      setReportLifecycle(data.lifecycle);
+    } catch (err) {
+      setLifecycleError(err instanceof Error ? err.message : 'Transition failed');
+    } finally {
+      setIsTransitioning(false);
     }
   };
 
@@ -711,6 +734,80 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     </div>
                   ))}
                 </div>
+              )}
+
+              {/* Lifecycle Control Buttons */}
+              <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                {reportLifecycle.status === 'open' && (
+                  <>
+                    <button
+                      onClick={() => transitionLifecycle('frozen')}
+                      disabled={isTransitioning}
+                      className="btn"
+                      style={{ background: 'var(--accent-primary)', color: '#fff', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                    >
+                      {isTransitioning ? '...' : 'Freeze Report'}
+                    </button>
+                    <button
+                      onClick={() => transitionLifecycle('review')}
+                      disabled={isTransitioning}
+                      className="btn"
+                      style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                    >
+                      {isTransitioning ? '...' : 'Send to Review'}
+                    </button>
+                  </>
+                )}
+                {reportLifecycle.status === 'review' && (
+                  <>
+                    <button
+                      onClick={() => transitionLifecycle('frozen')}
+                      disabled={isTransitioning}
+                      className="btn"
+                      style={{ background: 'var(--accent-primary)', color: '#fff', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                    >
+                      {isTransitioning ? '...' : 'Freeze Report'}
+                    </button>
+                    <button
+                      onClick={() => transitionLifecycle('open')}
+                      disabled={isTransitioning}
+                      className="btn"
+                      style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                    >
+                      {isTransitioning ? '...' : 'Reopen'}
+                    </button>
+                  </>
+                )}
+                {reportLifecycle.status === 'frozen' && (
+                  <>
+                    <button
+                      onClick={() => transitionLifecycle('published')}
+                      disabled={isTransitioning}
+                      className="btn"
+                      style={{ background: 'var(--status-success)', color: '#fff', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                    >
+                      {isTransitioning ? '...' : 'Publish (Immutable)'}
+                    </button>
+                    <button
+                      onClick={() => transitionLifecycle('open')}
+                      disabled={isTransitioning}
+                      className="btn"
+                      style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                    >
+                      {isTransitioning ? '...' : 'Unfreeze'}
+                    </button>
+                  </>
+                )}
+                {reportLifecycle.status === 'published' && (
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-dim)', fontStyle: 'italic' }}>
+                    Published reports are immutable.
+                  </span>
+                )}
+              </div>
+              {lifecycleError && (
+                <p style={{ color: 'var(--status-danger)', fontSize: '0.8rem', marginTop: '0.5rem' }}>
+                  {lifecycleError}
+                </p>
               )}
             </div>
           )}
