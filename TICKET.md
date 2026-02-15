@@ -2672,7 +2672,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Dependencies:** MND-025
 
-### [ ] MND-035 (P1) Add migration analytics for pre/post pivot report quality
+### [x] MND-035 (P1) Add migration analytics for pre/post pivot report quality
 **Goal:** Quantify whether nad.fun pivot improves actionable outputs.
 
 **Deliverables**
@@ -2683,3 +2683,11 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Team can show evidence that pivot improved launch-decision quality.
 
 **Dependencies:** MND-033, MND-034
+
+**Completion notes:**
+- `scripts/migration-analytics.ts`: fetches all runs, classifies by era (nad_fun/product_hunt/generic), computes per-era metrics
+- Metrics: avg overall score, friction depth, fix count, persona count, clarity/credibility/differentiation, fallback warning rate, traction band distribution
+- Quality delta: nad.fun vs PH score/friction/fallback comparison
+- `pnpm analytics:migration` command
+- Outputs: console table + `artifacts_runs/migration-analytics.json`
+- Test: `pnpm typecheck` passes for all packages

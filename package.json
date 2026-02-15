@@ -33,6 +33,7 @@
     "ci:e2e:nad:fun": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/e2e-nad-fun.ts",
     "e2e:monad": "npx tsx scripts/e2e-monad-flow.ts",
     "ci:e2e:monad": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/e2e-monad-flow.ts",
+    "analytics:migration": "npx tsx scripts/migration-analytics.ts",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },
