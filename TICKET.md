@@ -1936,7 +1936,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - forge-std v1.14.0 installed as git submodule
 - Test: `cd contracts && forge test -vv` — 15 passed, 0 failed
 
-### [ ] MND-003 (P0) Deploy Receipt contract to Monad testnet
+### [~] MND-003 (P0) Deploy Receipt contract to Monad testnet
 **Goal:** Operational contract address for app integration.
 
 **Deliverables**
@@ -1952,6 +1952,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - One manual publish tx succeeds on testnet.
 
 **Dependencies:** MND-002
+
+**Completion notes (partial — awaiting Monad testnet credentials):**
+- `contracts/script/Deploy.s.sol`: Foundry deployment script (dry-run verified, gas: 282048)
+- `foundry.toml`: Monad testnet RPC + explorer config via env vars
+- `.env.example`: RECEIPT_CONTRACT_ADDRESS, RECEIPT_CHAIN_ID, RECEIPT_RPC_URL, RECEIPT_PUBLISHER_KEY, MONAD_EXPLORER_URL, MONAD_EXPLORER_API_KEY
+- **BLOCKED**: Needs RECEIPT_RPC_URL + funded RECEIPT_PUBLISHER_KEY to deploy
+- To deploy: `cd contracts && forge script script/Deploy.s.sol:DeploySimVibeReceipt --rpc-url $RECEIPT_RPC_URL --private-key $RECEIPT_PUBLISHER_KEY --broadcast`
 
 ### [ ] MND-004 (P0) Persist receipt linkage in storage
 **Goal:** Store onchain receipt status per run in DB.
