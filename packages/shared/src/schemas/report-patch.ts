@@ -12,9 +12,7 @@ export const PATCHABLE_SECTIONS = [
   'personaReports',
   'oneLineFixes',
   'warnings',
-  'phForecast',
   'nadFunForecast',
-  'launchPack',
   'conversationDynamics',
 ] as const;
 

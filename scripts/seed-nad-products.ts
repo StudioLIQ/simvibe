@@ -11,7 +11,7 @@
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { NAD_SEED_PRODUCTS } from './fixtures/nad-seed-products';
+import { NAD_SEED_PRODUCTS, type NadSeedProduct } from './fixtures/nad-seed-products';
 
 const RAILWAY_PUBLIC_ORIGIN = process.env.RAILWAY_PUBLIC_DOMAIN
   ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN.replace(/^https?:\/\//, '').replace(/\/+$/, '')}`
@@ -29,10 +29,10 @@ const WEB_BASE_URL = (
   'http://localhost:5556'
 ).replace(/\/+$/, '');
 const RUN_MODE = process.env.RUN_MODE === 'deep' ? 'deep' : 'quick';
-const PRODUCT_COUNT = Math.max(1, Math.min(
-  NAD_SEED_PRODUCTS.length,
-  Number.parseInt(process.env.PRODUCT_COUNT || '8', 10) || 8,
-));
+const REQUESTED_PRODUCT_COUNT = Math.max(
+  1,
+  Number.parseInt(process.env.PRODUCT_COUNT || '20', 10) || 20,
+);
 const WAIT_FOR_SERVER_SECONDS = Math.max(
   0,
   Number.parseInt(process.env.WAIT_FOR_SERVER_SECONDS || '0', 10) || 0,
@@ -42,7 +42,7 @@ const SEED_LOOKBACK_LIMIT = Math.max(
   10,
   Number.parseInt(process.env.SEED_LOOKBACK_LIMIT || '200', 10) || 200,
 );
-const SEED_NAMESPACE = (process.env.SEED_NAMESPACE || 'nad-demo-v1')
+const SEED_NAMESPACE = (process.env.SEED_NAMESPACE || 'nad-live-v1')
   .trim()
   .toLowerCase()
   .replace(/[^a-z0-9:_-]+/g, '-')
@@ -53,12 +53,10 @@ const SEED_SLUG_TAG_PREFIX = `${SEED_TAG}:slug:`;
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLL_ATTEMPTS = RUN_MODE === 'deep' ? 420 : 240;
 const REQUEST_TIMEOUT_MS = 30000;
+const NAD_LIVE_SOURCE_URL = process.env.NAD_SOURCE_URL || 'https://api.nadapp.net/order/market_cap?sort=desc&offset=0&limit=20';
 const OUTPUT_DIR = path.join(process.cwd(), 'artifacts_runs');
 const OUTPUT_JSON = path.join(OUTPUT_DIR, 'nad-seed-summary.json');
 const OUTPUT_MD = path.join(OUTPUT_DIR, 'nad-seed-report-links.md');
-const TOKEN_NAME_TO_SLUG = new Map(
-  NAD_SEED_PRODUCTS.map((product) => [product.tokenName.trim().toLowerCase(), product.slug]),
-);
 
 interface SeededRun {
   slug: string;
@@ -84,6 +82,26 @@ interface ExistingRunLite {
 interface HttpResult {
   _httpStatus: number;
   [key: string]: any;
+}
+
+interface NadLiveApiToken {
+  token_info?: {
+    token_id?: string;
+    name?: string;
+    symbol?: string;
+    description?: string;
+    website?: string;
+  };
+  market_info?: {
+    market_type?: string;
+    holder_count?: number;
+  };
+  percent?: number;
+}
+
+interface NadLiveApiResponse {
+  tokens?: NadLiveApiToken[];
+  total_count?: number;
 }
 
 function log(message: string) {
@@ -115,6 +133,102 @@ async function requestJSON(url: string, init?: RequestInit): Promise<HttpResult>
     return result;
   } finally {
     clearTimeout(timeout);
+  }
+}
+
+function toSlug(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 50);
+}
+
+function oneLine(value: string | undefined, fallback: string): string {
+  const normalized = (value || '').replace(/\s+/g, ' ').trim();
+  if (!normalized) return fallback;
+  return normalized.length > 190 ? `${normalized.slice(0, 187)}...` : normalized;
+}
+
+function toLiveSeedProduct(item: NadLiveApiToken, index: number): NadSeedProduct | null {
+  const token = item.token_info;
+  const market = item.market_info;
+  const tokenId = token?.token_id?.trim();
+  const tokenName = token?.name?.trim();
+  const rawSymbol = token?.symbol?.trim();
+
+  if (!tokenId || !tokenName || !rawSymbol) {
+    return null;
+  }
+
+  const tokenSymbol = rawSymbol.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) || `TKN${index + 1}`;
+  const shortId = tokenId.toLowerCase().replace(/^0x/, '').slice(0, 8);
+  const slugBase = toSlug(`${tokenName}-${tokenSymbol}`);
+  const slug = shortId ? `${slugBase}-${shortId}` : slugBase;
+  const description = oneLine(token?.description, `${tokenName} token on nad.fun.`);
+  const marketType = market?.market_type || 'TOKEN';
+  const holderCount = Number.isFinite(market?.holder_count) ? Number(market?.holder_count) : 0;
+  const changePercent = typeof item.percent === 'number' && Number.isFinite(item.percent) ? item.percent : 0;
+  const changeLabel = `${changePercent >= 0 ? '+' : ''}${changePercent.toFixed(2)}%`;
+
+  return {
+    slug,
+    tokenName,
+    tokenSymbol,
+    tagline: oneLine(
+      token?.description,
+      `${tokenName} on nad.fun (${marketType.toUpperCase()})`,
+    ),
+    description,
+    launchThesis: `${tokenName} is already trading on nad.fun with ${holderCount.toLocaleString('en-US')} holders and ${changeLabel} recent momentum.`,
+    tokenNarrative: `${tokenName} (${tokenSymbol}) is positioned as a ${marketType.toLowerCase()}-market token in the Monad ecosystem.`,
+    distributionPlan: `Focus launch ops on current holders (${holderCount.toLocaleString('en-US')}) and social proof from live nad.fun market activity.`,
+    riskAssumptions: `Live market tokens face volatility, holder concentration risk, and short-term speculation cycles.`,
+    antiSnipe: marketType.toUpperCase() !== 'DEX',
+    bundled: false,
+    pricingModel: 'free',
+    category: marketType,
+    tags: unique([
+      'nad.fun',
+      'live-seed',
+      'market-cap',
+      tokenSymbol.toLowerCase(),
+      marketType.toLowerCase(),
+    ]),
+    website: token?.website?.trim() || undefined,
+  };
+}
+
+async function fetchLiveSeedProducts(): Promise<NadSeedProduct[] | null> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const res = await fetch(NAD_LIVE_SOURCE_URL, { signal: controller.signal }).finally(() => clearTimeout(timeout));
+
+    if (!res.ok) {
+      throw new Error(`HTTP ${res.status}`);
+    }
+
+    const payload = (await res.json()) as NadLiveApiResponse;
+    const tokens = Array.isArray(payload.tokens) ? payload.tokens : [];
+    const mapped = tokens
+      .map((item, index) => toLiveSeedProduct(item, index))
+      .filter((item): item is NadSeedProduct => item !== null);
+
+    if (mapped.length === 0) {
+      throw new Error('No valid tokens in response');
+    }
+
+    const deduped = Array.from(
+      mapped.reduce((acc, product) => acc.set(product.slug, product), new Map<string, NadSeedProduct>()).values(),
+    );
+
+    log(`Loaded ${deduped.length} live products from nad.fun source.`);
+    return deduped;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    log(`Warning: failed to load live nad.fun products (${message}). Falling back to local fixture.`);
+    return null;
   }
 }
 
@@ -153,7 +267,7 @@ function unique(values: string[]): string[] {
   return Array.from(new Set(values.map((value) => value.trim()).filter(Boolean)));
 }
 
-function buildSeedTags(product: typeof NAD_SEED_PRODUCTS[number]): string[] {
+function buildSeedTags(product: NadSeedProduct): string[] {
   return unique([
     ...product.tags,
     SEED_NAD_TAG,
@@ -162,7 +276,7 @@ function buildSeedTags(product: typeof NAD_SEED_PRODUCTS[number]): string[] {
   ]);
 }
 
-function toRunInput(product: typeof NAD_SEED_PRODUCTS[number]) {
+function toRunInput(product: NadSeedProduct) {
   const syntheticLanding = [
     product.tokenName,
     `$${product.tokenSymbol}`,
@@ -204,14 +318,14 @@ function toRunInput(product: typeof NAD_SEED_PRODUCTS[number]) {
   };
 }
 
-function inferLegacySlug(run: ExistingRunLite): string | null {
+function inferLegacySlug(run: ExistingRunLite, tokenNameToSlug: Map<string, string>): string | null {
   if (run.input?.platformMode !== 'nad_fun') return null;
   const tokenName = run.input?.nadFunSubmission?.tokenName?.trim().toLowerCase();
   if (!tokenName) return null;
-  return TOKEN_NAME_TO_SLUG.get(tokenName) || null;
+  return tokenNameToSlug.get(tokenName) || null;
 }
 
-async function fetchExistingSeededSlugs(): Promise<Set<string>> {
+async function fetchExistingSeededSlugs(tokenNameToSlug: Map<string, string>): Promise<Set<string>> {
   const existingSlugs = new Set<string>();
 
   if (!SEED_ONLY_MISSING) {
@@ -232,7 +346,7 @@ async function fetchExistingSeededSlugs(): Promise<Set<string>> {
         }
       }
 
-      const legacySlug = inferLegacySlug(run);
+      const legacySlug = inferLegacySlug(run, tokenNameToSlug);
       if (legacySlug) {
         existingSlugs.add(legacySlug);
       }
@@ -251,7 +365,7 @@ async function fetchExistingSeededSlugs(): Promise<Set<string>> {
 }
 
 async function createAndRun(
-  product: typeof NAD_SEED_PRODUCTS[number],
+  product: NadSeedProduct,
   index: number,
   total: number,
 ): Promise<SeededRun> {
@@ -297,7 +411,11 @@ async function createAndRun(
   throw new Error(`Run timeout for ${product.tokenName}`);
 }
 
-async function writeOutputs(results: SeededRun[], skippedExisting: typeof NAD_SEED_PRODUCTS) {
+async function writeOutputs(
+  results: SeededRun[],
+  skippedExisting: NadSeedProduct[],
+  productSource: string,
+) {
   await mkdir(OUTPUT_DIR, { recursive: true });
   await writeFile(OUTPUT_JSON, JSON.stringify({
     generatedAt: new Date().toISOString(),
@@ -306,6 +424,8 @@ async function writeOutputs(results: SeededRun[], skippedExisting: typeof NAD_SE
     runMode: RUN_MODE,
     seedNamespace: SEED_NAMESPACE,
     seedOnlyMissing: SEED_ONLY_MISSING,
+    productSource,
+    liveSourceUrl: NAD_LIVE_SOURCE_URL,
     skippedExistingCount: skippedExisting.length,
     skippedExistingSlugs: skippedExisting.map((product) => product.slug),
     count: results.length,
@@ -319,6 +439,7 @@ async function writeOutputs(results: SeededRun[], skippedExisting: typeof NAD_SE
   mdLines.push(`- API Base URL: ${API_BASE_URL}`);
   mdLines.push(`- Web Base URL: ${WEB_BASE_URL}`);
   mdLines.push(`- Run mode: ${RUN_MODE}`);
+  mdLines.push(`- Product source: ${productSource}`);
   mdLines.push(`- Seed namespace: ${SEED_NAMESPACE}`);
   mdLines.push(`- Seed only missing: ${SEED_ONLY_MISSING}`);
   mdLines.push(`- Skipped existing: ${skippedExisting.length}`);
@@ -344,16 +465,26 @@ async function writeOutputs(results: SeededRun[], skippedExisting: typeof NAD_SE
 }
 
 async function main() {
+  const liveProducts = await fetchLiveSeedProducts();
+  const allProducts = liveProducts && liveProducts.length > 0 ? liveProducts : NAD_SEED_PRODUCTS;
+  const sourceLabel = liveProducts && liveProducts.length > 0 ? 'nad.fun live API' : 'local fixture';
+  const productCount = Math.max(1, Math.min(allProducts.length, REQUESTED_PRODUCT_COUNT));
+  const tokenNameToSlug = new Map(
+    allProducts.map((product) => [product.tokenName.trim().toLowerCase(), product.slug]),
+  );
+
   log(`API: ${API_BASE_URL}`);
   log(`Web: ${WEB_BASE_URL}`);
+  log(`Product source: ${sourceLabel}`);
+  log(`Live source URL: ${NAD_LIVE_SOURCE_URL}`);
   log(`Seed namespace: ${SEED_NAMESPACE}`);
   log(`Seed only missing: ${SEED_ONLY_MISSING}`);
-  log(`Run mode: ${RUN_MODE}, productCount: ${PRODUCT_COUNT}`);
+  log(`Run mode: ${RUN_MODE}, productCount: ${productCount}`);
 
   await ensureServer();
-  const existingSlugs = await fetchExistingSeededSlugs();
+  const existingSlugs = await fetchExistingSeededSlugs(tokenNameToSlug);
 
-  const initialTargets = NAD_SEED_PRODUCTS.slice(0, PRODUCT_COUNT);
+  const initialTargets = allProducts.slice(0, productCount);
   const skippedExisting = SEED_ONLY_MISSING
     ? initialTargets.filter((product) => existingSlugs.has(product.slug))
     : [];
@@ -372,7 +503,7 @@ async function main() {
     log(`  done: ${seeded.tokenName} ($${seeded.tokenSymbol}) -> ${seeded.reportUrl} (score=${seeded.overallScore ?? '-'})`);
   }
 
-  await writeOutputs(results, skippedExisting);
+  await writeOutputs(results, skippedExisting, sourceLabel);
   log(`Seed complete. Reports: ${results.length}`);
   if (skippedExisting.length > 0) {
     log(`Skipped existing: ${skippedExisting.length}`);

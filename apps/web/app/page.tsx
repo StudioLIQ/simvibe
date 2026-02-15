@@ -19,7 +19,7 @@ interface RunLite {
 function countSeededRuns(runs: RunLite[]): number {
   return runs.filter((run) => {
     const tags = Array.isArray(run.input?.tags) ? run.input!.tags! : [];
-    return tags.some((tag) => tag === 'seed:ph' || tag.startsWith('seed:'));
+    return tags.some((tag) => tag.startsWith('seed:'));
   }).length;
 }
 

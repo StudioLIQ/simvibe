@@ -16,12 +16,6 @@ interface DraftLaunchSourceInput {
   tagline: string;
   description: string;
   url?: string;
-  phSubmission?: {
-    mediaAssets?: {
-      thumbnailUrl?: string;
-      galleryUrls?: string[];
-    };
-  };
 }
 
 interface DraftLaunchSourceRun {
@@ -57,7 +51,6 @@ function buildDraftLaunchInput(run: DraftLaunchSourceRun): NadLaunchInput {
   const words = tagline.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(Boolean);
   const symbol = words.map(w => w[0]).join('').toUpperCase().slice(0, 10) || 'TKN';
   const defaults = getDraftDefaultsFromEnv();
-  const media = run.input.phSubmission?.mediaAssets;
 
   return {
     name,
@@ -66,7 +59,7 @@ function buildDraftLaunchInput(run: DraftLaunchSourceRun): NadLaunchInput {
     website: run.input.url || defaults.website,
     x: defaults.x,
     telegram: defaults.telegram,
-    image: defaults.image || media?.thumbnailUrl || media?.galleryUrls?.[0],
+    image: defaults.image,
     antiSnipe: defaults.antiSnipe,
     bundled: defaults.bundled,
   };

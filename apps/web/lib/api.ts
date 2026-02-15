@@ -1,4 +1,4 @@
-import type { RunInput, PricingModel, RunMode, PlatformMode, PHSubmission, NadFunSubmission, PersonaSetName } from '@simvibe/shared';
+import type { PricingModel, RunMode, PlatformMode, NadFunSubmission, PersonaSetName } from '@simvibe/shared';
 
 export interface CreateRunRequest {
   tagline: string;
@@ -13,7 +13,6 @@ export interface CreateRunRequest {
   personaIds?: string[];
   personaSet?: PersonaSetName;
   platformMode?: PlatformMode;
-  phSubmission?: PHSubmission;
   nadFunSubmission?: NadFunSubmission;
 }
 

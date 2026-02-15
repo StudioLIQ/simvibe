@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 type RunStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed';
 
-type PlatformFilter = 'all' | 'nad_fun' | 'product_hunt' | 'generic';
+type PlatformFilter = 'all' | 'nad_fun' | 'generic';
 
 interface RunListItem {
   id: string;
@@ -16,9 +16,6 @@ interface RunListItem {
     runMode?: string;
     platformMode?: string;
     tags?: string[];
-    phSubmission?: {
-      productName?: string;
-    };
     nadFunSubmission?: {
       tokenName?: string;
       tokenSymbol?: string;
@@ -32,15 +29,13 @@ interface RunListItem {
 
 function isSeeded(run: RunListItem): boolean {
   const tags = Array.isArray(run.input?.tags) ? run.input.tags : [];
-  return tags.some((tag) => tag === 'seed:ph' || tag.startsWith('seed:'));
+  return tags.some((tag) => tag.startsWith('seed:'));
 }
 
 function getTitle(run: RunListItem): string {
   const nadName = run.input?.nadFunSubmission?.tokenName?.trim();
   const nadSymbol = run.input?.nadFunSubmission?.tokenSymbol?.trim();
   if (nadName) return nadSymbol ? `${nadName} ($${nadSymbol})` : nadName;
-  const phName = run.input?.phSubmission?.productName?.trim();
-  if (phName) return phName;
   return run.input?.tagline || run.id;
 }
 
@@ -51,7 +46,6 @@ function getPlatformMode(run: RunListItem): string {
 function getPlatformBadge(mode: string): { label: string; color: string } {
   switch (mode) {
     case 'nad_fun': return { label: 'nad.fun', color: 'var(--accent-primary)' };
-    case 'product_hunt': return { label: 'PH (legacy)', color: 'var(--text-dim)' };
     default: return { label: 'Generic', color: 'var(--text-muted)' };
   }
 }
@@ -141,7 +135,7 @@ export default function ReportsPage() {
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="e.g. conva, run_xxx, seed:ph"
+            placeholder="e.g. chog, run_xxx, seed:nad"
           />
         </div>
 
@@ -149,7 +143,6 @@ export default function ReportsPage() {
           {([
             { value: 'all' as PlatformFilter, label: 'All' },
             { value: 'nad_fun' as PlatformFilter, label: 'nad.fun' },
-            { value: 'product_hunt' as PlatformFilter, label: 'PH (legacy)' },
             { value: 'generic' as PlatformFilter, label: 'Generic' },
           ]).map(({ value, label }) => (
             <button

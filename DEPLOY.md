@@ -228,7 +228,6 @@ pnpm ci:e2e:all
 This runs:
 - `ci:smoke`
 - `ci:smoke:launch`
-- `ci:e2e:ph:nad`
 - `ci:e2e:nad:fun`
 - `ci:e2e:monad`
 - `ci:e2e:services`
@@ -260,21 +259,9 @@ API_BASE_URL=https://api-simvibe.example.com \
 WEB_BASE_URL=https://simvibe.example.com \
 SEED_ONLY_MISSING=true \
 WAIT_FOR_SERVER_SECONDS=180 \
-PRODUCT_COUNT=8 \
+PRODUCT_COUNT=20 \
 RUN_MODE=quick \
 pnpm seed:nad:railway
-```
-
-Legacy PH seeding:
-
-```bash
-API_BASE_URL=https://api-simvibe.example.com \
-WEB_BASE_URL=https://simvibe.example.com \
-SEED_ONLY_MISSING=true \
-WAIT_FOR_SERVER_SECONDS=180 \
-PRODUCT_COUNT=7 \
-RUN_MODE=quick \
-pnpm seed:ph:railway
 ```
 
 ---

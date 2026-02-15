@@ -8,10 +8,7 @@ import type {
   AggregatedMetrics,
   RunMode,
   PlatformMode,
-  PHSubmission,
-  PHForecast,
   NadFunForecast,
-  LaunchPack,
   RunInput,
   DiffusionTimeline,
   ConversationDynamics,
@@ -19,10 +16,8 @@ import type {
   PersonaSnapshots,
 } from '@simvibe/shared';
 import { applyCalibration } from '@simvibe/shared';
-import { aggregateOutputs, type AggregationResult } from './aggregator';
-import { computePHForecast } from './ph-forecast';
+import { aggregateOutputs } from './aggregator';
 import { computeNadFunForecast } from './nad-forecast';
-import { generateLaunchPack } from './launch-pack-generator';
 
 function createPersonaReport(output: AgentOutput): PersonaReport {
   const actionProbabilities: Partial<Record<ActionType, number>> = {};
@@ -85,7 +80,6 @@ export function generateReport(
   personaSet?: PersonaSetName,
   personaSnapshots?: PersonaSnapshots,
   platformMode?: PlatformMode,
-  phSubmission?: PHSubmission,
   conversationDynamics?: ConversationDynamics,
   runInput?: RunInput
 ): Report {
@@ -121,22 +115,10 @@ export function generateReport(
     warnings.push(`Calibration applied based on ${calibrated.sampleCount} previous actual outcomes (key: ${calibrated.priorKey})`);
   }
 
-  // PH-specific forecast
-  let phForecast: PHForecast | undefined;
-  if (platformMode === 'product_hunt') {
-    phForecast = computePHForecast(outputs, calibratedMetrics, phSubmission);
-  }
-
   // nad.fun-specific forecast
   let nadFunForecast: NadFunForecast | undefined;
   if (platformMode === 'nad_fun') {
     nadFunForecast = computeNadFunForecast(outputs, calibratedMetrics, runInput);
-  }
-
-  // Launch pack (PH mode with run input available)
-  let launchPack: LaunchPack | undefined;
-  if (platformMode === 'product_hunt' && runInput) {
-    launchPack = generateLaunchPack(runInput, outputs, aggregation.frictionList, phSubmission);
   }
 
   return {
@@ -161,10 +143,8 @@ export function generateReport(
     personaSnapshots,
     diffusion,
     platformMode,
-    phForecast,
     nadFunForecast,
     conversationDynamics,
-    launchPack,
   };
 }
 
@@ -238,33 +218,6 @@ export function formatReportMarkdown(report: Report): string {
     }
   }
 
-  if (report.phForecast) {
-    const ph = report.phForecast;
-    lines.push(`\n## Product Hunt Forecast`);
-    lines.push(`\n### Expected Upvotes by Window`);
-    lines.push(`| Window | Expected |`);
-    lines.push(`|--------|----------|`);
-    lines.push(`| First hour | ${ph.upvotesByWindow.firstHour} |`);
-    lines.push(`| First 4 hours | ${ph.upvotesByWindow.first4Hours} |`);
-    lines.push(`| First 24 hours | ${ph.upvotesByWindow.first24Hours} |`);
-    lines.push(`\n### Comment Velocity`);
-    lines.push(`- Expected comments (24h): ${ph.commentVelocity.expectedComments24h}`);
-    lines.push(`- Peak activity hour: ${ph.commentVelocity.peakHour}:00 PT`);
-    if (ph.makerCommentImpact) {
-      lines.push(`\n### Maker Comment Impact: **${ph.makerCommentImpact.toUpperCase()}**`);
-    }
-    if (ph.topicFitScore !== undefined) {
-      lines.push(`### Topic Fit Score: ${(ph.topicFitScore * 100).toFixed(0)}%`);
-    }
-    if (ph.momentumRisks.length > 0) {
-      lines.push(`\n### Momentum Risks`);
-      for (const risk of ph.momentumRisks) {
-        const icon = risk.severity === 'high' ? '[HIGH]' : risk.severity === 'medium' ? '[MED]' : '[LOW]';
-        lines.push(`- ${icon} **${risk.flag}**: ${risk.detail}`);
-      }
-    }
-  }
-
   if (report.nadFunForecast) {
     const nf = report.nadFunForecast;
     lines.push(`\n## nad.fun Launch Forecast`);
@@ -318,45 +271,6 @@ export function formatReportMarkdown(report: Report): string {
       lines.push(`\n### Disagreement Resolution`);
       for (const dr of cd.disagreementResolution) {
         lines.push(`- **${dr.topic}**: ${dr.initialDisagreement.join(' vs ')} -> resolved ${dr.resolvedToward}`);
-      }
-    }
-  }
-
-  if (report.launchPack) {
-    const lp = report.launchPack;
-    lines.push(`\n## Launch Pack (PH Submission Artifacts)`);
-
-    if (lp.taglineCandidates.length > 0) {
-      lines.push(`\n### Revised Tagline Candidates`);
-      for (const tc of lp.taglineCandidates) {
-        lines.push(`\n**"${tc.tagline}"**`);
-        lines.push(`Rationale: ${tc.rationale}`);
-        if (tc.addressesFriction) lines.push(`Addresses: ${tc.addressesFriction}`);
-      }
-    }
-
-    if (lp.descriptionCandidates.length > 0) {
-      lines.push(`\n### Revised Description Candidates`);
-      for (const dc of lp.descriptionCandidates) {
-        lines.push(`\n**[${dc.focusArea}]** ${dc.description}`);
-        lines.push(`Rationale: ${dc.rationale}`);
-      }
-    }
-
-    if (lp.makerCommentRewrites.length > 0) {
-      lines.push(`\n### Maker First Comment Rewrites`);
-      for (const mc of lp.makerCommentRewrites) {
-        lines.push(`\n**Strategy: ${mc.strategy}** (strengthens: ${mc.strengthens})`);
-        lines.push(`\`\`\`\n${mc.comment}\n\`\`\``);
-      }
-    }
-
-    if (lp.objectionHandling.length > 0) {
-      lines.push(`\n### Objection Handling Snippets`);
-      for (const oh of lp.objectionHandling) {
-        lines.push(`\n**Objection:** "${oh.objection}"`);
-        lines.push(`**Response:** ${oh.response}`);
-        lines.push(`*Source: ${oh.source}*`);
       }
     }
   }

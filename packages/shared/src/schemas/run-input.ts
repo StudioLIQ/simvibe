@@ -13,22 +13,7 @@ export const PricingModelSchema = z.enum([
 
 export const RunModeSchema = z.enum(['quick', 'deep']).default('quick');
 
-export const PlatformModeSchema = z.enum(['generic', 'product_hunt', 'nad_fun']).default('nad_fun');
-
-export const MediaAssetsSchema = z.object({
-  thumbnailUrl: z.string().url('Invalid thumbnail URL').optional(),
-  galleryUrls: z.array(z.string().url('Invalid gallery URL')).max(5, 'Max 5 gallery images').optional(),
-  videoUrl: z.string().url('Invalid video URL').optional(),
-}).optional();
-
-export const PHSubmissionSchema = z.object({
-  productName: z.string().max(60, 'PH product name max 60 chars').optional(),
-  phTagline: z.string().max(60, 'PH tagline max 60 chars').optional(),
-  phDescription: z.string().max(260, 'PH description max 260 chars').optional(),
-  topics: z.array(z.string()).max(3, 'PH allows max 3 topics').optional(),
-  makerFirstComment: z.string().max(1000, 'Maker comment max 1000 chars').optional(),
-  mediaAssets: MediaAssetsSchema,
-});
+export const PlatformModeSchema = z.enum(['generic', 'nad_fun']).default('nad_fun');
 
 export const NadFunSubmissionSchema = z.object({
   tokenName: z.string().max(100, 'Token name max 100 chars').optional(),
@@ -64,16 +49,9 @@ export const RunInputSchema = z.object({
   personaSet: PersonaSetNameSchema.optional(),
   // Platform-specific submission fields
   platformMode: PlatformModeSchema.optional(),
-  phSubmission: PHSubmissionSchema.optional(),
   nadFunSubmission: NadFunSubmissionSchema.optional(),
 }).refine(
   (data) => {
-    // In PH mode, allow running without URL/pastedContent if PH fields are provided
-    if (data.platformMode === 'product_hunt') {
-      const hasPH = data.phSubmission &&
-        (data.phSubmission.productName || data.phSubmission.phTagline || data.phSubmission.phDescription);
-      return !!(data.url || data.pastedContent || hasPH);
-    }
     // In nad.fun mode, allow running without URL if nad.fun fields are provided
     if (data.platformMode === 'nad_fun') {
       const hasNadFun = data.nadFunSubmission &&
@@ -92,9 +70,7 @@ export const RunInputSchema = z.object({
 export type PricingModel = z.infer<typeof PricingModelSchema>;
 export type RunMode = z.infer<typeof RunModeSchema>;
 export type PlatformMode = z.infer<typeof PlatformModeSchema>;
-export type PHSubmission = z.infer<typeof PHSubmissionSchema>;
 export type NadFunSubmission = z.infer<typeof NadFunSubmissionSchema>;
-export type MediaAssets = z.infer<typeof MediaAssetsSchema>;
 export type RunInput = z.infer<typeof RunInputSchema>;
 
 export function validateRunInput(data: unknown): { success: true; data: RunInput } | { success: false; error: string } {

@@ -90,19 +90,3 @@ jobs:
           path: artifacts_runs/e2e-nad-fun-summary.json
           retention-days: 30
           if-no-files-found: warn
-
-      - name: Run legacy PH E2E (compat)
-        if: matrix.mode == 'quick'
-        run: npx tsx scripts/e2e-ph-nad.ts
-        env:
-          PRODUCT_COUNT: "2"
-          MIN_READY_LAUNCHES: "1"
-
-      - name: Upload legacy PH E2E summary
-        if: always() && matrix.mode == 'quick'
-        uses: actions/upload-artifact@v4
-        with:
-          name: e2e-legacy-ph-summary
-          path: artifacts_runs/e2e-ph-nad-summary.json
-          retention-days: 30
-          if-no-files-found: warn

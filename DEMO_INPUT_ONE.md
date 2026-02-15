@@ -41,15 +41,3 @@
 
 ## Optional (BYOK)
 - Run 화면에서 `Optional: your GEMINI_API_KEY` 칸에 사용자 키 입력 후 시작하면 해당 런만 BYOK로 실행됩니다.
-
----
-
-## Legacy: Product Hunt Demo Input
-
-PH 모드 테스트가 필요한 경우:
-
-- `Platform Mode`: `Product Hunt (legacy)`
-- `Product Name`: `OrbitBoard`
-- `PH Tagline`: `AI issue triage for teams that ship fast`
-- `PH Description`: `Turn messy feedback into prioritized tasks automatically.`
-- `Tagline`: `Linear-style issue tracker with AI triage for fast product teams`

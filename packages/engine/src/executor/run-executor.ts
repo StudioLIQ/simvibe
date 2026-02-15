@@ -24,20 +24,24 @@ export interface ExecuteRunResult {
 function buildSyntheticLandingContent(input: {
   tagline: string;
   description: string;
-  phSubmission?: {
-    productName?: string;
-    phTagline?: string;
-    phDescription?: string;
-    makerFirstComment?: string;
+  nadFunSubmission?: {
+    tokenName?: string;
+    tokenSymbol?: string;
+    launchThesis?: string;
+    tokenNarrative?: string;
+    distributionPlan?: string;
+    riskAssumptions?: string;
   };
 }): string {
   let syntheticContent = `${input.tagline}\n\n${input.description}`;
-  if (input.phSubmission) {
-    const ph = input.phSubmission;
-    if (ph.productName) syntheticContent += `\n\nProduct: ${ph.productName}`;
-    if (ph.phTagline) syntheticContent += `\nPH Tagline: ${ph.phTagline}`;
-    if (ph.phDescription) syntheticContent += `\n${ph.phDescription}`;
-    if (ph.makerFirstComment) syntheticContent += `\n\nMaker Comment:\n${ph.makerFirstComment}`;
+  if (input.nadFunSubmission) {
+    const nad = input.nadFunSubmission;
+    if (nad.tokenName) syntheticContent += `\n\nToken Name: ${nad.tokenName}`;
+    if (nad.tokenSymbol) syntheticContent += `\nToken Symbol: ${nad.tokenSymbol}`;
+    if (nad.launchThesis) syntheticContent += `\n\nLaunch Thesis:\n${nad.launchThesis}`;
+    if (nad.tokenNarrative) syntheticContent += `\n\nToken Narrative:\n${nad.tokenNarrative}`;
+    if (nad.distributionPlan) syntheticContent += `\n\nDistribution Plan:\n${nad.distributionPlan}`;
+    if (nad.riskAssumptions) syntheticContent += `\n\nRisk Assumptions:\n${nad.riskAssumptions}`;
   }
   return syntheticContent;
 }
@@ -257,7 +261,6 @@ export async function executeRun(
         resolvedSetName,
         personaSnapshots,
         run.input.platformMode,
-        run.input.phSubmission,
         conversationDynamics,
         run.input
       );

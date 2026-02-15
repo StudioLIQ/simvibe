@@ -32,13 +32,6 @@ export default function HomePage() {
   const [personaSet, setPersonaSet] = useState<PersonaSetName | ''>('');
   const [customPersonaIds, setCustomPersonaIds] = useState('');
   const [platformMode, setPlatformMode] = useState<PlatformMode>('nad_fun');
-  const [phProductName, setPhProductName] = useState('');
-  const [phTagline, setPhTagline] = useState('');
-  const [phDescription, setPhDescription] = useState('');
-  const [phTopics, setPhTopics] = useState('');
-  const [makerFirstComment, setMakerFirstComment] = useState('');
-  const [thumbnailUrl, setThumbnailUrl] = useState('');
-  const [videoUrl, setVideoUrl] = useState('');
   // nad.fun fields
   const [tokenName, setTokenName] = useState('');
   const [tokenSymbol, setTokenSymbol] = useState('');
@@ -84,39 +77,19 @@ export default function HomePage() {
         throw new Error('Description is required');
       }
 
-      const isPH = platformMode === 'product_hunt';
       const isNadFun = platformMode === 'nad_fun';
-      const hasPHFields = isPH && (phProductName.trim() || phTagline.trim() || phDescription.trim());
       const hasNadFunFields = isNadFun && (launchThesis.trim() || tokenNarrative.trim() || tokenName.trim());
-      if (!url.trim() && !pastedContent.trim() && !hasPHFields && !hasNadFunFields) {
+      if (!url.trim() && !pastedContent.trim() && !hasNadFunFields) {
         throw new Error(
           isNadFun
             ? 'Provide a URL, pasted content, or at least one nad.fun field (token name, launch thesis, or token narrative)'
-            : isPH
-              ? 'Provide a URL, pasted content, or at least one PH listing field (name, tagline, or description)'
-              : 'Please provide a URL or paste your landing page content'
+            : 'Please provide a URL or paste your landing page content'
         );
       }
 
       const parsedPersonaIds = customPersonaIds.trim()
         ? customPersonaIds.split(',').map(id => id.trim()).filter(Boolean)
         : undefined;
-
-      const parsedTopics = phTopics.trim()
-        ? phTopics.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3)
-        : undefined;
-
-      const phSubmission = isPH ? {
-        productName: phProductName.trim() || undefined,
-        phTagline: phTagline.trim() || undefined,
-        phDescription: phDescription.trim() || undefined,
-        topics: parsedTopics,
-        makerFirstComment: makerFirstComment.trim() || undefined,
-        mediaAssets: (thumbnailUrl.trim() || videoUrl.trim()) ? {
-          thumbnailUrl: thumbnailUrl.trim() || undefined,
-          videoUrl: videoUrl.trim() || undefined,
-        } : undefined,
-      } : undefined;
 
       const nadFunSubmission = isNadFun ? {
         tokenName: tokenName.trim() || undefined,
@@ -141,7 +114,6 @@ export default function HomePage() {
         personaIds: parsedPersonaIds,
         personaSet: personaSet || undefined,
         platformMode: platformMode !== 'generic' ? platformMode : undefined,
-        phSubmission,
         nadFunSubmission,
       });
 
@@ -344,29 +316,6 @@ export default function HomePage() {
               <strong>Generic</strong>
               <p className="hint" style={{ margin: '0.25rem 0 0' }}>Landing page evaluation</p>
             </label>
-            <label
-              style={{
-                flex: 1,
-                minWidth: '140px',
-                padding: '1rem',
-                border: `2px solid ${platformMode === 'product_hunt' ? 'var(--accent-primary)' : 'var(--border)'}`,
-                borderRadius: '8px',
-                cursor: 'pointer',
-                background: platformMode === 'product_hunt' ? 'var(--accent-primary-soft)' : 'transparent',
-                opacity: 0.7,
-              }}
-            >
-              <input
-                type="radio"
-                name="platformMode"
-                value="product_hunt"
-                checked={platformMode === 'product_hunt'}
-                onChange={() => setPlatformMode('product_hunt')}
-                style={{ display: 'none' }}
-              />
-              <strong>Product Hunt</strong> <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>(legacy)</span>
-              <p className="hint" style={{ margin: '0.25rem 0 0' }}>PH launch simulation</p>
-            </label>
           </div>
 
           {platformMode === 'nad_fun' && (
@@ -491,109 +440,6 @@ export default function HomePage() {
             </div>
           )}
 
-          {platformMode === 'product_hunt' && (
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
-              <p className="hint" style={{ marginBottom: '1rem' }}>
-                Enter your Product Hunt listing details. In PH mode you can run without a landing URL.
-              </p>
-
-              <div className="form-group">
-                <label htmlFor="phProductName">
-                  Product Name <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 60 chars)</span>
-                </label>
-                <input
-                  id="phProductName"
-                  type="text"
-                  value={phProductName}
-                  onChange={(e) => setPhProductName(e.target.value)}
-                  placeholder="e.g., CodeReviewer AI"
-                  maxLength={60}
-                />
-                <p className="hint">{phProductName.length}/60</p>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="phTagline">
-                  PH Tagline <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 60 chars)</span>
-                </label>
-                <input
-                  id="phTagline"
-                  type="text"
-                  value={phTagline}
-                  onChange={(e) => setPhTagline(e.target.value)}
-                  placeholder="e.g., Ship better code, 10x faster"
-                  maxLength={60}
-                />
-                <p className="hint">{phTagline.length}/60</p>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="phDescription">
-                  PH Description <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 260 chars)</span>
-                </label>
-                <textarea
-                  id="phDescription"
-                  value={phDescription}
-                  onChange={(e) => setPhDescription(e.target.value)}
-                  placeholder="Short description for the Product Hunt listing page..."
-                  maxLength={260}
-                  style={{ minHeight: '80px' }}
-                />
-                <p className="hint">{phDescription.length}/260</p>
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="phTopics">
-                  Topics <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 3, comma-separated)</span>
-                </label>
-                <input
-                  id="phTopics"
-                  type="text"
-                  value={phTopics}
-                  onChange={(e) => setPhTopics(e.target.value)}
-                  placeholder="e.g., Developer Tools, Artificial Intelligence, Productivity"
-                />
-              </div>
-
-              <div className="form-group">
-                <label htmlFor="makerFirstComment">
-                  Maker First Comment <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 1000 chars)</span>
-                </label>
-                <textarea
-                  id="makerFirstComment"
-                  value={makerFirstComment}
-                  onChange={(e) => setMakerFirstComment(e.target.value)}
-                  placeholder="Your launch-day introductory comment as the maker..."
-                  maxLength={1000}
-                  style={{ minHeight: '100px' }}
-                />
-                <p className="hint">{makerFirstComment.length}/1000</p>
-              </div>
-
-              <div className="form-row">
-                <div className="form-group">
-                  <label htmlFor="thumbnailUrl">Thumbnail URL</label>
-                  <input
-                    id="thumbnailUrl"
-                    type="url"
-                    value={thumbnailUrl}
-                    onChange={(e) => setThumbnailUrl(e.target.value)}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div className="form-group">
-                  <label htmlFor="videoUrl">Video URL</label>
-                  <input
-                    id="videoUrl"
-                    type="url"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                    placeholder="https://youtube.com/..."
-                  />
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="card">

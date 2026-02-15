@@ -1,5 +1,5 @@
 import type { RunInput, LandingExtract, PersonaId } from '@simvibe/shared';
-import { WORLD_PROTOCOL, PH_PROTOCOL_EXTENSION, NAD_FUN_PROTOCOL_EXTENSION, OUTPUT_JSON_REMINDER } from './world-protocol';
+import { WORLD_PROTOCOL, NAD_FUN_PROTOCOL_EXTENSION, OUTPUT_JSON_REMINDER } from './world-protocol';
 import { getPersona, type PersonaDefinition } from './personas';
 
 export interface ComposedPrompt {
@@ -78,18 +78,17 @@ ${input.pricingModel}
     }
   }
 
-  if (input.phSubmission) {
-    const ph = input.phSubmission;
-    text += `\n## Product Hunt Listing\n`;
-    if (ph.productName) text += `**Product Name:** ${ph.productName}\n`;
-    if (ph.phTagline) text += `**PH Tagline:** ${ph.phTagline}\n`;
-    if (ph.phDescription) text += `**PH Description:** ${ph.phDescription}\n`;
-    if (ph.topics && ph.topics.length > 0) text += `**Topics:** ${ph.topics.join(', ')}\n`;
-    if (ph.makerFirstComment) text += `\n### Maker First Comment\n${ph.makerFirstComment}\n`;
-    if (ph.mediaAssets) {
-      if (ph.mediaAssets.thumbnailUrl) text += `**Thumbnail:** ${ph.mediaAssets.thumbnailUrl}\n`;
-      if (ph.mediaAssets.videoUrl) text += `**Video:** ${ph.mediaAssets.videoUrl}\n`;
-    }
+  if (input.nadFunSubmission) {
+    const nad = input.nadFunSubmission;
+    text += `\n## nad.fun Launch Inputs\n`;
+    if (nad.tokenName) text += `**Token Name:** ${nad.tokenName}\n`;
+    if (nad.tokenSymbol) text += `**Token Symbol:** ${nad.tokenSymbol}\n`;
+    if (nad.launchThesis) text += `\n### Launch Thesis\n${nad.launchThesis}\n`;
+    if (nad.tokenNarrative) text += `\n### Token Narrative\n${nad.tokenNarrative}\n`;
+    if (nad.distributionPlan) text += `\n### Distribution Plan\n${nad.distributionPlan}\n`;
+    if (nad.riskAssumptions) text += `\n### Risk Assumptions\n${nad.riskAssumptions}\n`;
+    if (nad.antiSnipe !== undefined) text += `**Anti-snipe:** ${nad.antiSnipe ? 'yes' : 'no'}\n`;
+    if (nad.bundled !== undefined) text += `**Bundled launch:** ${nad.bundled ? 'yes' : 'no'}\n`;
   }
 
   return text;
@@ -132,10 +131,9 @@ export function composePrompt(
   options: ComposePromptOptions = {}
 ): ComposedPrompt {
   const persona = getPersona(personaId);
-  const isPH = input.platformMode === 'product_hunt';
   const isNadFun = input.platformMode === 'nad_fun';
 
-  const platformExtension = isPH ? PH_PROTOCOL_EXTENSION : isNadFun ? NAD_FUN_PROTOCOL_EXTENSION : '';
+  const platformExtension = isNadFun ? NAD_FUN_PROTOCOL_EXTENSION : '';
 
   const systemPrompt = `${WORLD_PROTOCOL}
 ${platformExtension}

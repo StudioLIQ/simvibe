@@ -7,9 +7,8 @@
 4. Open http://localhost:5556 (허브 랜딩)
 5. New Simulation 진입: `http://localhost:5556/new`
 5. (Optional) Seed nad.fun-style runs for instant report links:
-   - `API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 PRODUCT_COUNT=5 pnpm seed:nad`
+   - `API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 PRODUCT_COUNT=20 pnpm seed:nad`
    - links saved at `artifacts_runs/nad-seed-report-links.md`
-   - (Legacy PH seeds: `pnpm seed:ph`)
 
 ---
 
