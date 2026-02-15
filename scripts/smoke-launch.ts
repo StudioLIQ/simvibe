@@ -7,10 +7,10 @@
  *
  * Usage:
  *   pnpm ci:smoke:launch   (starts server internally)
- *   BASE_URL=http://localhost:3000 pnpm smoke:launch  (against running server)
+ *   BASE_URL=http://localhost:5000 pnpm smoke:launch  (against running server)
  */
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLL_ATTEMPTS = 120;
 

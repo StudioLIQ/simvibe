@@ -4,7 +4,7 @@
   "private": true,
   "description": "simvi.be - Agentic Market Simulator for Vibe-coders",
   "scripts": {
-    "dev": "pnpm --filter @simvibe/web dev",
+    "dev": "pnpm --filter @simvibe/web dev --port 5000",
     "dev:worker": "pnpm --filter @simvibe/worker dev",
     "build": "pnpm --filter @simvibe/web build",
     "worker:start": "pnpm --filter @simvibe/worker start",

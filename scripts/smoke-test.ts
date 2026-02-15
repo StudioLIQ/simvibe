@@ -6,10 +6,10 @@
  * Usage:
  *   DEMO_MODE=true DATABASE_URL=memory:// pnpm smoke
  *   # Or with a running dev server:
- *   BASE_URL=http://localhost:3000 pnpm smoke
+ *   BASE_URL=http://localhost:5000 pnpm smoke
  */
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
+const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLL_ATTEMPTS = 120; // 2 minutes max
 

@@ -132,7 +132,7 @@ cp .env.example .env
 # Fill in GEMINI_API_KEY
 
 pnpm install
-pnpm dev          # http://localhost:3000
+pnpm dev          # http://localhost:5000
 ```
 
 For zero-cost local testing:

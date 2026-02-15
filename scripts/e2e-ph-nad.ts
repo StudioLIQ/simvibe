@@ -5,7 +5,7 @@ import path from 'node:path';
 import { buildE2EProductScenarios, type E2ERunMode } from './fixtures/e2e-products';
 
 const ROOT_DIR = path.resolve(process.cwd());
-const DEFAULT_PORT = Number(process.env.E2E_PORT || '3210');
+const DEFAULT_PORT = Number(process.env.E2E_PORT || '5000');
 const DEFAULT_BASE_URL = `http://localhost:${DEFAULT_PORT}`;
 const BASE_URL = (process.env.BASE_URL || DEFAULT_BASE_URL).replace(/\/+$/, '');
 const RUN_MODE: E2ERunMode = process.env.E2E_RUN_MODE === 'deep' ? 'deep' : 'quick';

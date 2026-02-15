@@ -3,15 +3,15 @@
  * Seed Product Hunt-style demo runs so report pages are ready to view.
  *
  * Usage:
- *   BASE_URL=http://localhost:3000 pnpm seed:ph
- *   BASE_URL=http://localhost:3000 PRODUCT_COUNT=6 RUN_MODE=quick pnpm seed:ph
+ *   BASE_URL=http://localhost:5000 pnpm seed:ph
+ *   BASE_URL=http://localhost:5000 PRODUCT_COUNT=6 RUN_MODE=quick pnpm seed:ph
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { PH_SEED_PRODUCTS } from './fixtures/ph-seed-products';
 
-const BASE_URL = (process.env.BASE_URL || 'http://localhost:3000').replace(/\/+$/, '');
+const BASE_URL = (process.env.BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
 const RUN_MODE = process.env.RUN_MODE === 'deep' ? 'deep' : 'quick';
 const PRODUCT_COUNT = Math.max(1, Math.min(
   PH_SEED_PRODUCTS.length,
