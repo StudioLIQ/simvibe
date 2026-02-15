@@ -151,6 +151,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [isPublishingToMonad, setIsPublishingToMonad] = useState(false);
   const [monadPublishError, setMonadPublishError] = useState<string | null>(null);
   const [monadConfigured, setMonadConfigured] = useState(false);
+  const [monadGateReady, setMonadGateReady] = useState<boolean | null>(null);
+  const [monadGateConfigured, setMonadGateConfigured] = useState(false);
 
   // Launch state
   const [launchReadiness, setLaunchReadiness] = useState<LaunchReadiness | null>(null);
@@ -406,6 +408,15 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             antiSnipe: data.launchInput.antiSnipe || false,
             bundled: data.launchInput.bundled || false,
           });
+        }
+      }
+      // Also fetch Monad gate status
+      const statusResp = await fetch(`/api/run/${id}/launch/status`);
+      if (statusResp.ok) {
+        const statusData = await statusResp.json();
+        if (statusData.monadGate) {
+          setMonadGateConfigured(statusData.monadGate.configured);
+          setMonadGateReady(statusData.monadGate.ready);
         }
       }
     } catch (err) {
@@ -1122,6 +1133,34 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 border: `1px solid ${launchReadiness.status === 'ready' ? 'var(--status-success)' : 'var(--status-danger)'}`,
               }}>
                 {launchReadiness.status === 'ready' ? 'READY' : 'NOT READY'}
+              </span>
+            )}
+            {monadGateConfigured && (
+              <span style={{
+                fontSize: '0.75rem',
+                padding: '0.125rem 0.5rem',
+                borderRadius: '4px',
+                background: monadGateReady === true
+                  ? 'var(--success-bg)'
+                  : monadGateReady === false
+                  ? 'var(--danger-bg)'
+                  : 'var(--indigo-bg)',
+                color: monadGateReady === true
+                  ? 'var(--success-soft)'
+                  : monadGateReady === false
+                  ? 'var(--danger-soft)'
+                  : 'var(--indigo-text)',
+                border: `1px solid ${monadGateReady === true
+                  ? 'var(--status-success)'
+                  : monadGateReady === false
+                  ? 'var(--status-danger)'
+                  : 'var(--indigo-border)'}`,
+              }}>
+                {monadGateReady === true
+                  ? 'Ready on Monad'
+                  : monadGateReady === false
+                  ? 'Blocked on Monad'
+                  : 'Monad Gate'}
               </span>
             )}
             {launchRecord && (

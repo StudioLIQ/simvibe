@@ -2109,7 +2109,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Exported: `preflightGateCheck`, `isMonadGateConfigured`, `MonadGateConfig`, `MonadGateResult`
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-010 (P1) Show readiness-onchain status in FE launch panel
+### [x] MND-010 (P1) Show readiness-onchain status in FE launch panel
 **Goal:** Make onchain gate decision visible before launch.
 
 **Deliverables**
@@ -2123,6 +2123,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - FE interaction test with mocked gate outcomes.
 
 **Dependencies:** MND-009
+
+**Completion notes:**
+- Launch panel: "Ready on Monad" (green) / "Blocked on Monad" (red) / "Monad Gate" (blue/pending) badge
+- Badge only shown when `monadGateConfigured=true` (GATE_CONTRACT_ADDRESS configured)
+- Launch status API (`GET /api/run/:id/launch/status`): returns `monadGate: { configured, ready, error }` from on-chain check
+- FE fetches gate status alongside launch data on page load
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-011 (P0) Persist nad.fun launch linkage fields
 **Goal:** Track launch tx + token address as first-class run artifacts.

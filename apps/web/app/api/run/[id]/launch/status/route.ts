@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import {
   createStorage,
   storageConfigFromEnv,
+  preflightGateCheck,
+  isMonadGateConfigured,
 } from '@simvibe/engine';
 
 /**
@@ -42,12 +44,27 @@ export async function GET(
       nextAction = 'Transaction is pending confirmation. Check your wallet or block explorer for the latest status.';
     }
 
+    // On-chain gate check (non-blocking)
+    let monadGate: { configured: boolean; ready: boolean | null; error?: string } = {
+      configured: false,
+      ready: null,
+    };
+    if (isMonadGateConfigured()) {
+      const gateResult = await preflightGateCheck(id);
+      monadGate = {
+        configured: true,
+        ready: gateResult.checked ? gateResult.ready : null,
+        error: gateResult.error,
+      };
+    }
+
     return NextResponse.json({
       launchRecord: run.launchRecord ?? null,
       launchReadiness: run.launchReadiness ?? null,
       launchInput: run.launchInput ?? null,
       events: launchEvents,
       nextAction,
+      monadGate,
     });
   } catch (error) {
     console.error('Error fetching launch status:', error);
