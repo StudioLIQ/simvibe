@@ -15,5 +15,6 @@ export * from './demo';
 export * from './chain';
 export * from './launch';
 export * from './report';
+export * from './agents';
 
 export const PACKAGE_NAME = '@simvibe/engine';

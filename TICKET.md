@@ -2361,7 +2361,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Revision count shown in collapsed state
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-021 (P0) Add external agent registry and participation config
+### [x] MND-021 (P0) Add external agent registry and participation config
 **Goal:** Let third-party agents join simulation/report refinement loops.
 
 **Deliverables**
@@ -2373,6 +2373,16 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - At least one external agent can submit valid patches.
 
 **Dependencies:** MND-017
+
+**Completion notes:**
+- `ExternalAgentSchema` in packages/shared/src/schemas/agent-registry.ts: id, name, owner, endpoint, schemaVersion, status, reputation, capabilities
+- 3 capabilities: simulation_participant, report_patcher, reviewer
+- `ParticipantConfigSchema`: per-run agent list with allowExternalPatches + requireReviewForExternal flags
+- `AgentRegistry` class in packages/engine/src/agents/registry.ts: register, get, disable, revoke, listActive (globalThis singleton)
+- `UnifiedAgent` interface: bridges persona + external agent into single identity
+- `resolveParticipants()`: builds unified agent list from persona IDs + external participants
+- `isAuthorizedPatcher()`: validates agent authorization for report patches
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-022 (P0) Implement report lifecycle controls (freeze/unfreeze/publish)
 **Goal:** Control when edits are allowed and when output is final.
