@@ -64,6 +64,15 @@ EXTRACTOR_PROVIDER=jina
 
 LLM_DAILY_TOKEN_LIMIT=2000000
 LLM_DAILY_COST_LIMIT_USD=5.00
+
+# Auto-seed on API boot (recommended)
+AUTO_SEED_NAD_ON_START=true
+AUTO_SEED_WAIT_SECONDS=180
+SEED_ONLY_MISSING=true
+PRODUCT_COUNT=20
+RUN_MODE=quick
+WEB_BASE_URL=https://simvibe.example.com
+# NAD_SOURCE_URL=https://api.nadapp.net/order/market_cap?sort=desc&offset=0&limit=20
 ```
 
 ### 3-2. Worker service (Railway, required)
@@ -135,7 +144,7 @@ pnpm install --frozen-lockfile && pnpm --filter @simvibe/web build
 5. Start command:
 
 ```bash
-pnpm --filter @simvibe/web start --port $PORT
+pnpm start:api:seed
 ```
 
 6. Set API env vars from section 3-1
@@ -250,7 +259,18 @@ Artifact:
 
 ---
 
-## 9) Seeding (Optional)
+## 9) Seeding (Auto + Manual)
+
+Default recommendation:
+- API start command uses `pnpm start:api:seed`
+- Server starts immediately and `seed:nad` runs in background
+- Seeding failure does not stop API process
+
+Disable auto-seed if needed:
+
+```env
+AUTO_SEED_NAD_ON_START=false
+```
 
 nad.fun demo seeding:
 

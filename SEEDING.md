@@ -27,6 +27,18 @@ pnpm seed:nad
 
 ## Railway Auto Seeding
 
+API 서비스 start command를 `pnpm start:api:seed`로 두면 서버 부팅과 동시에 백그라운드 시딩이 실행됩니다.
+
+필수/권장 변수:
+- `AUTO_SEED_NAD_ON_START=true`
+- `AUTO_SEED_WAIT_SECONDS=180`
+- `SEED_ONLY_MISSING=true`
+- `PRODUCT_COUNT=20`
+- `RUN_MODE=quick`
+- `WEB_BASE_URL=https://simvibe.example.com`
+
+수동으로 한 번 실행하려면 아래 명령 사용:
+
 ```bash
 API_BASE_URL=https://api-simvibe.studioliq.com \
 WEB_BASE_URL=https://simvibe.studioliq.com \
