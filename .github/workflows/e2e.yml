@@ -1,0 +1,92 @@
+name: E2E Pipeline
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  personas:
+    name: Persona validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm ci:personas
+
+  demo-outputs:
+    name: Demo output validity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test:demo
+
+  e2e:
+    name: E2E (${{ matrix.mode }}, ${{ matrix.product_count }} products)
+    runs-on: ubuntu-latest
+    needs: [typecheck, personas, demo-outputs]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - mode: quick
+            product_count: 3
+            min_ready: 1
+          - mode: deep
+            product_count: 2
+            min_ready: 1
+    env:
+      DEMO_MODE: "true"
+      DATABASE_URL: "memory://"
+      E2E_RUN_MODE: ${{ matrix.mode }}
+      PRODUCT_COUNT: ${{ matrix.product_count }}
+      MIN_READY_LAUNCHES: ${{ matrix.min_ready }}
+      E2E_VERBOSE_SERVER: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Run E2E (${{ matrix.mode }} mode)
+        run: npx tsx scripts/e2e-ph-nad.ts
+
+      - name: Upload E2E summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-summary-${{ matrix.mode }}
+          path: artifacts_runs/e2e-ph-nad-summary.json
+          retention-days: 30
+          if-no-files-found: warn
