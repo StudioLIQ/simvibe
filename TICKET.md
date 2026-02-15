@@ -1657,14 +1657,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-040 (P1) Post-launch tracking: token/campaign status back into report
+### [x] SIM-040 (P1) Post-launch tracking: token/campaign status back into report
 **Goal:** Close the loop from simulation -> launch -> market response.
 
 **Deliverables**
 - Poller/endpoint to sync launch state:
   - pending, confirmed, failed
   - token address + basic market status fields
-- Report widget: “Launch Status on nad.fun”
+- Report widget: "Launch Status on nad.fun"
 - Store timeline events (`launch_submitted`, `launch_confirmed`, `launch_failed`).
 
 **Acceptance Criteria**
@@ -1675,6 +1675,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Simulated tx state transitions reflect correctly in UI and API.
 
 **Dependencies:** SIM-039
+
+**Completion notes:**
+- Added LAUNCH_SUBMITTED, LAUNCH_CONFIRMED, LAUNCH_FAILED event types + `launch` phase to SimEvent schema
+- Confirm route emits timeline events with txHash, tokenAddress, status, idempotencyKey on each state transition
+- GET /api/run/[id]/launch/status: lightweight polling endpoint returning launchRecord + launchReadiness + launch events + nextAction guidance
+- Failed launches return actionable next-action text ("retry or fix the issue")
+- Report page launch panel already shows: status badge, txHash, tokenAddress, error, timestamps (from SIM-038/039)
+- Events are persisted in events table, visible in run event stream
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

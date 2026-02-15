@@ -6,7 +6,7 @@ import {
   confirmLaunchRecord,
   failLaunchRecord,
 } from '@simvibe/engine';
-import type { LaunchRecord } from '@simvibe/shared';
+import { createSimEvent, type LaunchRecord, type SimEventType } from '@simvibe/shared';
 
 /**
  * POST /api/run/:id/launch/confirm
@@ -63,27 +63,53 @@ export async function POST(
 
     // Update record based on reported status
     let updatedRecord: LaunchRecord;
+    let eventType: SimEventType;
+    let eventMessage: string;
+
     switch (status) {
       case 'submitted':
         updatedRecord = updateLaunchRecordWithTx(run.launchRecord, txHash, tokenAddress);
+        eventType = 'LAUNCH_SUBMITTED';
+        eventMessage = `Launch transaction submitted: ${txHash}`;
         break;
       case 'success':
         updatedRecord = confirmLaunchRecord(
           updateLaunchRecordWithTx(run.launchRecord, txHash, tokenAddress),
           tokenAddress,
         );
+        eventType = 'LAUNCH_CONFIRMED';
+        eventMessage = `Launch confirmed! Token: ${tokenAddress || 'pending'}`;
         break;
       case 'failed':
         updatedRecord = failLaunchRecord(
           updateLaunchRecordWithTx(run.launchRecord, txHash, tokenAddress),
           txError || 'Transaction failed',
         );
+        eventType = 'LAUNCH_FAILED';
+        eventMessage = `Launch failed: ${txError || 'Transaction failed'}`;
         break;
       default:
         updatedRecord = updateLaunchRecordWithTx(run.launchRecord, txHash, tokenAddress);
+        eventType = 'LAUNCH_SUBMITTED';
+        eventMessage = `Launch transaction submitted: ${txHash}`;
     }
 
+    // Persist record and emit timeline event
     await storage.saveLaunchRecord(id, updatedRecord);
+    await storage.appendEvent(
+      id,
+      createSimEvent(id, eventType, {
+        phase: 'launch',
+        message: eventMessage,
+        payload: {
+          txHash,
+          tokenAddress,
+          status: updatedRecord.status,
+          idempotencyKey: updatedRecord.idempotencyKey,
+          error: updatedRecord.error,
+        },
+      }),
+    );
     await storage.close();
 
     return NextResponse.json({

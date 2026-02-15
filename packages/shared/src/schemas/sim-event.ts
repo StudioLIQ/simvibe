@@ -19,6 +19,9 @@ export const SimEventTypeSchema = z.enum([
   'COMMENT_CREATED',
   'REPLY_CREATED',
   'SENTIMENT_SHIFT',
+  'LAUNCH_SUBMITTED',
+  'LAUNCH_CONFIRMED',
+  'LAUNCH_FAILED',
 ]);
 
 export const SimPhaseSchema = z.enum([
@@ -30,6 +33,7 @@ export const SimPhaseSchema = z.enum([
   'interaction',
   'aggregation',
   'report',
+  'launch',
 ]);
 
 export const SimEventSchema = z.object({
