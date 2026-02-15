@@ -2428,7 +2428,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Onchain receipt binds to specific report content + version state
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-024 (P0) Gate nad.fun launch to frozen/published report only
+### [x] MND-024 (P0) Gate nad.fun launch to frozen/published report only
 **Goal:** Prevent launching from mutable draft reports.
 
 **Deliverables**
@@ -2440,3 +2440,154 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - `open` reports cannot trigger live nad.fun launch.
 
 **Dependencies:** MND-022, MND-023
+
+**Completion notes:**
+- Launch execute route: checks `getReportLifecycle()` → 403 with `gateSource: 'report_lifecycle'` if not frozen/published
+- Response includes: `reportStatus`, `requiredStatus: ['frozen', 'published']`
+- Report page: warning banner "Report must be frozen or published before launching" when status is open/review
+- Execute Launch button disabled when report lifecycle is not frozen/published
+- Lifecycle check runs before off-chain/on-chain readiness gates
+- Test: `pnpm typecheck` passes for all packages
+
+---
+
+## Milestone M16 — Pivot to nad.fun Launch Reaction Simulator (P0/P1)
+
+### [ ] MND-025 (P0) Redefine primary platform mode to `nad_fun`
+**Goal:** Make nad.fun reaction prediction the default product behavior.
+
+**Deliverables**
+- `platformMode` schema updated with `nad_fun` as primary mode.
+- Default mode in FE/API switched from Product Hunt to nad.fun.
+- Legacy Product Hunt mode explicitly marked as `legacy`.
+
+**Acceptance Criteria**
+- New runs are created as nad.fun-focused by default.
+
+**Dependencies:** MND-024
+
+### [ ] MND-026 (P0) Replace PH-centric metrics with nad.fun launch metrics
+**Goal:** Align report output with token launch outcomes on nad.fun.
+
+**Deliverables**
+- New core metrics: buy intent, hold intent, early churn risk, snipe/dump risk, community spread potential.
+- Score weighting recalibrated for launch-readiness use case.
+- Report schema and UI cards updated.
+
+**Acceptance Criteria**
+- Report top-level metrics are nad.fun launch metrics (not PH upvote-centric).
+
+**Dependencies:** MND-025
+
+### [ ] MND-027 (P0) Update orchestrator prompts for nad.fun-native evaluation
+**Goal:** Make persona reasoning grounded in launch economics and market behavior.
+
+**Deliverables**
+- Prompt templates rewritten for nad.fun launch context.
+- Debate prompts include liquidity/snipe/trust dynamics.
+- Output rubric adjusted for onchain launch decisions.
+
+**Acceptance Criteria**
+- Agent outputs reference nad.fun launch considerations consistently.
+
+**Dependencies:** MND-026
+
+### [ ] MND-028 (P0) Create nad.fun-focused persona sets (quick/deep)
+**Goal:** Ensure simulation participants match launch-day participant archetypes.
+
+**Deliverables**
+- New persona set definitions for launcher, early buyer, whale watcher, skeptic, community lead, etc.
+- Run mode mapping (`quick` / `deep`) updated to new set.
+- Persona docs/tags updated for discoverability.
+
+**Acceptance Criteria**
+- Default simulation uses nad.fun-specific persona sets.
+
+**Dependencies:** MND-027
+
+### [ ] MND-029 (P0) Replace FE input UX from PH submission to nad.fun launch prep
+**Goal:** Collect launch-relevant inputs instead of Product Hunt listing fields.
+
+**Deliverables**
+- `/new` form sections revised: launch thesis, distribution plan, token narrative, risk assumptions.
+- Remove PH-only labels/wording from primary flow.
+- Keep legacy PH path behind explicit toggle if retained.
+
+**Acceptance Criteria**
+- Main form is clearly perceived as nad.fun launch simulator.
+
+**Dependencies:** MND-025
+
+### [ ] MND-030 (P0) Add API compatibility layer for legacy PH payloads
+**Goal:** Prevent breakage while pivoting to nad.fun primary mode.
+
+**Deliverables**
+- Legacy PH fields mapped to generic fallback fields where possible.
+- Validation errors provide migration guidance.
+- API version notes documented.
+
+**Acceptance Criteria**
+- Existing integrations do not hard-fail during transition window.
+
+**Dependencies:** MND-029
+
+### [ ] MND-031 (P1) Build nad.fun seed fixtures + seed script mode
+**Goal:** Seed realistic nad.fun launch scenarios for demo and QA.
+
+**Deliverables**
+- `scripts/fixtures/nad-seed-products.ts` style dataset.
+- Seed script option for `platformMode=nad_fun`.
+- Artifact links generated for seeded nad.fun reports.
+
+**Acceptance Criteria**
+- Team can pre-seed 5-8 nad.fun-style reports for demo instantly.
+
+**Dependencies:** MND-026
+
+### [ ] MND-032 (P1) Add report list filters for nad.fun/legacy mode
+**Goal:** Improve visibility during transition from PH to nad.fun focus.
+
+**Deliverables**
+- `/reports` filters: `nad_fun`, `legacy_ph`, `all`.
+- Badge per run indicating simulation mode.
+
+**Acceptance Criteria**
+- Users can isolate nad.fun reports in one click.
+
+**Dependencies:** MND-029
+
+### [ ] MND-033 (P0) Update E2E suite to nad.fun-first critical path
+**Goal:** Ensure CI validates the new core journey end-to-end.
+
+**Deliverables**
+- E2E scenario: create nad_fun run -> simulate -> living report update -> launch readiness -> nad.fun execution path.
+- Legacy PH E2E moved to compatibility lane.
+
+**Acceptance Criteria**
+- Main CI lane fails if nad.fun-first flow regresses.
+
+**Dependencies:** MND-031, MND-032
+
+### [ ] MND-034 (P0) Rewrite public copy/submission copy to nad.fun positioning
+**Goal:** Eliminate Product Hunt-first messaging drift.
+
+**Deliverables**
+- Landing, DEMO, DEPLOY, submission snippets updated.
+- One-liner: “Predict nad.fun launch reaction before going live.”
+
+**Acceptance Criteria**
+- No primary user-facing copy describes the product as PH-first.
+
+**Dependencies:** MND-025
+
+### [ ] MND-035 (P1) Add migration analytics for pre/post pivot report quality
+**Goal:** Quantify whether nad.fun pivot improves actionable outputs.
+
+**Deliverables**
+- Compare PH-era vs nad.fun-era report usefulness signals.
+- Internal dashboard or artifact summary.
+
+**Acceptance Criteria**
+- Team can show evidence that pivot improved launch-decision quality.
+
+**Dependencies:** MND-033, MND-034

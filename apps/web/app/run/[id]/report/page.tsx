@@ -1733,9 +1733,27 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             {/* Execute Launch */}
             {launchRecord && (launchRecord.status === 'draft' || launchRecord.status === 'confirmed') && (
               <div style={{ marginTop: '1rem' }}>
+                {reportLifecycle && reportLifecycle.status !== 'frozen' && reportLifecycle.status !== 'published' && (
+                  <div style={{
+                    padding: '0.75rem',
+                    marginBottom: '0.75rem',
+                    background: 'var(--warn-bg)',
+                    border: '1px solid var(--warn-border)',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.8rem',
+                    color: 'var(--warn-text)',
+                  }}>
+                    Report must be <strong>frozen</strong> or <strong>published</strong> before launching.
+                    Current status: <strong>{reportLifecycle.status}</strong>
+                  </div>
+                )}
                 <button
                   onClick={executeLaunch}
-                  disabled={isExecuting || launchReadiness?.status === 'not_ready'}
+                  disabled={
+                    isExecuting
+                    || launchReadiness?.status === 'not_ready'
+                    || (reportLifecycle != null && reportLifecycle.status !== 'frozen' && reportLifecycle.status !== 'published')
+                  }
                   className="btn"
                   style={{
                     width: '100%',
@@ -1743,7 +1761,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     color: 'var(--indigo-badge-text)',
                     padding: '0.75rem',
                     fontSize: '0.875rem',
-                    opacity: launchReadiness?.status === 'not_ready' ? 0.5 : 1,
+                    opacity: (launchReadiness?.status === 'not_ready' || (reportLifecycle != null && reportLifecycle.status !== 'frozen' && reportLifecycle.status !== 'published')) ? 0.5 : 1,
                   }}
                 >
                   {isExecuting ? 'Preparing...' : 'Execute Launch on nad.fun'}

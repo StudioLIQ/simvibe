@@ -47,6 +47,22 @@ export async function POST(
       );
     }
 
+    // Check report lifecycle: must be frozen or published to launch
+    const lifecycle = await storage.getReportLifecycle(id);
+    const reportStatus = lifecycle?.status ?? 'open';
+    if (reportStatus !== 'frozen' && reportStatus !== 'published') {
+      await storage.close();
+      return NextResponse.json(
+        {
+          error: `Cannot launch from a '${reportStatus}' report. Freeze or publish the report first.`,
+          reportStatus,
+          requiredStatus: ['frozen', 'published'],
+          gateSource: 'report_lifecycle',
+        },
+        { status: 403 }
+      );
+    }
+
     // Check off-chain readiness gate - only allow if ready or draft
     if (run.launchReadiness?.status === 'not_ready') {
       await storage.close();
