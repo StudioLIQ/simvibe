@@ -116,6 +116,19 @@ export class SQLiteStorage implements Storage {
     if (!colNames.has('receipt_published_at')) {
       this.db.exec('ALTER TABLE runs ADD COLUMN receipt_published_at TEXT');
     }
+    // Add launch linkage columns if missing (MND-011)
+    if (!colNames.has('launch_tx_hash')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN launch_tx_hash TEXT');
+    }
+    if (!colNames.has('token_contract_address')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN token_contract_address TEXT');
+    }
+    if (!colNames.has('nad_launch_url')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN nad_launch_url TEXT');
+    }
+    if (!colNames.has('launch_confirmed_at')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN launch_confirmed_at TEXT');
+    }
   }
 
   async createRun(input: RunInput): Promise<Run> {
@@ -160,6 +173,10 @@ export class SQLiteStorage implements Storage {
       launch_readiness: string | null;
       launch_input: string | null;
       launch_record: string | null;
+      launch_tx_hash: string | null;
+      token_contract_address: string | null;
+      nad_launch_url: string | null;
+      launch_confirmed_at: string | null;
       variant_of: string | null;
       error: string | null;
     } | undefined;
@@ -195,6 +212,10 @@ export class SQLiteStorage implements Storage {
       launchReadiness: row.launch_readiness ? JSON.parse(row.launch_readiness) : undefined,
       launchInput: row.launch_input ? JSON.parse(row.launch_input) : undefined,
       launchRecord: row.launch_record ? JSON.parse(row.launch_record) : undefined,
+      launchTxHash: row.launch_tx_hash ?? undefined,
+      tokenContractAddress: row.token_contract_address ?? undefined,
+      nadLaunchUrl: row.nad_launch_url ?? undefined,
+      launchConfirmedAt: row.launch_confirmed_at ?? undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
       events: events.map((e) => JSON.parse(e.data)),
@@ -371,9 +392,19 @@ export class SQLiteStorage implements Storage {
 
   async saveLaunchRecord(runId: string, record: LaunchRecord): Promise<void> {
     const now = new Date().toISOString();
+    const confirmedAt = record.status === 'success' ? now : null;
     const result = this.db.prepare(`
-      UPDATE runs SET launch_record = ?, updated_at = ? WHERE id = ?
-    `).run(JSON.stringify(record), now, runId);
+      UPDATE runs SET launch_record = ?, launch_tx_hash = ?, token_contract_address = ?,
+        launch_confirmed_at = COALESCE(launch_confirmed_at, ?), updated_at = ?
+      WHERE id = ?
+    `).run(
+      JSON.stringify(record),
+      record.txHash ?? null,
+      record.tokenAddress ?? null,
+      confirmedAt,
+      now,
+      runId
+    );
 
     if (result.changes === 0) {
       throw new Error(`Run not found: ${runId}`);

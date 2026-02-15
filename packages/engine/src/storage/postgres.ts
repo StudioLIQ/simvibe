@@ -118,6 +118,10 @@ export class PostgresStorage implements Storage {
       launchRecord: row.launch_record
         ? (typeof row.launch_record === 'string' ? JSON.parse(row.launch_record) : row.launch_record)
         : undefined,
+      launchTxHash: row.launch_tx_hash ?? undefined,
+      tokenContractAddress: row.token_contract_address ?? undefined,
+      nadLaunchUrl: row.nad_launch_url ?? undefined,
+      launchConfirmedAt: row.launch_confirmed_at ?? undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
       events: eventRows.map((e) =>
@@ -312,9 +316,19 @@ export class PostgresStorage implements Storage {
 
   async saveLaunchRecord(runId: string, record: LaunchRecord): Promise<void> {
     const now = new Date().toISOString();
+    const confirmedAt = record.status === 'success' ? now : null;
     const result = await this.pool.query(
-      `UPDATE runs SET launch_record = $1, updated_at = $2 WHERE id = $3`,
-      [JSON.stringify(record), now, runId]
+      `UPDATE runs SET launch_record = $1, launch_tx_hash = $2, token_contract_address = $3,
+        launch_confirmed_at = COALESCE(launch_confirmed_at, $4), updated_at = $5
+       WHERE id = $6`,
+      [
+        JSON.stringify(record),
+        record.txHash ?? null,
+        record.tokenAddress ?? null,
+        confirmedAt,
+        now,
+        runId,
+      ]
     );
 
     if (result.rowCount === 0) {

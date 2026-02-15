@@ -38,6 +38,11 @@ export interface Run {
   launchReadiness?: LaunchReadiness;
   launchInput?: NadLaunchInput;
   launchRecord?: LaunchRecord;
+  // Denormalized launch linkage fields (queryable columns)
+  launchTxHash?: string;
+  tokenContractAddress?: string;
+  nadLaunchUrl?: string;
+  launchConfirmedAt?: string;
   variantOf?: string;
   error?: string;
 }

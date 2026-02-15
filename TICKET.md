@@ -2131,7 +2131,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - FE fetches gate status alongside launch data on page load
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-011 (P0) Persist nad.fun launch linkage fields
+### [x] MND-011 (P0) Persist nad.fun launch linkage fields
 **Goal:** Track launch tx + token address as first-class run artifacts.
 
 **Deliverables**
@@ -2146,7 +2146,16 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Dependencies:** SIM-039, MND-004
 
-### [ ] MND-012 (P0) Wire nad.fun confirm flow to store live token address
+**Completion notes:**
+- Postgres migration `006_launch_linkage.sql`: 4 columns + 2 indexes (launch_tx_hash, token_contract_address)
+- SQLite `migrateSchema()`: adds 4 columns dynamically
+- `Run` interface: `launchTxHash?`, `tokenContractAddress?`, `nadLaunchUrl?`, `launchConfirmedAt?`
+- `saveLaunchRecord` updated in all 3 backends to write denormalized columns
+- `getRun` updated in SQLite + Postgres to read linkage fields
+- `launch_confirmed_at` set on status=success (COALESCE preserves first confirmation time)
+- Test: `pnpm typecheck` passes for all packages
+
+### [x] MND-012 (P0) Wire nad.fun confirm flow to store live token address
 **Goal:** Ensure post-launch confirm writes canonical contract address.
 
 **Deliverables**
@@ -2160,6 +2169,12 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Launch confirm API tests (valid/invalid address, duplicate confirm).
 
 **Dependencies:** MND-011
+
+**Completion notes:**
+- Confirm endpoint: `tokenAddress` required when `status=success` (400 error if missing)
+- Address format validation: must match `0x[a-fA-F0-9]{40}` regex (EVM address)
+- `saveLaunchRecord` writes `token_contract_address` column from `record.tokenAddress`
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-013 (P0) Expose live launch evidence in report page
 **Goal:** Show proof that token is live on nad.fun.

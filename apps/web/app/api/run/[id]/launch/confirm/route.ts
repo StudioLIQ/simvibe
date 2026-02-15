@@ -42,6 +42,22 @@ export async function POST(
       );
     }
 
+    // MND-012: Require tokenAddress on success
+    if (status === 'success' && (!tokenAddress || typeof tokenAddress !== 'string')) {
+      return NextResponse.json(
+        { error: 'tokenAddress is required when status is "success". Provide the deployed token contract address.' },
+        { status: 400 }
+      );
+    }
+
+    // Validate address format (basic hex check)
+    if (tokenAddress && !/^0x[a-fA-F0-9]{40}$/.test(tokenAddress)) {
+      return NextResponse.json(
+        { error: 'tokenAddress must be a valid Ethereum address (0x + 40 hex chars)' },
+        { status: 400 }
+      );
+    }
+
     const storage = createStorage(storageConfigFromEnv());
     const run = await storage.getRun(id);
 

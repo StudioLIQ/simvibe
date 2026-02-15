@@ -179,6 +179,11 @@ export class MemoryStorage implements Storage {
       throw new Error(`Run not found: ${runId}`);
     }
     run.launchRecord = record;
+    run.launchTxHash = record.txHash;
+    run.tokenContractAddress = record.tokenAddress;
+    if (record.status === 'success' && !run.launchConfirmedAt) {
+      run.launchConfirmedAt = new Date().toISOString();
+    }
     run.updatedAt = new Date().toISOString();
   }
 
