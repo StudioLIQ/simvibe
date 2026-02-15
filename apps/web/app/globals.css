@@ -138,6 +138,69 @@ a:hover {
   background: rgba(36, 27, 78, 0.9);
 }
 
+.ticker-shell {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  margin-bottom: 1rem;
+  padding: 0.52rem 0;
+  background: linear-gradient(110deg, rgba(19, 24, 40, 0.9), rgba(13, 18, 32, 0.95));
+}
+
+.ticker-shell::before,
+.ticker-shell::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 46px;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.ticker-shell::before {
+  left: 0;
+  background: linear-gradient(90deg, rgba(10, 13, 23, 0.95), rgba(10, 13, 23, 0));
+}
+
+.ticker-shell::after {
+  right: 0;
+  background: linear-gradient(270deg, rgba(10, 13, 23, 0.95), rgba(10, 13, 23, 0));
+}
+
+.ticker-track {
+  display: flex;
+  width: max-content;
+  gap: 0.6rem;
+  animation: ticker-marquee 30s linear infinite;
+}
+
+.ticker-shell:hover .ticker-track {
+  animation-play-state: paused;
+}
+
+.ticker-chip {
+  flex: 0 0 auto;
+  padding: 0.28rem 0.68rem;
+  border-radius: 999px;
+  border: 1px solid rgba(152, 136, 255, 0.36);
+  background: rgba(35, 28, 78, 0.6);
+  color: #dbe1ff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+@keyframes ticker-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
 .form-group {
   margin-bottom: 1.2rem;
 }

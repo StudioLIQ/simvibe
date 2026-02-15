@@ -79,6 +79,27 @@ export default function HomePage() {
     };
   }, [runs]);
 
+  const tickerItems = useMemo(() => {
+    const recent = runs.slice(0, 12).map((run) => {
+      const tags = Array.isArray(run.input?.tags) ? run.input.tags : [];
+      const seeded = tags.some((tag) => tag.startsWith('seed:'));
+      const score = typeof run.report?.overallScore === 'number' ? run.report.overallScore : null;
+      const shortId = run.id.length > 12 ? run.id.slice(0, 12) : run.id;
+      return `${shortId} · ${run.status.toUpperCase()} · ${score !== null ? `Score ${score}` : 'Scoring'}${seeded ? ' · SEEDED' : ''}`;
+    });
+
+    if (recent.length > 0) {
+      return recent;
+    }
+
+    return [
+      'nad.fun Signal Feed · Waiting for first run',
+      'Launch Readiness · Awaiting simulation',
+      'Persona Engine · 605 personas loaded',
+      'Risk Radar · Monitoring thesis quality',
+    ];
+  }, [runs]);
+
   return (
     <main className="container">
       <header className="header header-hero">
@@ -93,6 +114,14 @@ export default function HomePage() {
         </div>
         <p>Predict nad.fun launch reaction before you go live.</p>
       </header>
+
+      <section className="ticker-shell" aria-label="Live activity feed">
+        <div className="ticker-track">
+          {[...tickerItems, ...tickerItems].map((item, index) => (
+            <span key={`${item}-${index}`} className="ticker-chip">{item}</span>
+          ))}
+        </div>
+      </section>
 
       <div className="card card-highlight" style={{ marginBottom: '1rem' }}>
         <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>Live Snapshot</h2>
