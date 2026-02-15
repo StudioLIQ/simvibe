@@ -1,5 +1,6 @@
 import type { RunInput, LandingExtract, SimEvent, PersonaId } from '@simvibe/shared';
-import { createSimEvent, getAllPersonaIds } from '@simvibe/shared';
+import { createSimEvent } from '@simvibe/shared';
+import { getAllPersonaIds } from '../prompts/personas';
 import { getRunModeConfig } from '../config';
 import type {
   OrchestratorConfig,

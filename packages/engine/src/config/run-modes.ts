@@ -1,4 +1,5 @@
 import type { PersonaId, RunMode } from '@simvibe/shared';
+import { CORE_PERSONA_IDS } from '@simvibe/shared';
 
 export interface RunModeConfig {
   mode: RunMode;
@@ -15,13 +16,7 @@ export interface RunModeConfig {
  */
 const QUICK_MODE: RunModeConfig = {
   mode: 'quick',
-  personaIds: [
-    'cynical_engineer',
-    'passionate_pm',
-    'pragmatic_investor',
-    'ruthless_marketer',
-    'agency_owner',
-  ],
+  personaIds: [...CORE_PERSONA_IDS],
   maxTokensPerAgent: 2048,
   temperature: 0.7,
   enableDebate: false,
@@ -34,13 +29,7 @@ const QUICK_MODE: RunModeConfig = {
  */
 const DEEP_MODE: RunModeConfig = {
   mode: 'deep',
-  personaIds: [
-    'cynical_engineer',
-    'passionate_pm',
-    'pragmatic_investor',
-    'ruthless_marketer',
-    'agency_owner',
-  ],
+  personaIds: [...CORE_PERSONA_IDS],
   maxTokensPerAgent: 4096,
   temperature: 0.7,
   enableDebate: true,

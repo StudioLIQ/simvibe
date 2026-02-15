@@ -9,6 +9,7 @@
     "build": "pnpm --filter @simvibe/web build",
     "worker:start": "pnpm --filter @simvibe/worker start",
     "db:migrate": "pnpm --filter @simvibe/engine db:migrate",
+    "personas:validate": "pnpm --filter @simvibe/engine personas:validate",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },

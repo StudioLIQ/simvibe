@@ -1,12 +1,19 @@
 import { z } from 'zod';
 
-export const PersonaIdSchema = z.enum([
+/** Persona IDs are snake_case strings. No longer a fixed enum. */
+export const PersonaIdSchema = z.string()
+  .min(2, 'Persona ID too short')
+  .max(100, 'Persona ID too long')
+  .regex(/^[a-z][a-z0-9_]*$/, 'Persona ID must be snake_case');
+
+/** Core 5 persona IDs for backward compatibility. */
+export const CORE_PERSONA_IDS = [
   'cynical_engineer',
   'passionate_pm',
   'pragmatic_investor',
   'ruthless_marketer',
   'agency_owner',
-]);
+] as const;
 
 export const ActionTypeSchema = z.enum([
   'UPVOTE',
@@ -120,5 +127,5 @@ export function validateAgentOutput(data: unknown): { success: true; data: Agent
 }
 
 export function getAllPersonaIds(): PersonaId[] {
-  return PersonaIdSchema.options as PersonaId[];
+  return [...CORE_PERSONA_IDS] as PersonaId[];
 }
