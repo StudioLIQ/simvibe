@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import type { PricingModel, RunMode, PersonaSetName } from '@simvibe/shared';
+import type { PricingModel, RunMode, PlatformMode, PersonaSetName } from '@simvibe/shared';
 import { createRun } from '@/lib/api';
 
 const PRICING_MODELS: { value: PricingModel; label: string }[] = [
@@ -29,6 +29,14 @@ export default function HomePage() {
   const [runMode, setRunMode] = useState<RunMode>('quick');
   const [personaSet, setPersonaSet] = useState<PersonaSetName | ''>('');
   const [customPersonaIds, setCustomPersonaIds] = useState('');
+  const [platformMode, setPlatformMode] = useState<PlatformMode>('generic');
+  const [phProductName, setPhProductName] = useState('');
+  const [phTagline, setPhTagline] = useState('');
+  const [phDescription, setPhDescription] = useState('');
+  const [phTopics, setPhTopics] = useState('');
+  const [makerFirstComment, setMakerFirstComment] = useState('');
+  const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [videoUrl, setVideoUrl] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,13 +50,36 @@ export default function HomePage() {
       if (!description.trim()) {
         throw new Error('Description is required');
       }
-      if (!url.trim() && !pastedContent.trim()) {
-        throw new Error('Please provide a URL or paste your landing page content');
+
+      const isPH = platformMode === 'product_hunt';
+      const hasPHFields = isPH && (phProductName.trim() || phTagline.trim() || phDescription.trim());
+      if (!url.trim() && !pastedContent.trim() && !hasPHFields) {
+        throw new Error(
+          isPH
+            ? 'Provide a URL, pasted content, or at least one PH listing field (name, tagline, or description)'
+            : 'Please provide a URL or paste your landing page content'
+        );
       }
 
       const parsedPersonaIds = customPersonaIds.trim()
         ? customPersonaIds.split(',').map(id => id.trim()).filter(Boolean)
         : undefined;
+
+      const parsedTopics = phTopics.trim()
+        ? phTopics.split(',').map(t => t.trim()).filter(Boolean).slice(0, 3)
+        : undefined;
+
+      const phSubmission = isPH ? {
+        productName: phProductName.trim() || undefined,
+        phTagline: phTagline.trim() || undefined,
+        phDescription: phDescription.trim() || undefined,
+        topics: parsedTopics,
+        makerFirstComment: makerFirstComment.trim() || undefined,
+        mediaAssets: (thumbnailUrl.trim() || videoUrl.trim()) ? {
+          thumbnailUrl: thumbnailUrl.trim() || undefined,
+          videoUrl: videoUrl.trim() || undefined,
+        } : undefined,
+      } : undefined;
 
       const result = await createRun({
         tagline: tagline.trim(),
@@ -61,6 +92,8 @@ export default function HomePage() {
         runMode,
         personaIds: parsedPersonaIds,
         personaSet: personaSet || undefined,
+        platformMode: isPH ? 'product_hunt' : undefined,
+        phSubmission,
       });
 
       router.push(`/run/${result.runId}`);
@@ -180,6 +213,158 @@ export default function HomePage() {
             />
             <p className="hint">Use this if your page is not public or extraction fails</p>
           </div>
+        </div>
+
+        <div className="card">
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Platform Mode</h2>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+            <label
+              style={{
+                flex: 1,
+                padding: '1rem',
+                border: `2px solid ${platformMode === 'generic' ? '#6366f1' : '#333'}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: platformMode === 'generic' ? 'rgba(99,102,241,0.1)' : 'transparent',
+              }}
+            >
+              <input
+                type="radio"
+                name="platformMode"
+                value="generic"
+                checked={platformMode === 'generic'}
+                onChange={() => setPlatformMode('generic')}
+                style={{ display: 'none' }}
+              />
+              <strong>Generic</strong>
+              <p className="hint" style={{ margin: '0.25rem 0 0' }}>Landing page evaluation</p>
+            </label>
+            <label
+              style={{
+                flex: 1,
+                padding: '1rem',
+                border: `2px solid ${platformMode === 'product_hunt' ? '#da552f' : '#333'}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: platformMode === 'product_hunt' ? 'rgba(218,85,47,0.1)' : 'transparent',
+              }}
+            >
+              <input
+                type="radio"
+                name="platformMode"
+                value="product_hunt"
+                checked={platformMode === 'product_hunt'}
+                onChange={() => setPlatformMode('product_hunt')}
+                style={{ display: 'none' }}
+              />
+              <strong>Product Hunt</strong>
+              <p className="hint" style={{ margin: '0.25rem 0 0' }}>PH launch simulation</p>
+            </label>
+          </div>
+
+          {platformMode === 'product_hunt' && (
+            <div style={{ borderTop: '1px solid #333', paddingTop: '1rem' }}>
+              <p className="hint" style={{ marginBottom: '1rem' }}>
+                Enter your Product Hunt listing details. In PH mode you can run without a landing URL.
+              </p>
+
+              <div className="form-group">
+                <label htmlFor="phProductName">
+                  Product Name <span style={{ color: '#888', fontSize: '0.85em' }}>(max 60 chars)</span>
+                </label>
+                <input
+                  id="phProductName"
+                  type="text"
+                  value={phProductName}
+                  onChange={(e) => setPhProductName(e.target.value)}
+                  placeholder="e.g., CodeReviewer AI"
+                  maxLength={60}
+                />
+                <p className="hint">{phProductName.length}/60</p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="phTagline">
+                  PH Tagline <span style={{ color: '#888', fontSize: '0.85em' }}>(max 60 chars)</span>
+                </label>
+                <input
+                  id="phTagline"
+                  type="text"
+                  value={phTagline}
+                  onChange={(e) => setPhTagline(e.target.value)}
+                  placeholder="e.g., Ship better code, 10x faster"
+                  maxLength={60}
+                />
+                <p className="hint">{phTagline.length}/60</p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="phDescription">
+                  PH Description <span style={{ color: '#888', fontSize: '0.85em' }}>(max 260 chars)</span>
+                </label>
+                <textarea
+                  id="phDescription"
+                  value={phDescription}
+                  onChange={(e) => setPhDescription(e.target.value)}
+                  placeholder="Short description for the Product Hunt listing page..."
+                  maxLength={260}
+                  style={{ minHeight: '80px' }}
+                />
+                <p className="hint">{phDescription.length}/260</p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="phTopics">
+                  Topics <span style={{ color: '#888', fontSize: '0.85em' }}>(max 3, comma-separated)</span>
+                </label>
+                <input
+                  id="phTopics"
+                  type="text"
+                  value={phTopics}
+                  onChange={(e) => setPhTopics(e.target.value)}
+                  placeholder="e.g., Developer Tools, Artificial Intelligence, Productivity"
+                />
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="makerFirstComment">
+                  Maker First Comment <span style={{ color: '#888', fontSize: '0.85em' }}>(max 1000 chars)</span>
+                </label>
+                <textarea
+                  id="makerFirstComment"
+                  value={makerFirstComment}
+                  onChange={(e) => setMakerFirstComment(e.target.value)}
+                  placeholder="Your launch-day introductory comment as the maker..."
+                  maxLength={1000}
+                  style={{ minHeight: '100px' }}
+                />
+                <p className="hint">{makerFirstComment.length}/1000</p>
+              </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="thumbnailUrl">Thumbnail URL</label>
+                  <input
+                    id="thumbnailUrl"
+                    type="url"
+                    value={thumbnailUrl}
+                    onChange={(e) => setThumbnailUrl(e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="videoUrl">Video URL</label>
+                  <input
+                    id="videoUrl"
+                    type="url"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                    placeholder="https://youtube.com/..."
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="card">

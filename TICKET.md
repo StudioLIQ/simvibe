@@ -1263,3 +1263,178 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Client payload now matches shared `RunInput` schema capabilities
 - Test: `pnpm typecheck` passes for all packages
 - Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
+
+---
+
+## Milestone M10 — Product Hunt Reality Alignment + Runtime Reliability (P0/P1)
+
+### [x] SIM-029 (P0) Add Product Hunt submission schema + input UX
+**Goal:** Make run inputs match real Product Hunt listing constraints and artifacts.
+
+**Deliverables**
+- Extend `RunInputSchema` with optional PH submission fields:
+  - `productName` (char-limited)
+  - `phTagline` (PH-style short limit)
+  - `phDescription` (short body)
+  - `topics` (fixed-size list)
+  - `makerFirstComment` (launch-day comment draft)
+  - `mediaAssets` metadata (thumbnail/gallery/video links)
+- Input UI section: "Product Hunt Listing Mode" with field-level limits and validation hints.
+- Backward compatibility: existing runs without PH fields still valid.
+
+**Acceptance Criteria**
+- User can run simulation from PH-formatted listing data only (even without full landing URL).
+- Validation errors clearly explain PH-specific limits and required fields.
+
+**Test Plan**
+- Submit valid/invalid PH listing payloads and verify deterministic 2xx/4xx behavior.
+
+**Dependencies:** SIM-028
+
+**Completion notes:**
+- `PlatformModeSchema` ('generic' | 'product_hunt'), `PHSubmissionSchema`, `MediaAssetsSchema` added to `packages/shared/src/schemas/run-input.ts`
+- PH fields: productName (60), phTagline (60), phDescription (260), topics (max 3), makerFirstComment (1000), mediaAssets (thumbnail/gallery/video URLs)
+- `.refine()` on RunInputSchema: PH mode allows running with just PH listing fields (no URL/pastedContent required)
+- `CreateRunRequest` in `apps/web/lib/api.ts` updated with `platformMode` + `phSubmission`
+- Input page: "Platform Mode" card with Generic/Product Hunt toggle; PH fields with char counters and validation hints
+- Backward compatible: existing runs without PH fields parse fine (6 validation tests pass)
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
+
+---
+
+### [ ] SIM-030 (P0) Introduce PH mode simulation semantics (ranking-window + social proof)
+**Goal:** Model Product Hunt launch dynamics, not generic landing-page evaluation only.
+
+**Deliverables**
+- New run mode/profile: `platformMode: product_hunt`.
+- Inject PH-specific priors into prompts/orchestrator:
+  - launch window sensitivity (early momentum bias)
+  - maker comment quality impact
+  - topic-fit and novelty penalty
+  - social proof feedback (upvotes/comments) by phase
+- Report includes PH-specific outputs:
+  - expected upvotes by time window
+  - expected comment velocity
+  - launch momentum risk flags
+
+**Acceptance Criteria**
+- Same product with weak vs strong maker comment yields meaningfully different PH-mode forecast.
+- PH-mode report includes explicit timeline assumptions.
+
+**Test Plan**
+- Run A/B with only maker comment changed and verify directional shift in momentum metrics.
+
+**Dependencies:** SIM-029, SIM-020
+
+---
+
+### [ ] SIM-031 (P0) Model organic agent interactions as threaded comments
+**Goal:** Ensure “many persona agents reacting organically” is explicit and inspectable.
+
+**Deliverables**
+- Add threaded interaction layer:
+  - `comment_created`, `reply_created`, `sentiment_shift` events
+  - per-persona influence weights (who moves whom)
+- Persist thread graph in run data.
+- Report section: “Conversation Dynamics”
+  - top persuasive comments
+  - cascade triggers (positive/negative)
+  - disagreement resolution map
+
+**Acceptance Criteria**
+- Runs with 10+ personas show non-trivial interaction graph (not only independent outputs).
+- Report can trace key metric changes to concrete interaction events.
+
+**Test Plan**
+- Inject one skeptical/high-influence persona and verify measurable downstream impact on actions.
+
+**Dependencies:** SIM-030, SIM-021D
+
+---
+
+### [ ] SIM-032 (P1) Add Product Hunt launch report pack output
+**Goal:** Produce submission-ready artifacts, not only analytics.
+
+**Deliverables**
+- Generate `launch_pack` section in report:
+  - revised PH tagline candidates
+  - revised PH description candidates
+  - maker first-comment rewrite options
+  - FAQ/objection handling snippets for comments
+- Export endpoint for markdown/json bundle.
+
+**Acceptance Criteria**
+- A completed run can output a practical PH submission draft and comment playbook.
+- Artifacts are traceable to friction findings in the same report.
+
+**Test Plan**
+- Complete one run and verify export includes all sections with non-empty content.
+
+**Dependencies:** SIM-029, SIM-031
+
+---
+
+### [ ] SIM-033 (P0) Fix local runtime reliability matrix (Node/SQLite/Next) + fallback policy
+**Goal:** Ensure `create -> start -> stream -> report` works predictably in dev environments.
+
+**Deliverables**
+- Document and enforce supported Node versions for native SQLite path.
+- Add storage fallback policy:
+  - if SQLite native module unavailable, fail with actionable setup guidance OR auto-fallback to supported backend.
+- Add explicit startup diagnostics endpoint showing active storage backend and registry source.
+
+**Acceptance Criteria**
+- On unsupported Node/native setup, app fails fast with actionable error (no opaque 500).
+- On supported setup, full local run flow passes without manual patching.
+
+**Test Plan**
+- Validate behavior on both supported and unsupported Node versions.
+
+**Dependencies:** SIM-018B
+
+---
+
+### [ ] SIM-034 (P1) End-to-end smoke harness for web API path (demo mode)
+**Goal:** Prevent regressions between “engine works” and “web path actually works”.
+
+**Deliverables**
+- Scripted smoke flow:
+  - POST `/api/run`
+  - POST `/api/run/:id/start`
+  - poll `/api/run/:id` and `/api/run/:id/stream`
+  - assert report presence and core metrics shape
+- Run in CI with demo mode (no external API keys).
+
+**Acceptance Criteria**
+- CI fails if web path cannot complete a run end-to-end.
+- Smoke output includes run ID, duration, final status, and key metrics.
+
+**Test Plan**
+- Intentionally break one API route and verify smoke harness fails.
+
+**Dependencies:** SIM-033
+
+---
+
+### [ ] SIM-035 (P0) Fix demo-mode agent output validity (no negative probabilities / no fallback)
+**Goal:** Ensure `DEMO_MODE=true` runs produce fully valid agent outputs without schema fallback noise.
+
+**Problem observed**
+- In current demo LLM generator, probability values can become negative for certain personas/seeds.
+- This causes validation failure and fallback outputs, reducing demo credibility.
+
+**Deliverables**
+- Fix demo probability generation to always satisfy `0 <= probability <= 1`.
+- Add deterministic unit/fixture check for all default quick/deep personas.
+- Ensure demo mode can complete with zero fallbacks on standard sample inputs.
+
+**Acceptance Criteria**
+- Demo-mode quick run stores 0 fallback agent outputs.
+- Report warnings do not include fallback warning for valid demo inputs.
+
+**Test Plan**
+- Run web API flow (`create -> start -> get run`) with `DEMO_MODE=true` and assert fallback count is 0.
+- Add test that validates generated demo action arrays against `ActionProbabilitySchema`.
+
+**Dependencies:** SIM-034

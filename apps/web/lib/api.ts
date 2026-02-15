@@ -1,4 +1,4 @@
-import type { RunInput, PricingModel, RunMode, PersonaSetName } from '@simvibe/shared';
+import type { RunInput, PricingModel, RunMode, PlatformMode, PHSubmission, PersonaSetName } from '@simvibe/shared';
 
 export interface CreateRunRequest {
   tagline: string;
@@ -12,6 +12,8 @@ export interface CreateRunRequest {
   runMode?: RunMode;
   personaIds?: string[];
   personaSet?: PersonaSetName;
+  platformMode?: PlatformMode;
+  phSubmission?: PHSubmission;
 }
 
 export interface CreateRunResponse {
