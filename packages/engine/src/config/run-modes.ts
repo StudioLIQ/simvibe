@@ -29,12 +29,40 @@ const DEEP_EXTRA_PERSONA_IDS: PersonaId[] = [
 ];
 
 /**
+ * nad.fun quick persona IDs: crypto-native core set for token launch evaluation.
+ * Covers: smart contract skeptic, crypto community, crypto marketer, pragmatic investor, cynical engineer.
+ */
+const NAD_FUN_QUICK_PERSONA_IDS: PersonaId[] = [
+  'cynical_engineer' as PersonaId,                         // Technical skeptic (shared with core)
+  'pragmatic_investor' as PersonaId,                       // Investment/ROI evaluator (shared with core)
+  'community_manager_web3' as PersonaId,                   // Web3 community perspective
+  'smart_contract_dev' as PersonaId,                       // Onchain skeptic / DeFi engineer
+  'ph_grinder_crypto_marketer_comment_grinder' as PersonaId, // Crypto marketing/hype evaluator
+];
+
+/**
+ * nad.fun deep persona IDs: expanded set with more diverse launch-day archetypes.
+ * Adds: early-buyer maker, whale/VC, skeptical economist, security auditor, growth founder, community builder.
+ */
+const NAD_FUN_DEEP_EXTRA_IDS: PersonaId[] = [
+  'ruthless_marketer' as PersonaId,                        // Growth/distribution angle
+  'agency_owner' as PersonaId,                             // Business model evaluator
+  'skeptical_economist' as PersonaId,                      // Economic skeptic
+  'elite_security_engineer_threat_modeler' as PersonaId,   // Security/audit perspective
+  'elite_community_builder_high_signal' as PersonaId,      // Community quality signal
+  'elite_growth_focused_founder' as PersonaId,             // GTM / launch momentum
+  'ph_grinder_crypto_marketer_maker_cosplayer' as PersonaId, // Degen/trend follower
+];
+
+/**
  * Named persona sets: curated bundles of persona IDs for each run mode.
  * Adding a new set only requires adding an entry here + referencing it in a mode config.
  */
 export const PERSONA_SETS: Record<string, PersonaId[]> = {
   quick: [...CORE_PERSONA_IDS],
   deep: [...CORE_PERSONA_IDS, ...DEEP_EXTRA_PERSONA_IDS],
+  nad_fun_quick: [...NAD_FUN_QUICK_PERSONA_IDS],
+  nad_fun_deep: [...NAD_FUN_QUICK_PERSONA_IDS, ...NAD_FUN_DEEP_EXTRA_IDS],
 };
 
 /**

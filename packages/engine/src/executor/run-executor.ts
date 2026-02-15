@@ -136,7 +136,7 @@ export async function executeRun(
     currentPhase = { phase: 'simulation', startedAt: new Date().toISOString() };
     const modeConfig = getRunModeConfig(run.input.runMode);
 
-    // Resolve persona IDs: explicit personaIds > personaSet > mode defaults
+    // Resolve persona IDs: explicit personaIds > personaSet > platform-aware mode defaults
     let resolvedPersonaIds: string[];
     let resolvedSetName = modeConfig.personaSetName;
 
@@ -147,6 +147,12 @@ export async function executeRun(
       const setIds = getPersonaSetIds(run.input.personaSet);
       resolvedPersonaIds = setIds ?? modeConfig.personaIds;
       resolvedSetName = run.input.personaSet;
+    } else if (run.input.platformMode === 'nad_fun') {
+      // nad.fun mode: use crypto-native persona sets by default
+      const nadSetName = (run.input.runMode === 'deep' ? 'nad_fun_deep' : 'nad_fun_quick') as typeof resolvedSetName;
+      const nadSetIds = getPersonaSetIds(nadSetName);
+      resolvedPersonaIds = nadSetIds ?? modeConfig.personaIds;
+      resolvedSetName = nadSetName;
     } else {
       resolvedPersonaIds = modeConfig.personaIds;
     }

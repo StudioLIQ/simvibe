@@ -34,6 +34,6 @@ export type PersonaSnapshots = z.infer<typeof PersonaSnapshotsSchema>;
 /**
  * Named persona set: a curated bundle of persona IDs.
  */
-export const PersonaSetNameSchema = z.enum(['quick', 'deep', 'custom']);
+export const PersonaSetNameSchema = z.enum(['quick', 'deep', 'nad_fun_quick', 'nad_fun_deep', 'custom']);
 
 export type PersonaSetName = z.infer<typeof PersonaSetNameSchema>;

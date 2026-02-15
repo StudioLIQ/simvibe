@@ -505,6 +505,8 @@ export default function HomePage() {
               <option value="">Mode default</option>
               <option value="quick">Quick (5 core personas)</option>
               <option value="deep">Deep (11 personas)</option>
+              <option value="nad_fun_quick">nad.fun Quick (5 crypto-native)</option>
+              <option value="nad_fun_deep">nad.fun Deep (12 crypto-native)</option>
               <option value="custom">Custom persona IDs</option>
             </select>
           </div>
