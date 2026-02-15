@@ -1478,7 +1478,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-035 (P0) Fix demo-mode agent output validity (no negative probabilities / no fallback)
+### [x] SIM-035 (P0) Fix demo-mode agent output validity (no negative probabilities / no fallback)
 **Goal:** Ensure `DEMO_MODE=true` runs produce fully valid agent outputs without schema fallback noise.
 
 **Problem observed**
@@ -1499,6 +1499,16 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Add test that validates generated demo action arrays against `ActionProbabilitySchema`.
 
 **Dependencies:** SIM-034
+
+**Completion notes:**
+- Root cause: signed right shift (`>>`) in DemoLLMClient hash-based weight generation caused negative
+  values when seed exceeded 2^31 (pragmatic_investor, elite_community_builder_high_signal)
+- Fix: changed to unsigned right shift (`>>>`) for all bit-shifted seed derivations
+- `scripts/test-demo-outputs.ts`: validates demo output schema for all 11 quick/deep personas x 2 modes (debate on/off)
+- `pnpm test:demo` runs the validation (22 tests)
+- Before fix: 4 failures (negative PAY/SHARE/BOUNCE probabilities)
+- After fix: 22/22 pass, 0 failures, all probabilities in [0, 0.95] range
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

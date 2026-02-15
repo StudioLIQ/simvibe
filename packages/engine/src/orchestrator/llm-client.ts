@@ -65,13 +65,14 @@ function buildDemoOutput(systemPrompt: string, userPrompt: string): Record<strin
   const primaryAction = DEMO_PRIMARY_ACTIONS[seed % DEMO_PRIMARY_ACTIONS.length];
   const includeDebate = /Include the debate phase\./i.test(userPrompt);
 
+  // Use unsigned right shift (>>>) to avoid negative results from signed bit shift
   const weights: Record<typeof DEMO_PRIMARY_ACTIONS[number], number> = {
     UPVOTE: 0.15 + ((seed % 20) / 100),
-    COMMENT: 0.1 + (((seed >> 2) % 20) / 100),
-    SIGNUP: 0.2 + (((seed >> 4) % 30) / 100),
-    PAY: 0.05 + (((seed >> 6) % 20) / 100),
-    SHARE: 0.08 + (((seed >> 8) % 15) / 100),
-    BOUNCE: 0.1 + (((seed >> 10) % 25) / 100),
+    COMMENT: 0.1 + (((seed >>> 2) % 20) / 100),
+    SIGNUP: 0.2 + (((seed >>> 4) % 30) / 100),
+    PAY: 0.05 + (((seed >>> 6) % 20) / 100),
+    SHARE: 0.08 + (((seed >>> 8) % 15) / 100),
+    BOUNCE: 0.1 + (((seed >>> 10) % 25) / 100),
   };
 
   const maxAction = Object.entries(weights).sort((a, b) => b[1] - a[1])[0][0] as typeof DEMO_PRIMARY_ACTIONS[number];
