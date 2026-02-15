@@ -2086,7 +2086,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Dependencies:** MND-007
 
-### [ ] MND-009 (P0) Enforce onchain preflight in launch API
+### [x] MND-009 (P0) Enforce onchain preflight in launch API
 **Goal:** Prevent launch execution unless Monad gate returns ready.
 
 **Deliverables**
@@ -2100,6 +2100,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - API integration test for blocked and allowed paths.
 
 **Dependencies:** MND-008
+
+**Completion notes:**
+- `packages/engine/src/launch/monad-gate.ts`: On-chain gate client with `preflightGateCheck()`, `checkOnchainReadiness()`
+- Config: `GATE_CONTRACT_ADDRESS` + `RECEIPT_RPC_URL` (shared RPC)
+- Launch execute route: on-chain preflight after off-chain gate, 403 with `gateSource: 'onchain'` when not ready
+- Non-blocking on network errors: logs warning but allows off-chain gate to be the primary gate
+- Exported: `preflightGateCheck`, `isMonadGateConfigured`, `MonadGateConfig`, `MonadGateResult`
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-010 (P1) Show readiness-onchain status in FE launch panel
 **Goal:** Make onchain gate decision visible before launch.

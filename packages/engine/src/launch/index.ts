@@ -18,3 +18,12 @@ export {
   failLaunchRecord,
   type LaunchExecutionPlan,
 } from './executor';
+
+export {
+  preflightGateCheck,
+  checkOnchainReadiness,
+  getMonadGateConfig,
+  isMonadGateConfigured,
+  type MonadGateConfig,
+  type MonadGateResult,
+} from './monad-gate';

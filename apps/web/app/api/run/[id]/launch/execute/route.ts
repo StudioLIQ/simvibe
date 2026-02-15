@@ -4,6 +4,8 @@ import {
   storageConfigFromEnv,
   prepareLaunchExecution,
   isNadLaunchEnabled,
+  preflightGateCheck,
+  isMonadGateConfigured,
 } from '@simvibe/engine';
 
 /**
@@ -45,16 +47,37 @@ export async function POST(
       );
     }
 
-    // Check readiness gate - only allow if ready or draft
+    // Check off-chain readiness gate - only allow if ready or draft
     if (run.launchReadiness?.status === 'not_ready') {
       await storage.close();
       return NextResponse.json(
         {
           error: 'Launch readiness gate is NOT READY. Fix blockers before executing.',
           blockers: run.launchReadiness.blockers,
+          gateSource: 'offchain',
         },
         { status: 403 }
       );
+    }
+
+    // On-chain preflight: if Monad gate is configured, check isLaunchReady
+    if (isMonadGateConfigured()) {
+      const gateResult = await preflightGateCheck(id);
+      if (gateResult.checked && !gateResult.ready) {
+        await storage.close();
+        return NextResponse.json(
+          {
+            error: 'On-chain readiness gate returned NOT READY. Attest readiness on Monad first.',
+            gateSource: 'onchain',
+            gateError: gateResult.error,
+          },
+          { status: 403 }
+        );
+      }
+      // If check failed (network error etc.), log but don't block (defense in depth is off-chain gate above)
+      if (!gateResult.checked && gateResult.error) {
+        console.warn(`On-chain gate check failed (non-blocking): ${gateResult.error}`);
+      }
     }
 
     // Prevent re-execution of already submitted/successful launches
