@@ -1911,7 +1911,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - runId: keccak256(runIdString), inputHash/reportHash: SHA-256 of canonical JSON → bytes32
 - Test: ABI validates as JSON, all 8 entries present
 
-### [ ] MND-002 (P0) Implement Receipt contract + tests
+### [x] MND-002 (P0) Implement Receipt contract + tests
 **Goal:** Deployable Solidity contract for publishing receipts on Monad.
 
 **Deliverables**
@@ -1927,6 +1927,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Contract test command in CI/local docs.
 
 **Dependencies:** MND-001
+
+**Completion notes:**
+- `contracts/src/SimVibeReceipt.sol`: Full implementation of ISimVibeReceipt interface
+- `contracts/test/SimVibeReceipt.t.sol`: 15 tests (14 unit + 1 fuzz with 256 runs)
+- Tests cover: success, event emission, all 5 score bands, multiple runs, timestamp, duplicate revert, zero hash revert, invalid score band revert, not-found reads, fuzz
+- Foundry project: `foundry.toml` with solc 0.8.24, optimizer 200 runs
+- forge-std v1.14.0 installed as git submodule
+- Test: `cd contracts && forge test -vv` — 15 passed, 0 failed
 
 ### [ ] MND-003 (P0) Deploy Receipt contract to Monad testnet
 **Goal:** Operational contract address for app integration.
