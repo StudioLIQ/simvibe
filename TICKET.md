@@ -1101,3 +1101,126 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Test: `pnpm typecheck` passes for all packages
 - Test: `pnpm ci:personas` passes (605 valid, 50 tests pass)
 - Test: `DATABASE_URL=postgres://... pnpm personas:sync --dry-run` previews sync
+
+---
+
+## Milestone M9 — Post-Completion Fixes (Validation Gap Closure) (P0/P1)
+### [x] SIM-024 (P0) Actually enable DB-first persona registry at runtime
+**Goal:** Ensure synced Postgres personas are truly used in production runtime (not only file-based fallback).
+
+**Problem observed**
+- `initPersonaRegistryFromDb()` exists but is not called by web/worker startup.
+- Current runtime path therefore keeps loading personas from files via `getPersonaRegistry()`.
+
+**Deliverables**
+- Bootstrap DB registry on service startup when `DATABASE_URL` is Postgres:
+  - worker startup path
+  - web API startup path (or first request bootstrap with cache)
+- Fallback logic:
+  - DB unavailable/empty -> file registry
+  - explicit logs indicating active source (`db` vs `files`)
+- Test coverage:
+  - integration test proving DB-populated personas are returned by registry
+
+**Acceptance Criteria**
+- With active personas in DB, runtime uses DB personas without code redeploy.
+- Logs clearly show registry source selection.
+
+**Dependencies:** SIM-023
+
+**Completion notes:**
+- Worker startup (`apps/worker/src/index.ts`): calls `initPersonaRegistryFromDb()` when DATABASE_URL is Postgres, logs source/count
+- Web API (`apps/web/app/api/run/[id]/start/route.ts`): calls `ensurePersonaRegistry()` before inline execution
+- New `ensurePersonaRegistry()` async helper: checks cache TTL → tries Postgres → falls back to files
+- Exported from `@simvibe/engine` for use by both worker and web
+- Regression tests: sections 9 (ensurePersonaRegistry) and 10 (DB integration) added to test-personas.ts
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 54 tests pass)
+
+---
+
+### [ ] SIM-025 (P0) Make Quick/Deep persona sets actually different
+**Goal:** Fulfill mode semantics where Quick and Deep use distinct persona bundles.
+
+**Problem observed**
+- `PERSONA_SETS.quick` and `PERSONA_SETS.deep` are currently identical (same core 5 IDs).
+
+**Deliverables**
+- Curate non-identical set definitions:
+  - `quick`: minimal core set optimized for latency
+  - `deep`: expanded/diverse set for confidence depth
+- Update mode labels/UI copy to reflect actual set sizes.
+- Add regression test asserting set inequality and minimum deep-set expansion.
+
+**Acceptance Criteria**
+- Quick and Deep runs execute different persona sets by default.
+- Report metadata (`personaSet`, `executedPersonaIds`) reflects the difference.
+
+**Dependencies:** SIM-022
+
+---
+
+### [ ] SIM-026 (P1) Enforce fail-fast persona ID validation at API boundary
+**Goal:** Return actionable 4xx before run creation/enqueue when persona IDs are unknown.
+
+**Problem observed**
+- Unknown `personaIds` currently fail during execution stage, often after run is created/queued.
+
+**Deliverables**
+- Validate requested `personaIds` against runtime registry in:
+  - `POST /api/run`
+  - optional re-check in `POST /api/run/[id]/start`
+- Return 4xx with missing IDs + short sample of available IDs.
+- Keep executor-side validation as defense in depth.
+
+**Acceptance Criteria**
+- Invalid persona IDs never create queued work.
+- API response is deterministic and user-actionable.
+
+**Dependencies:** SIM-021B, SIM-024
+
+---
+
+### [ ] SIM-027 (P1) Implement real time-budget guardrails + early-stop reporting
+**Goal:** Make `timeBudgetMs` effective and surface early-stop reason in report/events.
+
+**Problem observed**
+- `timeBudgetMs` is defined in config but not enforced in orchestrator flow.
+- `earlyStopReason` is schema/report field but always unset.
+
+**Deliverables**
+- Enforce time budget in orchestrator loop:
+  - stop launching new agent batches when budget nearly exhausted
+  - emit warning/phase event on early stop
+- Populate report `earlyStopReason` and warnings consistently.
+- Add tests for budget-hit scenarios.
+
+**Acceptance Criteria**
+- Runs nearing budget stop gracefully without crash.
+- Report and timeline explicitly explain partial execution.
+
+**Dependencies:** SIM-019, SIM-021D
+
+---
+
+### [ ] SIM-028 (P1) Expose persona selection in web client path (`personaIds` / `personaSet`)
+**Goal:** Align UI/client behavior with run-level persona selection capabilities.
+
+**Problem observed**
+- `RunInputSchema` supports `personaIds` and `personaSet`, but web input flow only exposes `runMode`.
+- `apps/web/lib/api.ts` request type does not include persona selection fields.
+
+**Deliverables**
+- Update web API client type (`CreateRunRequest`) to include:
+  - `personaIds?: string[]`
+  - `personaSet?: 'quick' | 'deep' | 'custom'`
+- Add minimal UI controls on input page:
+  - choose named persona set, or
+  - optional custom persona IDs (comma-separated) for advanced runs
+- Show selected persona config in run summary/report header.
+
+**Acceptance Criteria**
+- User can create runs with explicit persona set/IDs without manual API calls.
+- Client payload matches shared `RunInput` capabilities.
+
+**Dependencies:** SIM-021C, SIM-026

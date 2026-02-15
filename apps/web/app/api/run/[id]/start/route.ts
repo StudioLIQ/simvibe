@@ -6,6 +6,7 @@ import {
   createJobQueue,
   queueConfigFromEnv,
   JOB_RUN_EXECUTE,
+  ensurePersonaRegistry,
   type ExtractorConfig,
   type OrchestratorConfig,
 } from '@simvibe/engine';
@@ -86,6 +87,9 @@ export async function POST(
         await queue.stop();
       }
     }
+
+    // Ensure persona registry is loaded (DB-first if Postgres, else files)
+    await ensurePersonaRegistry();
 
     // Inline mode: execute synchronously (SQLite/dev)
     const result = await executeRun(id, {

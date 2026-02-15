@@ -205,6 +205,41 @@ export async function initPersonaRegistryFromDb(databaseUrl: string): Promise<Pe
 }
 
 /**
+ * Ensure the global persona registry is loaded, preferring Postgres when DATABASE_URL is set.
+ * Safe to call from async contexts (API routes, worker startup). Idempotent within TTL.
+ *
+ * Priority:
+ *   1. Return cached registry if within TTL
+ *   2. Try Postgres (if DATABASE_URL starts with postgres://)
+ *   3. Fall back to file-based loading
+ */
+export async function ensurePersonaRegistry(): Promise<PersonaRegistry> {
+  const now = Date.now();
+
+  // Return cached registry if within TTL
+  if (_globalRegistry && (now - _registryLoadedAt) < CACHE_TTL_MS) {
+    return _globalRegistry;
+  }
+
+  // Try Postgres if configured
+  const dbUrl = process.env.DATABASE_URL;
+  if (dbUrl && (dbUrl.startsWith('postgres://') || dbUrl.startsWith('postgresql://'))) {
+    try {
+      return await initPersonaRegistryFromDb(dbUrl);
+    } catch (error) {
+      console.warn(
+        `[persona-registry] ensurePersonaRegistry: DB init failed, falling back to files: ${
+          error instanceof Error ? error.message : error
+        }`
+      );
+    }
+  }
+
+  // Fall back to synchronous file-based loading
+  return getPersonaRegistry();
+}
+
+/**
  * Reset the global registry (for testing).
  */
 export function resetPersonaRegistry(): void {

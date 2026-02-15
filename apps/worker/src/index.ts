@@ -21,6 +21,8 @@ import {
   createJobQueue,
   queueConfigFromEnv,
   JOB_RUN_EXECUTE,
+  initPersonaRegistryFromDb,
+  getPersonaRegistry,
   type ExecuteRunConfig,
   type ExtractorConfig,
   type OrchestratorConfig,
@@ -206,6 +208,29 @@ async function main() {
   const storageConfig = storageConfigFromEnv();
   const queueConfig = queueConfigFromEnv();
   log('info', 'Worker starting', { storage: storageConfig.type, queue: queueConfig.type });
+
+  // Bootstrap persona registry from Postgres if available
+  if (storageConfig.type === 'postgres' && storageConfig.postgresUrl) {
+    try {
+      const registry = await initPersonaRegistryFromDb(storageConfig.postgresUrl);
+      log('info', 'Persona registry initialized', {
+        source: registry.source,
+        count: registry.size,
+      });
+    } catch (error) {
+      log('warn', 'Persona registry DB init failed, using file fallback', {
+        error: error instanceof Error ? error.message : String(error),
+        source: getPersonaRegistry().source,
+        count: getPersonaRegistry().size,
+      });
+    }
+  } else {
+    const registry = getPersonaRegistry();
+    log('info', 'Persona registry initialized from files', {
+      source: registry.source,
+      count: registry.size,
+    });
+  }
 
   // CLI mode: execute a single run ID
   const runId = process.argv[2];
