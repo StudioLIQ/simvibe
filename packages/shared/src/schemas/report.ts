@@ -64,6 +64,31 @@ export const MomentumRiskSchema = z.object({
   detail: z.string(),
 });
 
+// --- nad.fun Launch Metrics ---
+
+export const NadFunRiskItemSchema = z.object({
+  flag: z.string(),
+  severity: z.enum(['low', 'medium', 'high']),
+  detail: z.string(),
+});
+
+export const NadFunForecastSchema = z.object({
+  // Core launch metrics (0-1 probabilities)
+  buyIntent: z.number().min(0).max(1),
+  holdIntent: z.number().min(0).max(1),
+  earlyChurnRisk: z.number().min(0).max(1),
+  snipeDumpRisk: z.number().min(0).max(1),
+  communitySpreadPotential: z.number().min(0).max(1),
+  // Derived metrics
+  launchViabilityScore: z.number().min(0).max(100),
+  // Risk signals
+  risks: z.array(NadFunRiskItemSchema),
+  // Narrative quality assessment
+  narrativeStrength: z.enum(['none', 'weak', 'moderate', 'strong']),
+  // Token economics confidence
+  tokenomicsClarity: z.number().min(0).max(1),
+});
+
 export const PHForecastSchema = z.object({
   upvotesByWindow: z.object({
     firstHour: z.number().min(0),
@@ -106,12 +131,15 @@ export const ReportSchema = z.object({
   diffusion: DiffusionTimelineSchema.optional(),
   platformMode: PlatformModeSchema.optional(),
   phForecast: PHForecastSchema.optional(),
+  nadFunForecast: NadFunForecastSchema.optional(),
   conversationDynamics: ConversationDynamicsSchema.optional(),
   launchPack: LaunchPackSchema.optional(),
 });
 
 export type MomentumRisk = z.infer<typeof MomentumRiskSchema>;
 export type PHForecast = z.infer<typeof PHForecastSchema>;
+export type NadFunRiskItem = z.infer<typeof NadFunRiskItemSchema>;
+export type NadFunForecast = z.infer<typeof NadFunForecastSchema>;
 export type TractionBand = z.infer<typeof TractionBandSchema>;
 export type ConfidenceLevel = z.infer<typeof ConfidenceLevelSchema>;
 export type FrictionItem = z.infer<typeof FrictionItemSchema>;

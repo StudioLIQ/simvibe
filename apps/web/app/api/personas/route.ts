@@ -8,6 +8,8 @@ interface PersonaItem {
   skepticismLevel: string;
   decisionStyle: string;
   budgetRange: { min: number; max: number };
+  cryptoInvestmentExperience: string;
+  degenLevel: string;
   prioritiesCount: number;
   redFlagsCount: number;
 }
@@ -34,13 +36,18 @@ export async function GET(request: NextRequest) {
       skepticismLevel: persona.skepticismLevel,
       decisionStyle: persona.decisionStyle,
       budgetRange: persona.budgetRange,
+      cryptoInvestmentExperience: persona.cryptoInvestmentExperience,
+      degenLevel: persona.degenLevel,
       prioritiesCount: persona.priorities.length,
       redFlagsCount: persona.redFlags.length,
     }));
 
     const filtered = q
       ? all.filter((persona) => {
-          const haystack = `${persona.id} ${persona.name} ${persona.role} ${persona.decisionStyle}`.toLowerCase();
+          const haystack = (
+            `${persona.id} ${persona.name} ${persona.role} ${persona.decisionStyle} ` +
+            `${persona.cryptoInvestmentExperience} ${persona.degenLevel}`
+          ).toLowerCase();
           return haystack.includes(q);
         })
       : all;

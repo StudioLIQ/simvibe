@@ -95,3 +95,5 @@
 - **budgetRange:** `{ min: 100, max: 1200 }`
 - **skepticismLevel:** `high`
 - **decisionStyle:** Wants a crisp demo and proof; will test in a small, low-risk sandbox first.
+- **cryptoInvestmentExperience:** `none`
+- **degenLevel:** `none`

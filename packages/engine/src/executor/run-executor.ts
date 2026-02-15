@@ -63,6 +63,8 @@ function buildPersonaSnapshots(personaIds: string[]): PersonaSnapshots {
         budgetRange: persona.budgetRange,
         skepticismLevel: persona.skepticismLevel,
         decisionStyle: persona.decisionStyle,
+        cryptoInvestmentExperience: persona.cryptoInvestmentExperience,
+        degenLevel: persona.degenLevel,
       };
     }
   }

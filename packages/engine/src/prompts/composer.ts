@@ -35,6 +35,10 @@ Monthly software budget: $${persona.budgetRange.min} - $${persona.budgetRange.ma
 
 ## Your Skepticism Level
 ${persona.skepticismLevel.toUpperCase()} - ${persona.decisionStyle}
+
+## Your Crypto Profile
+Crypto investment experience: ${persona.cryptoInvestmentExperience.toUpperCase()}
+Degen level: ${persona.degenLevel.toUpperCase()}
 `;
 }
 

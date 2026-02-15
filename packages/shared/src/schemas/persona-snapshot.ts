@@ -18,6 +18,8 @@ export const PersonaSnapshotSchema = z.object({
   }),
   skepticismLevel: z.enum(['low', 'medium', 'high', 'very_high']),
   decisionStyle: z.string(),
+  cryptoInvestmentExperience: z.enum(['none', 'low', 'medium', 'high', 'very_high']).default('none'),
+  degenLevel: z.enum(['none', 'low', 'medium', 'high', 'extreme']).default('none'),
 });
 
 export type PersonaSnapshot = z.infer<typeof PersonaSnapshotSchema>;

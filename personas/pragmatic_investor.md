@@ -23,6 +23,8 @@ budgetRange:
   max: 1000
 skepticismLevel: high
 decisionStyle: Thinks about scalability, unit economics, and competitive landscape.
+cryptoInvestmentExperience: medium
+degenLevel: low
 # Extended metadata
 age: 45
 location: Palo Alto, CA, USA

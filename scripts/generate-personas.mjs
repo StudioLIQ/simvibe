@@ -779,6 +779,37 @@ function priceSensitivityFromBudgetMax(max) {
   return 'Low';
 }
 
+function inferCryptoInvestmentExperience(seed, pack) {
+  const text = `${seed.personaId} ${seed.role} ${seed.archetype}`.toLowerCase();
+  const has = (keywords) => keywords.some((k) => text.includes(k));
+
+  if (has(['degen', 'memecoin', 'yield farm'])) return 'very_high';
+  if (has(['smart contract', 'smart_contract', 'web3', 'defi', 'onchain', 'solidity', 'evm'])) {
+    return 'high';
+  }
+  if (has(['crypto', 'blockchain', 'token', 'wallet', 'nft', 'trader'])) {
+    return 'high';
+  }
+  if (has(['investor', 'angel', 'venture', 'founder', 'finance'])) return 'medium';
+  if (pack === 'ph_grinder') return 'low';
+  return 'none';
+}
+
+function inferDegenLevel(seed, pack, cryptoInvestmentExperience) {
+  const text = `${seed.personaId} ${seed.role} ${seed.archetype}`.toLowerCase();
+  const has = (keywords) => keywords.some((k) => text.includes(k));
+
+  if (has(['degen', 'memecoin', 'yield farm'])) return 'extreme';
+  if (has(['smart contract', 'smart_contract', 'web3', 'defi', 'onchain', 'solidity', 'evm', 'trader'])) {
+    return 'high';
+  }
+  if (has(['crypto', 'blockchain', 'token', 'wallet', 'nft'])) return 'medium';
+  if (cryptoInvestmentExperience === 'high' || cryptoInvestmentExperience === 'very_high') return 'medium';
+  if (cryptoInvestmentExperience === 'medium') return 'low';
+  if (pack === 'ph_grinder') return 'low';
+  return 'none';
+}
+
 function generateVoiceBlock({ displayName, role, archetype, skepticismLevel, procurement, refusedData, anchors }, pack, rng) {
   const lead = `You are ${displayName}, ${role}.`;
   const constraints = `You have limited time and you avoid anything that could create risk with ${refusedData}.`;
@@ -831,6 +862,8 @@ function generatePersonaDoc(seed, anchors, pack) {
   const seniority = deriveSeniority(seed.role);
   const employmentStatus = inferEmploymentStatus(seed.role);
   const budget = parseBudgetRange(seed.budgetRange);
+  const cryptoInvestmentExperience = inferCryptoInvestmentExperience(seed, pack);
+  const degenLevel = inferDegenLevel(seed, pack, cryptoInvestmentExperience);
   const income = inferMonthlyIncomeUSD(category, seniority, stage, rng);
 
   const household = age < 28
@@ -1119,6 +1152,8 @@ function generatePersonaDoc(seed, anchors, pack) {
 - **budgetRange:** \`{ min: ${budget.min}, max: ${budget.max} }\`
 - **skepticismLevel:** \`${seed.skepticismLevel}\`
 - **decisionStyle:** ${decisionStyle}
+- **cryptoInvestmentExperience:** \`${cryptoInvestmentExperience}\`
+- **degenLevel:** \`${degenLevel}\`
 `;
 
   const wc = wordCount(voiceBlock);

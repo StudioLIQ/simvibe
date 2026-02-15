@@ -95,3 +95,5 @@
 - **budgetRange:** `{ min: 200, max: 5000 }`
 - **skepticismLevel:** `very_high`
 - **decisionStyle:** Needs concrete proof (docs, security details, real workflow) before trying anything.
+- **cryptoInvestmentExperience:** `none`
+- **degenLevel:** `none`

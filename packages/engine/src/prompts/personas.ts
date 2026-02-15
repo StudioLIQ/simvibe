@@ -10,6 +10,8 @@ export interface PersonaDefinition {
   budgetRange: { min: number; max: number };
   skepticismLevel: 'low' | 'medium' | 'high' | 'very_high';
   decisionStyle: string;
+  cryptoInvestmentExperience: 'none' | 'low' | 'medium' | 'high' | 'very_high';
+  degenLevel: 'none' | 'low' | 'medium' | 'high' | 'extreme';
 }
 
 /**

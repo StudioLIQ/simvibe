@@ -23,6 +23,8 @@ budgetRange:
   max: 2000
 skepticismLevel: high
 decisionStyle: Evaluates conversion potential in the first 5 seconds of seeing the page.
+cryptoInvestmentExperience: none
+degenLevel: none
 # Extended metadata
 age: 29
 location: Austin, TX, USA

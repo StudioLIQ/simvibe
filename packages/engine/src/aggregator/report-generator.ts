@@ -10,6 +10,7 @@ import type {
   PlatformMode,
   PHSubmission,
   PHForecast,
+  NadFunForecast,
   LaunchPack,
   RunInput,
   DiffusionTimeline,
@@ -20,6 +21,7 @@ import type {
 import { applyCalibration } from '@simvibe/shared';
 import { aggregateOutputs, type AggregationResult } from './aggregator';
 import { computePHForecast } from './ph-forecast';
+import { computeNadFunForecast } from './nad-forecast';
 import { generateLaunchPack } from './launch-pack-generator';
 
 function createPersonaReport(output: AgentOutput): PersonaReport {
@@ -125,6 +127,12 @@ export function generateReport(
     phForecast = computePHForecast(outputs, calibratedMetrics, phSubmission);
   }
 
+  // nad.fun-specific forecast
+  let nadFunForecast: NadFunForecast | undefined;
+  if (platformMode === 'nad_fun') {
+    nadFunForecast = computeNadFunForecast(outputs, calibratedMetrics, runInput);
+  }
+
   // Launch pack (PH mode with run input available)
   let launchPack: LaunchPack | undefined;
   if (platformMode === 'product_hunt' && runInput) {
@@ -154,6 +162,7 @@ export function generateReport(
     diffusion,
     platformMode,
     phForecast,
+    nadFunForecast,
     conversationDynamics,
     launchPack,
   };
@@ -250,6 +259,29 @@ export function formatReportMarkdown(report: Report): string {
     if (ph.momentumRisks.length > 0) {
       lines.push(`\n### Momentum Risks`);
       for (const risk of ph.momentumRisks) {
+        const icon = risk.severity === 'high' ? '[HIGH]' : risk.severity === 'medium' ? '[MED]' : '[LOW]';
+        lines.push(`- ${icon} **${risk.flag}**: ${risk.detail}`);
+      }
+    }
+  }
+
+  if (report.nadFunForecast) {
+    const nf = report.nadFunForecast;
+    lines.push(`\n## nad.fun Launch Forecast`);
+    lines.push(`\n### Launch Viability Score: ${nf.launchViabilityScore}/100`);
+    lines.push(`\n### Core Launch Metrics`);
+    lines.push(`| Metric | Value |`);
+    lines.push(`|--------|-------|`);
+    lines.push(`| Buy Intent | ${(nf.buyIntent * 100).toFixed(1)}% |`);
+    lines.push(`| Hold Intent | ${(nf.holdIntent * 100).toFixed(1)}% |`);
+    lines.push(`| Early Churn Risk | ${(nf.earlyChurnRisk * 100).toFixed(1)}% |`);
+    lines.push(`| Snipe/Dump Risk | ${(nf.snipeDumpRisk * 100).toFixed(1)}% |`);
+    lines.push(`| Community Spread | ${(nf.communitySpreadPotential * 100).toFixed(1)}% |`);
+    lines.push(`\n### Narrative Strength: **${nf.narrativeStrength.toUpperCase()}**`);
+    lines.push(`### Tokenomics Clarity: ${(nf.tokenomicsClarity * 100).toFixed(0)}%`);
+    if (nf.risks.length > 0) {
+      lines.push(`\n### Launch Risks`);
+      for (const risk of nf.risks) {
         const icon = risk.severity === 'high' ? '[HIGH]' : risk.severity === 'medium' ? '[MED]' : '[LOW]';
         lines.push(`- ${icon} **${risk.flag}**: ${risk.detail}`);
       }

@@ -45,6 +45,8 @@ budgetRange:
   max: 500
 skepticismLevel: high
 decisionStyle: Tests things carefully before committing.
+cryptoInvestmentExperience: medium
+degenLevel: low
 ---
 
 # Test Persona (Frontmatter)
@@ -64,6 +66,8 @@ const ENGINE_MAPPING_FIXTURE = `# Persona: Test EM
 - **budgetRange:** \`{ min: 10, max: 300 }\`
 - **skepticismLevel:** \`medium\`
 - **decisionStyle:** Evaluates pragmatically.
+- **cryptoInvestmentExperience:** \`high\`
+- **degenLevel:** \`high\`
 `;
 
 const INVALID_FIXTURE = `# No engine mapping section and no frontmatter
@@ -89,6 +93,8 @@ section('1. Parser: YAML frontmatter format');
   assert(result.data?.id === 'test_persona_fm', 'Correct ID extracted');
   assert(result.data?.name === 'Test Persona FM', 'Correct name extracted');
   assert(result.data?.skepticismLevel === 'high', 'Correct skepticism level');
+  assert(result.data?.cryptoInvestmentExperience === 'medium', 'Correct crypto investment experience');
+  assert(result.data?.degenLevel === 'low', 'Correct degen level');
   assert(result.data?.priorities?.length === 2, 'Correct number of priorities');
   assert(result.data?.budgetRange?.min === 0, 'Budget min parsed');
   assert(result.data?.budgetRange?.max === 500, 'Budget max parsed');
@@ -102,6 +108,8 @@ section('2. Parser: Legacy Engine Mapping format');
   assert(result.data?.id === 'test_persona_em', 'Correct ID extracted');
   assert(result.data?.name === 'Test Persona EM', 'Correct name extracted');
   assert(result.data?.skepticismLevel === 'medium', 'Correct skepticism level');
+  assert(result.data?.cryptoInvestmentExperience === 'high', 'Correct crypto investment experience');
+  assert(result.data?.degenLevel === 'high', 'Correct degen level');
   assert(result.data?.priorities?.length === 2, 'Correct number of priorities');
   assert(result.data?.budgetRange?.min === 10, 'Budget min parsed');
 }
@@ -186,6 +194,8 @@ section('8. Registry: Manual registration');
     budgetRange: { min: 0, max: 100 },
     skepticismLevel: 'low',
     decisionStyle: 'Test style',
+    cryptoInvestmentExperience: 'none',
+    degenLevel: 'none',
   });
   assert(testRegistry.has('custom_test_persona'), 'Manually registered persona exists');
   assert(testRegistry.size === 1, 'Registry has exactly 1 persona');

@@ -907,6 +907,108 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         )}
       </div>
 
+      {/* nad.fun Launch Forecast */}
+      {report.nadFunForecast && (
+        <div className="card" style={{ marginBottom: '1.5rem' }}>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>nad.fun Launch Forecast</h3>
+
+          {/* Launch Viability Score */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '1rem',
+            marginBottom: '1.5rem',
+            padding: '1rem',
+            background: 'var(--surface-subtle)',
+            borderRadius: '0.5rem',
+          }}>
+            <div style={{
+              fontSize: '2.5rem',
+              fontWeight: 700,
+              color: report.nadFunForecast.launchViabilityScore >= 70 ? 'var(--status-success)'
+                : report.nadFunForecast.launchViabilityScore >= 45 ? 'var(--status-warning)'
+                : 'var(--status-danger)',
+            }}>
+              {report.nadFunForecast.launchViabilityScore}
+            </div>
+            <div>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Launch Viability</div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Narrative: <strong>{report.nadFunForecast.narrativeStrength.toUpperCase()}</strong>
+                {' | '}
+                Tokenomics Clarity: <strong>{(report.nadFunForecast.tokenomicsClarity * 100).toFixed(0)}%</strong>
+              </div>
+            </div>
+          </div>
+
+          {/* Core Metrics Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', textAlign: 'center', marginBottom: '1.5rem' }}>
+            <div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--status-success)' }}>
+                {(report.nadFunForecast.buyIntent * 100).toFixed(0)}%
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Buy Intent</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
+                {(report.nadFunForecast.holdIntent * 100).toFixed(0)}%
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hold Intent</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: report.nadFunForecast.earlyChurnRisk > 0.5 ? 'var(--status-danger)' : 'var(--status-warning)' }}>
+                {(report.nadFunForecast.earlyChurnRisk * 100).toFixed(0)}%
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Early Churn</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: report.nadFunForecast.snipeDumpRisk > 0.5 ? 'var(--status-danger)' : 'var(--status-warning)' }}>
+                {(report.nadFunForecast.snipeDumpRisk * 100).toFixed(0)}%
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Snipe/Dump</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-secondary)' }}>
+                {(report.nadFunForecast.communitySpreadPotential * 100).toFixed(0)}%
+              </div>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Community</div>
+            </div>
+          </div>
+
+          {/* Launch Risks */}
+          {report.nadFunForecast.risks.length > 0 && (
+            <div>
+              <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                Launch Risks ({report.nadFunForecast.risks.length})
+              </div>
+              {report.nadFunForecast.risks.map((risk, i) => (
+                <div key={i} style={{
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: '0.5rem',
+                  marginBottom: '0.5rem',
+                  fontSize: '0.8rem',
+                  padding: '0.5rem 0.75rem',
+                  background: risk.severity === 'high' ? 'var(--danger-bg)' : risk.severity === 'medium' ? 'var(--warn-bg)' : 'var(--surface-card)',
+                  borderRadius: '0.375rem',
+                  border: `1px solid ${risk.severity === 'high' ? 'var(--status-danger)' : risk.severity === 'medium' ? 'var(--warn-border)' : 'var(--border)'}`,
+                }}>
+                  <span style={{
+                    color: risk.severity === 'high' ? 'var(--status-danger)' : risk.severity === 'medium' ? 'var(--status-warning)' : 'var(--text-muted)',
+                    fontWeight: 600,
+                    minWidth: '40px',
+                    fontSize: '0.7rem',
+                  }}>
+                    {risk.severity === 'high' ? 'HIGH' : risk.severity === 'medium' ? 'MED' : 'LOW'}
+                  </span>
+                  <span style={{ color: 'var(--text-dim)' }}>{risk.detail}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="card" style={{ marginBottom: '1.5rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: run?.actuals || showActuals ? '1rem' : 0 }}>
           <h3 style={{ fontSize: '1rem' }}>Actual Outcomes</h3>

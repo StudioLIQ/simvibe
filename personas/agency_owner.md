@@ -23,6 +23,8 @@ budgetRange:
   max: 5000
 skepticismLevel: medium
 decisionStyle: Evaluates through agency workflow lens - can I use this for all my clients?
+cryptoInvestmentExperience: medium
+degenLevel: low
 # Extended metadata
 age: 38
 location: Chicago, IL, USA

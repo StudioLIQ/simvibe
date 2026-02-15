@@ -13,6 +13,7 @@ export const PATCHABLE_SECTIONS = [
   'oneLineFixes',
   'warnings',
   'phForecast',
+  'nadFunForecast',
   'launchPack',
   'conversationDynamics',
 ] as const;

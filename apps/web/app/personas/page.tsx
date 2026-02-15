@@ -10,6 +10,8 @@ interface PersonaItem {
   skepticismLevel: string;
   decisionStyle: string;
   budgetRange: { min: number; max: number };
+  cryptoInvestmentExperience: string;
+  degenLevel: string;
   prioritiesCount: number;
   redFlagsCount: number;
 }
@@ -73,9 +75,19 @@ export default function PersonasPage() {
       acc[p.skepticismLevel] = (acc[p.skepticismLevel] || 0) + 1;
       return acc;
     }, {});
+    const byCryptoExperience = personas.reduce<Record<string, number>>((acc, p) => {
+      acc[p.cryptoInvestmentExperience] = (acc[p.cryptoInvestmentExperience] || 0) + 1;
+      return acc;
+    }, {});
+    const byDegen = personas.reduce<Record<string, number>>((acc, p) => {
+      acc[p.degenLevel] = (acc[p.degenLevel] || 0) + 1;
+      return acc;
+    }, {});
 
     return {
       bySkepticism,
+      byCryptoExperience,
+      byDegen,
     };
   }, [personas]);
 
@@ -95,7 +107,7 @@ export default function PersonasPage() {
 
       <div className="card" style={{ marginBottom: '1rem' }}>
         <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="persona-search">검색 (id / name / role / decisionStyle)</label>
+          <label htmlFor="persona-search">검색 (id / name / role / decisionStyle / crypto / degen)</label>
           <input
             id="persona-search"
             type="text"
@@ -118,6 +130,18 @@ export default function PersonasPage() {
             <div className="hint">High+ Skepticism</div>
             <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>
               {(summary.bySkepticism.high || 0) + (summary.bySkepticism.very_high || 0)}
+            </div>
+          </div>
+          <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
+            <div className="hint">High+ Crypto Exp</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>
+              {(summary.byCryptoExperience.high || 0) + (summary.byCryptoExperience.very_high || 0)}
+            </div>
+          </div>
+          <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
+            <div className="hint">High+ Degen</div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>
+              {(summary.byDegen.high || 0) + (summary.byDegen.extreme || 0)}
             </div>
           </div>
           <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
@@ -155,6 +179,9 @@ export default function PersonasPage() {
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{persona.skepticismLevel}</div>
                     <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>${persona.budgetRange.min} - ${persona.budgetRange.max}</div>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                      crypto {persona.cryptoInvestmentExperience} · degen {persona.degenLevel}
+                    </div>
                   </div>
                 </div>
 

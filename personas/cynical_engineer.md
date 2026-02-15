@@ -23,6 +23,8 @@ budgetRange:
   max: 100
 skepticismLevel: very_high
 decisionStyle: Needs to see technical proof, code samples, or architecture diagrams before committing.
+cryptoInvestmentExperience: none
+degenLevel: none
 # Extended metadata
 age: 34
 location: San Francisco, CA, USA

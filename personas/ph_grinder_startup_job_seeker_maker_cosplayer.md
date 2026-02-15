@@ -95,3 +95,5 @@
 - **budgetRange:** `{ min: 0, max: 40 }`
 - **skepticismLevel:** `low`
 - **decisionStyle:** Tries it if it’s easy to start and clearly reduces work within the first day.
+- **cryptoInvestmentExperience:** `low`
+- **degenLevel:** `low`

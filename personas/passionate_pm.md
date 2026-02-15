@@ -23,6 +23,8 @@ budgetRange:
   max: 500
 skepticismLevel: medium
 decisionStyle: Evaluates through the lens of user experience and team workflow fit.
+cryptoInvestmentExperience: none
+degenLevel: none
 # Extended metadata
 age: 31
 location: New York, NY, USA

@@ -95,3 +95,5 @@
 - **budgetRange:** `{ min: 500, max: 5000 }`
 - **skepticismLevel:** `high`
 - **decisionStyle:** Decides quickly from screenshots, pricing, and one proof point; won’t book a call.
+- **cryptoInvestmentExperience:** `low`
+- **degenLevel:** `none`

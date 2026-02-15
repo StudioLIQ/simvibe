@@ -41,6 +41,8 @@ function toPersonaDefinition(fields: PersonaEngineFields): PersonaDefinition {
     budgetRange: fields.budgetRange,
     skepticismLevel: fields.skepticismLevel,
     decisionStyle: fields.decisionStyle,
+    cryptoInvestmentExperience: fields.cryptoInvestmentExperience,
+    degenLevel: fields.degenLevel,
   };
 }
 
