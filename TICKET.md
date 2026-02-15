@@ -2038,7 +2038,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Error display: red alert box with failure reason
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-007 (P0) Define onchain readiness gate interface
+### [x] MND-007 (P0) Define onchain readiness gate interface
 **Goal:** Standardize launch-readiness verification on Monad.
 
 **Deliverables**
@@ -2052,6 +2052,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Spec fixture vectors committed.
 
 **Dependencies:** MND-001
+
+**Completion notes:**
+- `contracts/spec/ISimVibeGate.sol`: Frozen Solidity interface with Attestation struct, events, errors, role-based access
+- `contracts/spec/gate-abi.json`: Frozen ABI (15 entries: 9 functions, 2 events, 4 errors)
+- Policy hash format: `keccak256(abi.encode(minOverallScore, maxUncertainty, maxDisagreement, maxFallback, minClarity, minCredibility, maxBounce, policyVersion))` — all uint16 scaled x100 for precision
+- Versioning: `policyVersion` (uint16) increments monotonically; historical attestations remain valid
+- Roles: owner (register/revoke policies, manage attesters), attester (submit attestations)
+- `attestReady(runId, policyHash, ready)` records one attestation per runId
+- `isLaunchReady(runId)` checks if attestation exists with ready=true
+- Maps to existing `ReadinessPolicyConfig` from `packages/engine/src/launch/readiness-gate.ts`
+- Test: Gate ABI validates as JSON, 15 entries present
 
 ### [ ] MND-008 (P0) Implement Readiness Gate contract + tests
 **Goal:** Smart-contract-based launch gate.

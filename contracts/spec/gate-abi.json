@@ -1,0 +1,122 @@
+[
+  {
+    "type": "function",
+    "name": "registerPolicy",
+    "inputs": [{ "name": "policyHash", "type": "bytes32" }],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "revokePolicy",
+    "inputs": [{ "name": "policyHash", "type": "bytes32" }],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "addAttester",
+    "inputs": [{ "name": "attester", "type": "address" }],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "removeAttester",
+    "inputs": [{ "name": "attester", "type": "address" }],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "attestReady",
+    "inputs": [
+      { "name": "runId", "type": "bytes32" },
+      { "name": "policyHash", "type": "bytes32" },
+      { "name": "ready", "type": "bool" }
+    ],
+    "outputs": [],
+    "stateMutability": "nonpayable"
+  },
+  {
+    "type": "function",
+    "name": "isLaunchReady",
+    "inputs": [{ "name": "runId", "type": "bytes32" }],
+    "outputs": [{ "name": "ready", "type": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getAttestation",
+    "inputs": [{ "name": "runId", "type": "bytes32" }],
+    "outputs": [
+      {
+        "name": "attestation",
+        "type": "tuple",
+        "components": [
+          { "name": "runId", "type": "bytes32" },
+          { "name": "policyHash", "type": "bytes32" },
+          { "name": "ready", "type": "bool" },
+          { "name": "timestamp", "type": "uint64" },
+          { "name": "attester", "type": "address" }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isPolicyAccepted",
+    "inputs": [{ "name": "policyHash", "type": "bytes32" }],
+    "outputs": [{ "name": "accepted", "type": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "isAttester",
+    "inputs": [{ "name": "attester", "type": "address" }],
+    "outputs": [{ "name": "authorized", "type": "bool" }],
+    "stateMutability": "view"
+  },
+  {
+    "type": "event",
+    "name": "ReadinessAttested",
+    "inputs": [
+      { "name": "runId", "type": "bytes32", "indexed": true },
+      { "name": "policyHash", "type": "bytes32", "indexed": true },
+      { "name": "ready", "type": "bool", "indexed": false },
+      { "name": "timestamp", "type": "uint64", "indexed": false },
+      { "name": "attester", "type": "address", "indexed": true }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "event",
+    "name": "PolicyUpdated",
+    "inputs": [
+      { "name": "policyHash", "type": "bytes32", "indexed": true },
+      { "name": "accepted", "type": "bool", "indexed": false }
+    ],
+    "anonymous": false
+  },
+  {
+    "type": "error",
+    "name": "UnauthorizedAttester",
+    "inputs": [{ "name": "caller", "type": "address" }]
+  },
+  {
+    "type": "error",
+    "name": "InvalidPolicyHash",
+    "inputs": [{ "name": "policyHash", "type": "bytes32" }]
+  },
+  {
+    "type": "error",
+    "name": "DuplicateAttestation",
+    "inputs": [{ "name": "runId", "type": "bytes32" }]
+  },
+  {
+    "type": "error",
+    "name": "NotOwner",
+    "inputs": [{ "name": "caller", "type": "address" }]
+  }
+]
