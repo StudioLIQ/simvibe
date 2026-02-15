@@ -2589,7 +2589,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Existing PH integrations continue to work transparently (auto-detection)
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-031 (P1) Build nad.fun seed fixtures + seed script mode
+### [x] MND-031 (P1) Build nad.fun seed fixtures + seed script mode
 **Goal:** Seed realistic nad.fun launch scenarios for demo and QA.
 
 **Deliverables**
@@ -2601,6 +2601,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Team can pre-seed 5-8 nad.fun-style reports for demo instantly.
 
 **Dependencies:** MND-026
+
+**Completion notes:**
+- `scripts/fixtures/nad-seed-products.ts`: 8 realistic nad.fun token launch scenarios (MonadMemes, DeFi Shield, NadNames, YieldApes, MonadSocial, NadLaunch, NadOracle, DegenDAO)
+- Each fixture: tokenName, tokenSymbol, launchThesis, tokenNarrative, distributionPlan, riskAssumptions, antiSnipe, bundled
+- `scripts/seed-nad-products.ts`: seed script with dedupe detection, server wait, artifact output
+- Scripts: `pnpm seed:nad`, `pnpm seed:nad:railway`
+- Outputs: `artifacts_runs/nad-seed-summary.json` and `artifacts_runs/nad-seed-report-links.md`
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-032 (P1) Add report list filters for nad.fun/legacy mode
 **Goal:** Improve visibility during transition from PH to nad.fun focus.

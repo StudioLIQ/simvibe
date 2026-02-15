@@ -20,6 +20,8 @@
     "e2e:ph:nad": "npx tsx scripts/e2e-ph-nad.ts",
     "seed:ph": "npx tsx scripts/seed-ph-products.ts",
     "seed:ph:railway": "SEED_ONLY_MISSING=true WAIT_FOR_SERVER_SECONDS=180 npx tsx scripts/seed-ph-products.ts",
+    "seed:nad": "npx tsx scripts/seed-nad-products.ts",
+    "seed:nad:railway": "SEED_ONLY_MISSING=true WAIT_FOR_SERVER_SECONDS=180 npx tsx scripts/seed-nad-products.ts",
     "test:demo": "DEMO_MODE=true npx tsx scripts/test-demo-outputs.ts",
     "test:readiness": "pnpm --filter @simvibe/engine test:readiness",
     "ci:smoke": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/smoke-test.ts",
