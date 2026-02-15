@@ -1,4 +1,3 @@
-import Database from 'better-sqlite3';
 import { nanoid } from 'nanoid';
 import type {
   RunInput,
@@ -63,9 +62,17 @@ const INIT_SQL = `
 `;
 
 export class SQLiteStorage implements Storage {
-  private db: Database.Database;
+  private db: import('better-sqlite3').Database;
+
+  private static loadSqlite(): typeof import('better-sqlite3') {
+    // Avoid bundler static-analysis issues (Next.js app routes + native module).
+    // eslint-disable-next-line no-eval
+    const nodeRequire = eval('require') as NodeJS.Require;
+    return nodeRequire('better-sqlite3');
+  }
 
   constructor(dbPath: string) {
+    const Database = SQLiteStorage.loadSqlite();
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.exec(INIT_SQL);

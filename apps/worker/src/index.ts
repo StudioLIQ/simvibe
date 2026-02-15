@@ -23,6 +23,7 @@ import {
   JOB_RUN_EXECUTE,
   initPersonaRegistryFromDb,
   getPersonaRegistry,
+  isDemoMode,
   type ExecuteRunConfig,
   type ExtractorConfig,
   type OrchestratorConfig,
@@ -46,13 +47,14 @@ function getOrchestratorConfig(): OrchestratorConfig {
   const apiKey = provider === 'anthropic'
     ? process.env.ANTHROPIC_API_KEY
     : process.env.OPENAI_API_KEY;
+  const demoMode = isDemoMode();
 
-  if (!apiKey) {
+  if (!apiKey && !demoMode) {
     throw new Error(`${provider.toUpperCase()}_API_KEY is required`);
   }
 
   return {
-    llm: { provider, apiKey },
+    llm: { provider, apiKey: apiKey || 'demo-mode-key' },
     enableDebate: false,
   };
 }

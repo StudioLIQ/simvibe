@@ -144,11 +144,16 @@ export function getPersonaRegistry(): PersonaRegistry {
   // priming via initPersonaRegistryFromDb() at startup, or fall through to files.
 
   // File-based loading (synchronous fallback)
+  const configuredDir = process.env.PERSONAS_DIR;
   const possiblePaths = [
+    configuredDir ? path.resolve(configuredDir) : '',
     path.resolve(process.cwd(), 'personas'),
+    path.resolve(process.cwd(), '../personas'),
+    path.resolve(process.cwd(), '../../personas'),
     path.resolve(__dirname, '../../../../personas'),
     path.resolve(__dirname, '../../../../../personas'),
-  ];
+    path.resolve(__dirname, '../../../../../../personas'),
+  ].filter(Boolean);
 
   for (const dir of possiblePaths) {
     if (fs.existsSync(dir)) {

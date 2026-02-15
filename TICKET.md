@@ -1412,7 +1412,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-033 (P0) Fix local runtime reliability matrix (Node/SQLite/Next) + fallback policy
+### [x] SIM-033 (P0) Fix local runtime reliability matrix (Node/SQLite/Next) + fallback policy
 **Goal:** Ensure `create -> start -> stream -> report` works predictably in dev environments.
 
 **Deliverables**
@@ -1429,6 +1429,21 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Validate behavior on both supported and unsupported Node versions.
 
 **Dependencies:** SIM-018B
+
+**Completion notes:**
+- Storage lazy-loading: SQLite/Postgres modules loaded via dynamic `require()` to avoid bundler issues with Next.js
+- SQLite fallback: if better-sqlite3 native module fails, auto-falls back to MemoryStorage with clear warning + fix instructions
+- `DATABASE_URL=memory://` supported for explicit in-memory mode (no native deps needed)
+- `next.config.js`: `serverComponentsExternalPackages: ['better-sqlite3']` for Next.js compatibility
+- Memory storage singleton: prevents re-creation across API requests in same process
+- `getActiveStorageBackend()` exported: tracks which backend is actually in use
+- GET /api/diagnostics endpoint: shows Node version, storage backend, persona registry source/count, env config (secrets masked)
+- `.env.example` updated with `memory://` option documented
+- Persona registry: improved path resolution (PERSONAS_DIR env, multiple fallback paths)
+- Demo mode: worker + web start route skip API key requirement when DEMO_MODE=true, use DemoLLMClient
+- DemoLLMClient in llm-client.ts: deterministic demo outputs with valid schema
+- Supported Node: >=18.0.0 (tested on 18.x, 20.x, 22.x)
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 
