@@ -9,6 +9,9 @@ import type {
   RunDiagnostics,
   ChainReceipt,
   PersonaSnapshots,
+  NadLaunchInput,
+  LaunchReadiness,
+  LaunchRecord,
 } from '@simvibe/shared';
 
 export type RunStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed';
@@ -27,6 +30,9 @@ export interface Run {
   diagnostics?: RunDiagnostics;
   receipt?: ChainReceipt;
   personaSnapshots?: PersonaSnapshots;
+  launchReadiness?: LaunchReadiness;
+  launchInput?: NadLaunchInput;
+  launchRecord?: LaunchRecord;
   variantOf?: string;
   error?: string;
 }
@@ -45,6 +51,9 @@ export interface Storage {
   saveDiagnostics(runId: string, diagnostics: RunDiagnostics): Promise<void>;
   saveReceipt(runId: string, receipt: ChainReceipt): Promise<void>;
   savePersonaSnapshots(runId: string, snapshots: PersonaSnapshots): Promise<void>;
+  saveLaunchReadiness(runId: string, readiness: LaunchReadiness): Promise<void>;
+  saveLaunchInput(runId: string, input: NadLaunchInput): Promise<void>;
+  saveLaunchRecord(runId: string, record: LaunchRecord): Promise<void>;
   getCalibrationPrior(key: string): Promise<CalibrationPrior | null>;
   saveCalibrationPrior(prior: CalibrationPrior): Promise<void>;
   listRuns(limit?: number): Promise<Run[]>;

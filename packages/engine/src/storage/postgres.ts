@@ -11,6 +11,9 @@ import type {
   RunDiagnostics,
   ChainReceipt,
   PersonaSnapshots,
+  NadLaunchInput,
+  LaunchReadiness,
+  LaunchRecord,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 import { runMigrations } from './migrate';
@@ -101,6 +104,15 @@ export class PostgresStorage implements Storage {
         : undefined,
       personaSnapshots: row.persona_snapshots
         ? (typeof row.persona_snapshots === 'string' ? JSON.parse(row.persona_snapshots) : row.persona_snapshots)
+        : undefined,
+      launchReadiness: row.launch_readiness
+        ? (typeof row.launch_readiness === 'string' ? JSON.parse(row.launch_readiness) : row.launch_readiness)
+        : undefined,
+      launchInput: row.launch_input
+        ? (typeof row.launch_input === 'string' ? JSON.parse(row.launch_input) : row.launch_input)
+        : undefined,
+      launchRecord: row.launch_record
+        ? (typeof row.launch_record === 'string' ? JSON.parse(row.launch_record) : row.launch_record)
         : undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
@@ -253,6 +265,42 @@ export class PostgresStorage implements Storage {
     const result = await this.pool.query(
       `UPDATE runs SET persona_snapshots = $1, updated_at = $2 WHERE id = $3`,
       [JSON.stringify(snapshots), now, runId]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async saveLaunchReadiness(runId: string, readiness: LaunchReadiness): Promise<void> {
+    const now = new Date().toISOString();
+    const result = await this.pool.query(
+      `UPDATE runs SET launch_readiness = $1, updated_at = $2 WHERE id = $3`,
+      [JSON.stringify(readiness), now, runId]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async saveLaunchInput(runId: string, input: NadLaunchInput): Promise<void> {
+    const now = new Date().toISOString();
+    const result = await this.pool.query(
+      `UPDATE runs SET launch_input = $1, updated_at = $2 WHERE id = $3`,
+      [JSON.stringify(input), now, runId]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async saveLaunchRecord(runId: string, record: LaunchRecord): Promise<void> {
+    const now = new Date().toISOString();
+    const result = await this.pool.query(
+      `UPDATE runs SET launch_record = $1, updated_at = $2 WHERE id = $3`,
+      [JSON.stringify(record), now, runId]
     );
 
     if (result.rowCount === 0) {

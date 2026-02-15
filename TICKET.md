@@ -1514,7 +1514,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ## Milestone M11 — Report-to-Launch Bridge (simvi.be -> nad.fun) (P0/P1)
 
-### [ ] SIM-036 (P0) Define Nad Launch schema + persistence on run
+### [x] SIM-036 (P0) Define Nad Launch schema + persistence on run
 **Goal:** Make each simulation report directly translatable into a nad.fun launch payload.
 
 **Deliverables**
@@ -1536,6 +1536,18 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Create run -> complete -> call launch GET/POST -> verify stored payload roundtrip.
 
 **Dependencies:** SIM-032
+
+**Completion notes:**
+- NadLaunchInput, LaunchReadiness, LaunchRecord Zod schemas in packages/shared/src/schemas/nad-launch.ts
+- LaunchReadiness: status (ready|not_ready), blockers (code+message+severity), confidence, recommendedActions, evaluatedAt
+- LaunchRecord: status (draft|confirmed|submitted|success|failed), txHash, tokenAddress, idempotencyKey
+- Storage interface updated with saveLaunchReadiness/saveLaunchInput/saveLaunchRecord in all 3 backends (Memory, SQLite, Postgres)
+- SQLite auto-migration adds launch_readiness, launch_input, launch_record columns
+- Postgres migration: 004_nad_launch.sql adds 3 JSONB columns
+- GET /api/run/[id]/launch: returns readiness assessment + draft launch payload derived from run input/report
+- POST /api/run/[id]/launch: validates NadLaunchInput, persists readiness + input + draft LaunchRecord
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
 
 ---
 

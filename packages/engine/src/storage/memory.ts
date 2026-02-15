@@ -10,6 +10,9 @@ import type {
   RunDiagnostics,
   ChainReceipt,
   PersonaSnapshots,
+  NadLaunchInput,
+  LaunchReadiness,
+  LaunchRecord,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -145,6 +148,33 @@ export class MemoryStorage implements Storage {
       throw new Error(`Run not found: ${runId}`);
     }
     run.personaSnapshots = snapshots;
+    run.updatedAt = new Date().toISOString();
+  }
+
+  async saveLaunchReadiness(runId: string, readiness: LaunchReadiness): Promise<void> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+    run.launchReadiness = readiness;
+    run.updatedAt = new Date().toISOString();
+  }
+
+  async saveLaunchInput(runId: string, input: NadLaunchInput): Promise<void> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+    run.launchInput = input;
+    run.updatedAt = new Date().toISOString();
+  }
+
+  async saveLaunchRecord(runId: string, record: LaunchRecord): Promise<void> {
+    const run = this.runs.get(runId);
+    if (!run) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+    run.launchRecord = record;
     run.updatedAt = new Date().toISOString();
   }
 

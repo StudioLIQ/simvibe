@@ -10,6 +10,9 @@ import type {
   RunDiagnostics,
   ChainReceipt,
   PersonaSnapshots,
+  NadLaunchInput,
+  LaunchReadiness,
+  LaunchRecord,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -83,11 +86,22 @@ export class SQLiteStorage implements Storage {
    * Apply incremental schema migrations for existing databases.
    */
   private migrateSchema(): void {
-    // Add persona_snapshots column if missing (SIM-022)
     const columns = this.db.pragma('table_info(runs)') as { name: string }[];
-    const hasSnapshots = columns.some(c => c.name === 'persona_snapshots');
-    if (!hasSnapshots) {
+    const colNames = new Set(columns.map(c => c.name));
+
+    // Add persona_snapshots column if missing (SIM-022)
+    if (!colNames.has('persona_snapshots')) {
       this.db.exec('ALTER TABLE runs ADD COLUMN persona_snapshots TEXT');
+    }
+    // Add nad launch columns if missing (SIM-036)
+    if (!colNames.has('launch_readiness')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN launch_readiness TEXT');
+    }
+    if (!colNames.has('launch_input')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN launch_input TEXT');
+    }
+    if (!colNames.has('launch_record')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN launch_record TEXT');
     }
   }
 
@@ -126,6 +140,9 @@ export class SQLiteStorage implements Storage {
       diagnostics: string | null;
       receipt: string | null;
       persona_snapshots: string | null;
+      launch_readiness: string | null;
+      launch_input: string | null;
+      launch_record: string | null;
       variant_of: string | null;
       error: string | null;
     } | undefined;
@@ -154,6 +171,9 @@ export class SQLiteStorage implements Storage {
       diagnostics: row.diagnostics ? JSON.parse(row.diagnostics) : undefined,
       receipt: row.receipt ? JSON.parse(row.receipt) : undefined,
       personaSnapshots: row.persona_snapshots ? JSON.parse(row.persona_snapshots) : undefined,
+      launchReadiness: row.launch_readiness ? JSON.parse(row.launch_readiness) : undefined,
+      launchInput: row.launch_input ? JSON.parse(row.launch_input) : undefined,
+      launchRecord: row.launch_record ? JSON.parse(row.launch_record) : undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
       events: events.map((e) => JSON.parse(e.data)),
@@ -290,6 +310,39 @@ export class SQLiteStorage implements Storage {
     const result = this.db.prepare(`
       UPDATE runs SET persona_snapshots = ?, updated_at = ? WHERE id = ?
     `).run(JSON.stringify(snapshots), now, runId);
+
+    if (result.changes === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async saveLaunchReadiness(runId: string, readiness: LaunchReadiness): Promise<void> {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      UPDATE runs SET launch_readiness = ?, updated_at = ? WHERE id = ?
+    `).run(JSON.stringify(readiness), now, runId);
+
+    if (result.changes === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async saveLaunchInput(runId: string, input: NadLaunchInput): Promise<void> {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      UPDATE runs SET launch_input = ?, updated_at = ? WHERE id = ?
+    `).run(JSON.stringify(input), now, runId);
+
+    if (result.changes === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async saveLaunchRecord(runId: string, record: LaunchRecord): Promise<void> {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      UPDATE runs SET launch_record = ?, updated_at = ? WHERE id = ?
+    `).run(JSON.stringify(record), now, runId);
 
     if (result.changes === 0) {
       throw new Error(`Run not found: ${runId}`);
