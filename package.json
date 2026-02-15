@@ -27,6 +27,8 @@
     "ci:e2e:ph:nad": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/e2e-ph-nad.ts",
     "ci:e2e:quick": "DEMO_MODE=true DATABASE_URL=memory:// E2E_RUN_MODE=quick PRODUCT_COUNT=3 MIN_READY_LAUNCHES=1 npx tsx scripts/e2e-ph-nad.ts",
     "ci:e2e:deep": "DEMO_MODE=true DATABASE_URL=memory:// E2E_RUN_MODE=deep PRODUCT_COUNT=2 MIN_READY_LAUNCHES=1 npx tsx scripts/e2e-ph-nad.ts",
+    "e2e:monad": "npx tsx scripts/e2e-monad-flow.ts",
+    "ci:e2e:monad": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/e2e-monad-flow.ts",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },
