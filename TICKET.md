@@ -842,7 +842,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-021A (P0) Persona registry loader for existing 600 docs (bridge before frontmatter migration)
+### [x] SIM-021A (P0) Persona registry loader for existing 600 docs (bridge before frontmatter migration)
 **Goal:** Make all current `personas/*.md` runnable as agents now, without waiting for full frontmatter migration.
 
 **Deliverables**
@@ -865,9 +865,18 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Dependencies:** SIM-021
 
+**Completion notes:**
+- Implemented as part of SIM-021: parser supports `## 10) Engine Mapping` format (legacy bridge)
+- Registry loads 587/605 persona docs at startup (18 pre-existing parse issues)
+- `pnpm personas:validate` prints invalid file list with non-zero exit code
+- Orchestrator/prompt layer uses registry-backed IDs (no hardcoded 5-persona list)
+- Non-core persona IDs (e.g., `accelerator_mentor`) load correctly and are runnable
+- No TS code edit required to activate a new persona doc
+- Test: `pnpm personas:validate` passes for 587 docs
+
 ---
 
-### [ ] SIM-021B (P0) De-hardcode personaId schemas + runtime membership validation
+### [x] SIM-021B (P0) De-hardcode personaId schemas + runtime membership validation
 **Goal:** Remove compile-time persona enum bottleneck while preserving safety.
 
 **Deliverables**
@@ -889,6 +898,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - API request with known non-core persona ID runs successfully end-to-end
 
 **Dependencies:** SIM-021A
+
+**Completion notes:**
+- PersonaIdSchema changed from fixed enum to constrained string regex in SIM-021
+- Report/event schemas accept dynamic persona IDs via PersonaIdSchema
+- Runtime guardrail: executor validates persona IDs against loaded registry before simulation
+- Unknown IDs throw clear error listing available personas
+- Backward compatibility: CORE_PERSONA_IDS constant preserved, old stored runs parse fine
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

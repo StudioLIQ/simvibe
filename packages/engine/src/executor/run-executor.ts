@@ -5,6 +5,7 @@ import { createExtractor, type ExtractorConfig } from '../extractor';
 import { createOrchestrator, type OrchestratorConfig } from '../orchestrator';
 import { generateReport } from '../aggregator';
 import { getRunModeConfig } from '../config';
+import { getPersonaRegistry } from '../personas/registry';
 
 export interface ExecuteRunConfig {
   storage: Storage;
@@ -77,6 +78,18 @@ export async function executeRun(
     // Phase 2: Simulation — apply run mode config
     currentPhase = { phase: 'simulation', startedAt: new Date().toISOString() };
     const modeConfig = getRunModeConfig(run.input.runMode);
+
+    // Validate persona IDs against registry before running
+    const registry = getPersonaRegistry();
+    const missingIds = modeConfig.personaIds.filter(id => !registry.has(id));
+    if (missingIds.length > 0) {
+      throw new Error(
+        `Unknown persona IDs: ${missingIds.join(', ')}. ` +
+        `Registry has ${registry.size} personas. ` +
+        `Available: ${registry.getAllIds().slice(0, 10).join(', ')}...`
+      );
+    }
+
     const modeAwareConfig: typeof orchestratorConfig = {
       ...orchestratorConfig,
       llm: {
