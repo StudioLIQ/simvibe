@@ -1469,6 +1469,62 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               </div>
             )}
 
+            {/* Live Launch Evidence (MND-013) */}
+            {launchRecord?.status === 'success' && launchRecord.tokenAddress && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '1rem',
+                background: 'var(--success-bg)',
+                borderRadius: '0.5rem',
+                border: '1px solid var(--status-success)',
+              }}>
+                <div style={{ fontWeight: 600, color: 'var(--success-soft)', marginBottom: '0.75rem' }}>
+                  Token Live on nad.fun
+                </div>
+                <div style={{ marginBottom: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Token Contract Address</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <code style={{
+                      fontSize: '0.75rem',
+                      color: 'var(--success-soft)',
+                      background: 'var(--surface-subtle)',
+                      padding: '0.375rem 0.5rem',
+                      borderRadius: '4px',
+                      wordBreak: 'break-all',
+                      flex: 1,
+                    }}>
+                      {launchRecord.tokenAddress}
+                    </code>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText(launchRecord.tokenAddress!); }}
+                      className="btn"
+                      style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.25rem 0.5rem', fontSize: '0.75rem', flexShrink: 0 }}
+                    >
+                      Copy
+                    </button>
+                  </div>
+                </div>
+                {launchRecord.txHash && (
+                  <div style={{ marginBottom: '0.5rem' }}>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Launch TX Hash</div>
+                    <code style={{ fontSize: '0.7rem', color: 'var(--success-soft)', wordBreak: 'break-all' }}>
+                      {launchRecord.txHash}
+                    </code>
+                  </div>
+                )}
+                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                  <a
+                    href={`https://nad.fun/token/${launchRecord.tokenAddress}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', textDecoration: 'underline' }}
+                  >
+                    View on nad.fun
+                  </a>
+                </div>
+              </div>
+            )}
+
             {/* Execute Launch */}
             {launchRecord && (launchRecord.status === 'draft' || launchRecord.status === 'confirmed') && (
               <div style={{ marginTop: '1rem' }}>

@@ -2176,7 +2176,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - `saveLaunchRecord` writes `token_contract_address` column from `record.tokenAddress`
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-013 (P0) Expose live launch evidence in report page
+### [x] MND-013 (P0) Expose live launch evidence in report page
 **Goal:** Show proof that token is live on nad.fun.
 
 **Deliverables**
@@ -2190,6 +2190,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - FE regression for success/pending/not-launched states.
 
 **Dependencies:** MND-012
+
+**Completion notes:**
+- Report launch panel: "Token Live on nad.fun" section shown on launch success + tokenAddress present
+- Token contract address with Copy button, launch TX hash display
+- "View on nad.fun" deep-link to `nad.fun/token/{tokenAddress}`
+- Only visible when launch confirmed successfully
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-014 (P0) Build end-to-end flow script for hackathon demo
 **Goal:** Automate proof path: simulate -> publish receipt -> gate -> launch -> verify.
