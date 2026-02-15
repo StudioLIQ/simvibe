@@ -102,6 +102,10 @@ export class PostgresStorage implements Storage {
       receipt: row.receipt
         ? (typeof row.receipt === 'string' ? JSON.parse(row.receipt) : row.receipt)
         : undefined,
+      receiptTxHash: row.receipt_tx_hash ?? undefined,
+      receiptContract: row.receipt_contract ?? undefined,
+      receiptChainId: row.receipt_chain_id ?? undefined,
+      receiptPublishedAt: row.receipt_published_at ?? undefined,
       personaSnapshots: row.persona_snapshots
         ? (typeof row.persona_snapshots === 'string' ? JSON.parse(row.persona_snapshots) : row.persona_snapshots)
         : undefined,
@@ -251,8 +255,18 @@ export class PostgresStorage implements Storage {
   async saveReceipt(runId: string, receipt: ChainReceipt): Promise<void> {
     const now = new Date().toISOString();
     const result = await this.pool.query(
-      `UPDATE runs SET receipt = $1, updated_at = $2 WHERE id = $3`,
-      [JSON.stringify(receipt), now, runId]
+      `UPDATE runs SET receipt = $1, receipt_tx_hash = $2, receipt_contract = $3,
+        receipt_chain_id = $4, receipt_published_at = $5, updated_at = $6
+       WHERE id = $7`,
+      [
+        JSON.stringify(receipt),
+        receipt.txHash ?? null,
+        receipt.contractAddress ?? null,
+        receipt.chainId ?? null,
+        receipt.timestamp ?? null,
+        now,
+        runId,
+      ]
     );
 
     if (result.rowCount === 0) {

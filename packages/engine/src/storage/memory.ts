@@ -139,6 +139,10 @@ export class MemoryStorage implements Storage {
       throw new Error(`Run not found: ${runId}`);
     }
     run.receipt = receipt;
+    run.receiptTxHash = receipt.txHash;
+    run.receiptContract = receipt.contractAddress;
+    run.receiptChainId = receipt.chainId;
+    run.receiptPublishedAt = receipt.timestamp;
     run.updatedAt = new Date().toISOString();
   }
 

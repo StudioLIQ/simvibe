@@ -103,6 +103,19 @@ export class SQLiteStorage implements Storage {
     if (!colNames.has('launch_record')) {
       this.db.exec('ALTER TABLE runs ADD COLUMN launch_record TEXT');
     }
+    // Add receipt linkage columns if missing (MND-004)
+    if (!colNames.has('receipt_tx_hash')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN receipt_tx_hash TEXT');
+    }
+    if (!colNames.has('receipt_contract')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN receipt_contract TEXT');
+    }
+    if (!colNames.has('receipt_chain_id')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN receipt_chain_id INTEGER');
+    }
+    if (!colNames.has('receipt_published_at')) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN receipt_published_at TEXT');
+    }
   }
 
   async createRun(input: RunInput): Promise<Run> {
@@ -139,6 +152,10 @@ export class SQLiteStorage implements Storage {
       actuals: string | null;
       diagnostics: string | null;
       receipt: string | null;
+      receipt_tx_hash: string | null;
+      receipt_contract: string | null;
+      receipt_chain_id: number | null;
+      receipt_published_at: string | null;
       persona_snapshots: string | null;
       launch_readiness: string | null;
       launch_input: string | null;
@@ -170,6 +187,10 @@ export class SQLiteStorage implements Storage {
       actuals: row.actuals ? JSON.parse(row.actuals) : undefined,
       diagnostics: row.diagnostics ? JSON.parse(row.diagnostics) : undefined,
       receipt: row.receipt ? JSON.parse(row.receipt) : undefined,
+      receiptTxHash: row.receipt_tx_hash ?? undefined,
+      receiptContract: row.receipt_contract ?? undefined,
+      receiptChainId: row.receipt_chain_id ?? undefined,
+      receiptPublishedAt: row.receipt_published_at ?? undefined,
       personaSnapshots: row.persona_snapshots ? JSON.parse(row.persona_snapshots) : undefined,
       launchReadiness: row.launch_readiness ? JSON.parse(row.launch_readiness) : undefined,
       launchInput: row.launch_input ? JSON.parse(row.launch_input) : undefined,
@@ -297,8 +318,18 @@ export class SQLiteStorage implements Storage {
   async saveReceipt(runId: string, receipt: ChainReceipt): Promise<void> {
     const now = new Date().toISOString();
     const result = this.db.prepare(`
-      UPDATE runs SET receipt = ?, updated_at = ? WHERE id = ?
-    `).run(JSON.stringify(receipt), now, runId);
+      UPDATE runs SET receipt = ?, receipt_tx_hash = ?, receipt_contract = ?,
+        receipt_chain_id = ?, receipt_published_at = ?, updated_at = ?
+      WHERE id = ?
+    `).run(
+      JSON.stringify(receipt),
+      receipt.txHash ?? null,
+      receipt.contractAddress ?? null,
+      receipt.chainId ?? null,
+      receipt.timestamp ?? null,
+      now,
+      runId
+    );
 
     if (result.changes === 0) {
       throw new Error(`Run not found: ${runId}`);

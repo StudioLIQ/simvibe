@@ -29,6 +29,11 @@ export interface Run {
   actuals?: ActualOutcomes;
   diagnostics?: RunDiagnostics;
   receipt?: ChainReceipt;
+  // Denormalized receipt linkage fields (queryable columns)
+  receiptTxHash?: string;
+  receiptContract?: string;
+  receiptChainId?: number;
+  receiptPublishedAt?: string;
   personaSnapshots?: PersonaSnapshots;
   launchReadiness?: LaunchReadiness;
   launchInput?: NadLaunchInput;

@@ -1960,7 +1960,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - **BLOCKED**: Needs RECEIPT_RPC_URL + funded RECEIPT_PUBLISHER_KEY to deploy
 - To deploy: `cd contracts && forge script script/Deploy.s.sol:DeploySimVibeReceipt --rpc-url $RECEIPT_RPC_URL --private-key $RECEIPT_PUBLISHER_KEY --broadcast`
 
-### [ ] MND-004 (P0) Persist receipt linkage in storage
+### [x] MND-004 (P0) Persist receipt linkage in storage
 **Goal:** Store onchain receipt status per run in DB.
 
 **Deliverables**
@@ -1974,6 +1974,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - DB migration test + API response inspection.
 
 **Dependencies:** MND-003
+
+**Completion notes:**
+- Postgres migration `005_receipt_linkage.sql`: 4 columns + index on `receipt_tx_hash`
+- SQLite `migrateSchema()`: adds 4 columns dynamically
+- `Run` interface: `receiptTxHash?`, `receiptContract?`, `receiptChainId?`, `receiptPublishedAt?`
+- `saveReceipt` updated in all 3 backends (SQLite, Postgres, Memory) to write denormalized columns
+- `getRun` updated in SQLite + Postgres to read linkage fields
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-005 (P0) Add API endpoint to publish receipt on Monad
 **Goal:** Backend route to publish run/report hash onchain.
