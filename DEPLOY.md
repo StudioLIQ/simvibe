@@ -182,7 +182,34 @@ DEMO_MODE=true DATABASE_URL=memory:// pnpm dev:api
 pnpm dev:web
 ```
 
-## 5. Monitoring
+## 5. Railway Auto Seeding (Optional)
+
+데모용 Product Hunt 리포트를 배포 직후 자동으로 채우고 싶을 때 사용합니다.
+
+시드 상세 목록:
+- `SEEDING.md`
+
+권장 방식:
+1. `web` 서비스가 healthy 된 뒤 실행되는 one-off job 또는 cron job에서 실행
+2. 아래 명령으로 시딩
+
+```bash
+API_BASE_URL=https://<your-web-domain> \
+WEB_BASE_URL=https://<your-web-domain> \
+WAIT_FOR_SERVER_SECONDS=180 \
+SEED_ONLY_MISSING=true \
+SEED_NAMESPACE=ph-demo-v1 \
+PRODUCT_COUNT=7 \
+RUN_MODE=quick \
+pnpm seed:ph:railway
+```
+
+메모:
+- `SEED_ONLY_MISSING=true`면 기존 시드 런을 감지해서 중복 생성을 건너뜁니다.
+- 강제 재시딩은 `SEED_ONLY_MISSING=false`로 실행합니다.
+- `RAILWAY_PUBLIC_DOMAIN` 환경변수가 있으면 `API_BASE_URL`/`WEB_BASE_URL` 생략 시 자동 사용됩니다.
+
+## 6. Monitoring
 
 ### Cost guard state
 
