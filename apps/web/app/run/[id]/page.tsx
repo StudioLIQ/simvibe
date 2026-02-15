@@ -164,7 +164,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
     return (
       <main className="container">
         <div className="error-message">{error}</div>
-        <Link href="/">Back to Home</Link>
+        <Link href="/">Back to Hub</Link>
       </main>
     );
   }
@@ -181,7 +181,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
     <main className="container">
       <header className="header">
         <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
-          &larr; Back to Home
+          &larr; Back to Hub
         </Link>
         <h1 style={{ marginTop: '0.5rem' }}>Simulation Run</h1>
         <p>{run.input.tagline}</p>

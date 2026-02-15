@@ -4,7 +4,8 @@
 1. Ensure `DEMO_MODE=true` in `.env` (uses cached extracts, no API calls)
 2. Start API server: `pnpm dev:api` (port `5555`)
 3. Start FE server: `pnpm dev:web` (port `5556`, proxies `/api/*` to `5555`)
-4. Open http://localhost:5556
+4. Open http://localhost:5556 (허브 랜딩)
+5. New Simulation 진입: `http://localhost:5556/new`
 5. (Optional) Seed Product Hunt-style runs for instant report links:
    - `API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 PRODUCT_COUNT=5 pnpm seed:ph`
    - links saved at `artifacts_runs/ph-seed-report-links.md`
@@ -17,7 +18,7 @@
 "This is simvi.be - an agentic market simulator. Instead of guessing how users will react to your product, you deploy it into a synthetic market of AI agents that behave like real launch-day users."
 
 ### [0:15-0:45] Create a World
-1. Click through to the input form
+1. 허브(`/`)에서 `새 시뮬레이션` 클릭 (또는 `/new` 직접 이동)
 2. Enter example product:
    - **Tagline:** "Ship code reviews 10x faster with AI"
    - **Description:** "AI-powered code review tool that catches bugs before they hit production"
@@ -27,6 +28,10 @@
    - **Pasted Content:** "CodeReviewer - AI Code Review..."
 
 3. Click "Create World"
+
+### [보너스] 누적 리포트 보기
+- 허브(`/`)에서 `누적 리포트` 클릭 (또는 `/reports` 직접 이동)
+- 기존 시딩/완료 런의 report 링크를 한 번에 확인
 
 ### [0:45-1:15] Watch Simulation
 "Now watch as 5 different personas - a Cynical Engineer, a Product Manager, an Investor, a Growth Marketer, and an Agency Owner - each evaluate the product from their unique perspective."

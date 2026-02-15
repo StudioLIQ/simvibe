@@ -462,7 +462,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
     return (
       <main className="container">
         <div className="error-message">{error}</div>
-        <Link href="/">Back to Home</Link>
+        <Link href="/">Back to Hub</Link>
       </main>
     );
   }
