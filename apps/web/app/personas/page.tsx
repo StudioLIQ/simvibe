@@ -94,36 +94,34 @@ export default function PersonasPage() {
   return (
     <main className="container">
       <header className="header" style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-          <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>&larr; 허브</Link>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
-          <Link href="/reports" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>누적 리포트</Link>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
-          <Link href="/new" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>새 시뮬레이션</Link>
+        <div className="top-nav">
+          <Link href="/">&larr; Hub</Link>
+          <Link href="/reports">Reports</Link>
+          <Link href="/new">Start Simulation</Link>
         </div>
         <h1>Persona Registry</h1>
-        <p>현재 로드된 Persona 목록과 특성을 조회합니다.</p>
+        <p>Browse currently loaded personas and inspect their behavior profiles.</p>
       </header>
 
       <div className="card" style={{ marginBottom: '1rem' }}>
         <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="persona-search">검색 (id / name / role / decisionStyle / crypto / degen)</label>
+          <label htmlFor="persona-search">Search (id / name / role / decision style / crypto / degen)</label>
           <input
             id="persona-search"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="예: cynical, investor, procurement"
+            placeholder="e.g. cynical, investor, procurement"
           />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.65rem' }}>
           <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
-            <div className="hint">총 Persona</div>
+            <div className="hint">Total Personas</div>
             <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>{response?.total ?? '-'}</div>
           </div>
           <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
-            <div className="hint">현재 결과</div>
+            <div className="hint">Current Results</div>
             <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>{response?.count ?? '-'}</div>
           </div>
           <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
@@ -152,11 +150,11 @@ export default function PersonasPage() {
       </div>
 
       <div className="card">
-        {loading && <p className="hint">불러오는 중...</p>}
+        {loading && <p className="hint">Loading personas...</p>}
         {error && <div className="error-message">{error}</div>}
 
         {!loading && !error && personas.length === 0 && (
-          <p className="hint">표시할 Persona가 없습니다.</p>
+          <p className="hint">No personas to display.</p>
         )}
 
         {!loading && !error && personas.length > 0 && (

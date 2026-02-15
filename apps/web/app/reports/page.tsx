@@ -82,7 +82,7 @@ export default function ReportsPage() {
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : '리포트 목록을 불러오지 못했습니다.');
+          setError(err instanceof Error ? err.message : 'Failed to load reports.');
         }
       } finally {
         if (!cancelled) {
@@ -124,26 +124,24 @@ export default function ReportsPage() {
   return (
     <main className="container">
       <header className="header" style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-          <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>&larr; 허브</Link>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
-          <Link href="/new" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>새 시뮬레이션</Link>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
-          <Link href="/personas" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Persona 목록</Link>
+        <div className="top-nav">
+          <Link href="/">&larr; Hub</Link>
+          <Link href="/new">Start Simulation</Link>
+          <Link href="/personas">Personas</Link>
         </div>
-        <h1>누적 리포트</h1>
-        <p>완료된 런의 리포트를 한 곳에서 확인합니다.</p>
+        <h1>Reports</h1>
+        <p>Track every completed simulation run from one dashboard.</p>
       </header>
 
       <div className="card" style={{ marginBottom: '1rem' }}>
         <div className="form-group" style={{ marginBottom: '0.75rem' }}>
-          <label htmlFor="search">검색 (이름, runId, 태그)</label>
+          <label htmlFor="search">Search (title, run ID, tags)</label>
           <input
             id="search"
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="예: conva, run_xxx, seed:ph"
+            placeholder="e.g. conva, run_xxx, seed:ph"
           />
         </div>
 
@@ -180,16 +178,16 @@ export default function ReportsPage() {
             checked={seededOnly}
             onChange={(e) => setSeededOnly(e.target.checked)}
           />
-          시딩된 리포트만 보기
+          Show seeded reports only
         </label>
       </div>
 
       <div className="card">
-        {loading && <p className="hint">불러오는 중...</p>}
+        {loading && <p className="hint">Loading reports...</p>}
         {error && <div className="error-message">{error}</div>}
 
         {!loading && !error && completedReports.length === 0 && (
-          <p className="hint">조건에 맞는 리포트가 없습니다.</p>
+          <p className="hint">No reports match your filters.</p>
         )}
 
         {!loading && !error && completedReports.length > 0 && (
@@ -246,10 +244,10 @@ export default function ReportsPage() {
 
                   <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
                     <Link href={`/run/${run.id}/report`} className="btn btn-primary" style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem' }}>
-                      Report 보기
+                      Open Report
                     </Link>
                     <Link href={`/run/${run.id}`} className="btn" style={{ padding: '0.45rem 0.8rem', fontSize: '0.85rem', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}>
-                      Run 상세
+                      Run Detail
                     </Link>
                   </div>
                 </div>

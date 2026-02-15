@@ -1,53 +1,53 @@
-# simvi.be 배포 런북 (Vercel + Railway)
+# simvi.be Deployment Runbook (Vercel + Railway)
 
-마지막 업데이트: 2026-02-15
+Last updated: 2026-02-15
 
-이 문서는 현재 코드 기준의 실제 운영 절차를 정리한 배포 기준 문서다.
+This runbook reflects the current production architecture and operational flow.
 
-## 1) 운영 아키텍처
+## 1) Architecture
 
 ```text
 [User]
   -> Vercel Web (apps/web)
        -> /api/* rewrite
-            -> Railway API (apps/web Next server, route handlers)
+            -> Railway API (apps/web Next server + route handlers)
                  -> Postgres (Railway)
                  -> pg-boss queue
                       -> Railway Worker (apps/worker)
 ```
 
-핵심 원칙:
-- 운영 DB는 반드시 `Postgres` (`DATABASE_URL=postgres://...`).
-- API/Worker는 같은 `DATABASE_URL`을 공유.
-- Web은 Vercel에서 `/api/*`를 Railway API로 프록시(`API_SERVER_ORIGIN`).
-- 계약(Receipt/Gate/NAD on-chain)은 옵션. 미설정 시 오프체인 경로로 동작.
+Key rules:
+- Production storage must be Postgres (`DATABASE_URL=postgres://...`).
+- API and Worker must share the same `DATABASE_URL`.
+- Web on Vercel proxies `/api/*` to Railway API via `API_SERVER_ORIGIN`.
+- On-chain features (Receipt/Gate/NAD launch) are optional. System still works in off-chain mode.
 
 ---
 
-## 2) 배포 전 필수 체크 (로컬)
+## 2) Pre-deploy Validation (Local)
 
-Node/pnpm:
-- Node `>=18` (권장 20/22)
+Requirements:
+- Node `>=18` (recommended: 20 or 22)
 - pnpm `>=9`
 
-필수 검증:
+Run before every deploy:
 
 ```bash
 pnpm typecheck
 pnpm ci:e2e:all
 ```
 
-주의:
-- `ci:e2e:services`는 Docker 필요(Postgres 컨테이너 기동).
-- launch 실행은 report lifecycle이 `frozen` 또는 `published`여야 통과한다.
+Notes:
+- `ci:e2e:services` (included in `ci:e2e:all`) requires Docker.
+- Launch execution requires report lifecycle to be `frozen` or `published`.
 
 ---
 
-## 3) 환경변수 기준
+## 3) Environment Variables
 
-기준 샘플: `.env.example`
+Source of truth: `.env.example`
 
-### 3-1. API 서비스 (Railway, 필수)
+### 3-1. API service (Railway, required)
 
 ```env
 DATABASE_URL=postgres://...
@@ -56,17 +56,17 @@ DEMO_MODE=false
 
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=...
-# 또는 ANTHROPIC_API_KEY / OPENAI_API_KEY
+# or ANTHROPIC_API_KEY / OPENAI_API_KEY
 
 EXTRACTOR_PROVIDER=jina
-# JINA_API_KEY=... (선택)
-# FIRECRAWL_API_KEY=... (firecrawl 선택 시 필수)
+# JINA_API_KEY=... (optional)
+# FIRECRAWL_API_KEY=... (required only if provider=firecrawl)
 
 LLM_DAILY_TOKEN_LIMIT=2000000
 LLM_DAILY_COST_LIMIT_USD=5.00
 ```
 
-### 3-2. Worker 서비스 (Railway, 필수)
+### 3-2. Worker service (Railway, required)
 
 ```env
 DATABASE_URL=postgres://...
@@ -84,134 +84,132 @@ LLM_DAILY_TOKEN_LIMIT=2000000
 LLM_DAILY_COST_LIMIT_USD=5.00
 ```
 
-### 3-3. Web 서비스 (Vercel, 필수)
+### 3-3. Web service (Vercel, required)
 
 ```env
 API_SERVER_ORIGIN=https://api-simvibe.example.com
 NODE_ENV=production
 ```
 
-보안 권장:
-- Vercel에는 API/DB/지갑 비밀키를 두지 않는다.
-- API/Worker에만 LLM/DB/체인 키를 둔다.
+Security recommendation:
+- Do not place DB/API/wallet secrets in Vercel.
+- Keep secrets only in Railway API/Worker.
 
-### 3-4. 옵션 (체인/런치)
+### 3-4. Optional chain/launch variables
 
 Receipt publish (Monad):
 - `RECEIPT_CONTRACT_ADDRESS`
 - `RECEIPT_RPC_URL`
 - `RECEIPT_PUBLISHER_KEY`
-- `RECEIPT_CHAIN_ID` (선택)
+- `RECEIPT_CHAIN_ID` (optional)
 
-nad.fun launch 설정:
+nad.fun launch config:
 - `NAD_TOKEN_FACTORY_ADDRESS`
 - `NAD_CHAIN_ID`
 - `NAD_RPC_URL`
 - `NAD_CREATE_BASE_URL`
 - `NAD_LAUNCH_FEE_MON`
 
-Readiness 정책:
-- `LAUNCH_FORCE_OVERRIDE` (운영에서는 `false` 권장)
-- `LAUNCH_MIN_OVERALL_SCORE` 등 (`packages/engine/src/launch/readiness-gate.ts` 참고)
+Readiness policy:
+- `LAUNCH_FORCE_OVERRIDE` (should be `false` in production)
+- `LAUNCH_MIN_OVERALL_SCORE`, etc. (see `packages/engine/src/launch/readiness-gate.ts`)
 
 ---
 
-## 4) Railway 배포
+## 4) Railway Deployment
 
-### 4-1. Postgres 생성
+### 4-1. Create Postgres
 1. Railway Project -> `New` -> `Database` -> PostgreSQL
-2. `DATABASE_URL` 확보
+2. Copy `DATABASE_URL`
 
-### 4-2. API 서비스 생성
-1. `New` -> GitHub Repo 연결
-2. Service 이름: `simvibe-api` (권장)
+### 4-2. Create API service
+1. `New` -> Connect GitHub repo
+2. Service name: `simvibe-api` (recommended)
 3. Root Directory: `/`
-4. Build Command:
+4. Build command:
 
 ```bash
 pnpm install --frozen-lockfile && pnpm --filter @simvibe/web build
 ```
 
-5. Start Command:
+5. Start command:
 
 ```bash
 pnpm --filter @simvibe/web start --port $PORT
 ```
 
-6. 환경변수(3-1) 설정
+6. Set API env vars from section 3-1
 
-### 4-3. Worker 서비스 생성
-1. `New` -> GitHub Repo 연결
-2. Service 이름: `simvibe-worker` (권장)
-3. Dockerfile Path: `apps/worker/Dockerfile`
-4. Public Domain 불필요 (내부 서비스로 운영)
-5. 환경변수(3-2) 설정
+### 4-3. Create Worker service
+1. `New` -> Connect same GitHub repo
+2. Service name: `simvibe-worker` (recommended)
+3. Dockerfile path: `apps/worker/Dockerfile`
+4. No public domain needed
+5. Set Worker env vars from section 3-2
 
-### 4-4. API 도메인 연결
-예: `api-simvibe.example.com`
+### 4-4. Connect API domain
+Example: `api-simvibe.example.com`
 
-검증:
+Verify:
 - `https://api-simvibe.example.com/api/diagnostics`
-- `storage.activeBackend=postgres` 확인
+- Check `storage.activeBackend=postgres`
 
 ---
 
-## 5) 초기화 작업 (필수, 최초 1회)
+## 5) First-time Initialization (Required)
 
-API 서비스 환경으로 one-off 실행:
+Run once in API environment:
 
 ```bash
 pnpm db:migrate
 pnpm personas:sync
 ```
 
-검증:
-- 마이그레이션 성공 로그
-- `personas:sync` 성공 로그
+Verify migration and persona sync logs are successful.
 
 ---
 
-## 6) Vercel 배포 (Web)
+## 6) Vercel Deployment (Web)
 
-1. Project Import (repo)
+1. Import project from repo
 2. Root Directory: `apps/web`
-3. Install Command:
+3. Install command:
 
 ```bash
 cd ../.. && pnpm install --frozen-lockfile
 ```
 
-4. Build Command:
+4. Build command:
 
 ```bash
 cd ../.. && pnpm --filter @simvibe/web build
 ```
 
-5. 환경변수(3-3) 설정
-6. 도메인 연결(예: `simvibe.example.com`)
+5. Set Web env vars from section 3-3
+6. Connect domain (example: `simvibe.example.com`)
 
-검증:
-- `https://simvibe.example.com` 접속
-- 브라우저 DevTools에서 `/api/*` 요청이 `API_SERVER_ORIGIN`으로 프록시되는지 확인
+Verify:
+- `https://simvibe.example.com` loads
+- `/api/*` requests are proxied to `API_SERVER_ORIGIN`
 
 ---
 
-## 7) 배포 직후 검증
+## 7) Post-deploy Verification
 
-### 7-1. 서비스 헬스
+### 7-1. Service health
 - API: `GET /api/diagnostics`
-- Worker: 로그에서 `Worker consuming jobs from pg-boss queue` 확인
+- Worker log contains: `Worker consuming jobs from pg-boss queue`
 
-### 7-2. 런 실행 플로우
-1. `POST /api/run` -> `runId`
-2. `POST /api/run/:id/start` -> `queued=true`
-3. `GET /api/run/:id` polling -> `queued -> running -> completed`
+### 7-2. Run lifecycle
+1. `POST /api/run` -> get `runId`
+2. `POST /api/run/:id/start` -> expect `queued=true`
+3. Poll `GET /api/run/:id` -> `queued -> running -> completed`
 
-### 7-3. launch 플로우 (중요)
-launch execute 전 필수:
+### 7-3. Launch lifecycle (important)
+Before launch execute, freeze lifecycle:
 - `POST /api/run/:id/report/lifecycle` with `targetStatus=frozen`
 
-그 후:
+Then:
 1. `GET /api/run/:id/launch`
 2. `POST /api/run/:id/launch`
 3. `POST /api/run/:id/launch/execute`
@@ -220,14 +218,14 @@ launch execute 전 필수:
 
 ---
 
-## 8) 운영용 E2E
+## 8) E2E for Operations
 
-### 8-1. 메모리 모드(빠른 회귀)
+### 8-1. Full E2E chain
 ```bash
 pnpm ci:e2e:all
 ```
 
-이 명령은 아래를 순서대로 실행한다:
+This runs:
 - `ci:smoke`
 - `ci:smoke:launch`
 - `ci:e2e:ph:nad`
@@ -235,27 +233,27 @@ pnpm ci:e2e:all
 - `ci:e2e:monad`
 - `ci:e2e:services`
 
-### 8-2. 실제 서비스 연결 E2E 단독 실행
+### 8-2. Cross-service E2E only
 ```bash
 pnpm ci:e2e:services
 ```
 
-이 테스트는 다음을 한 번에 검증한다:
+It validates in one pass:
 - API enqueue
-- pg-boss 큐 전달
-- Worker 실행
+- pg-boss queue delivery
+- Worker execution
 - report patch/lifecycle
 - launch execute/confirm
-- receipt 저장
+- receipt persistence
 
-결과 파일:
+Artifact:
 - `artifacts_runs/e2e-services-flow-summary.json`
 
 ---
 
-## 9) 시딩 (옵션)
+## 9) Seeding (Optional)
 
-nad.fun 데모 시딩:
+nad.fun demo seeding:
 
 ```bash
 API_BASE_URL=https://api-simvibe.example.com \
@@ -267,7 +265,7 @@ RUN_MODE=quick \
 pnpm seed:nad:railway
 ```
 
-Legacy PH 시딩:
+Legacy PH seeding:
 
 ```bash
 API_BASE_URL=https://api-simvibe.example.com \
@@ -281,22 +279,22 @@ pnpm seed:ph:railway
 
 ---
 
-## 10) 장애 대응 순서
+## 10) Incident Triage Order
 
-1. API `GET /api/diagnostics`
-2. `DATABASE_URL`/Postgres 연결 확인
-3. Worker 로그(큐 소비, 실행 실패) 확인
-4. Vercel `API_SERVER_ORIGIN` 확인
-5. launch 403이면 report lifecycle 상태(`open/review/frozen/published`) 먼저 확인
+1. Check API `GET /api/diagnostics`
+2. Validate `DATABASE_URL` and Postgres connectivity
+3. Check Worker logs (queue consumption, execution errors)
+4. Validate Vercel `API_SERVER_ORIGIN`
+5. If launch returns 403, check report lifecycle status first
 
 ---
 
-## 11) 롤백
+## 11) Rollback
 
-원칙:
-- DB는 유지하고, API/Web/Worker를 이전 릴리스로 롤백
-- 롤백 후 즉시 `ci:smoke`, `ci:smoke:launch` 최소 검증
+Principle:
+- Keep DB as-is, roll back API/Web/Worker to previous release.
+- Immediately run `pnpm ci:smoke` and `pnpm ci:smoke:launch` after rollback.
 
-권장:
-- 릴리스마다 `artifacts_runs/*summary.json` 보관
-- 배포 태그/커밋 해시를 운영 기록에 남길 것
+Recommended:
+- Store `artifacts_runs/*summary.json` per release.
+- Record deployed commit hashes in ops notes.

@@ -156,12 +156,10 @@ export default function HomePage() {
   return (
     <main className="container">
       <header className="header">
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
-          <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>&larr; 허브</Link>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
-          <Link href="/reports" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>누적 리포트</Link>
-          <span style={{ color: 'var(--text-dim)' }}>·</span>
-          <Link href="/personas" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Persona 목록</Link>
+        <div className="top-nav">
+          <Link href="/">&larr; Hub</Link>
+          <Link href="/reports">Reports</Link>
+          <Link href="/personas">Personas</Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.25rem' }}>
           <Image src="/logo.png" alt="simvi.be logo" width={36} height={36} />
@@ -650,14 +648,14 @@ export default function HomePage() {
           <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Persona Configuration</h2>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem', flexWrap: 'wrap' }}>
             <p className="hint" style={{ margin: 0 }}>
-              현재 로드된 Persona: <strong style={{ color: 'var(--accent-primary)' }}>{personaCount ?? '-'}</strong>
+              Loaded personas: <strong style={{ color: 'var(--accent-primary)' }}>{personaCount ?? '-'}</strong>
             </p>
             <Link
               href="/personas"
               className="btn"
               style={{ padding: '0.45rem 0.75rem', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
             >
-              Persona 목록 보기
+              View Persona Registry
             </Link>
           </div>
           <p className="hint" style={{ marginBottom: '1rem' }}>

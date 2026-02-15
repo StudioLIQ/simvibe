@@ -81,34 +81,39 @@ export default function HomePage() {
 
   return (
     <main className="container">
-      <header className="header" style={{ marginBottom: '1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.25rem' }}>
+      <header className="header header-hero">
+        <div className="top-nav">
+          <Link href="/new">Start Simulation</Link>
+          <Link href="/reports">Reports</Link>
+          <Link href="/personas">Personas</Link>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.35rem' }}>
           <Image src="/logo.png" alt="simvi.be logo" width={42} height={42} priority />
           <h1 style={{ marginBottom: 0 }}>simvi.be</h1>
         </div>
-        <p>Predict nad.fun launch reaction before going live.</p>
+        <p>Predict nad.fun launch reaction before you go live.</p>
       </header>
 
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>현재 상태</h2>
+      <div className="card card-highlight" style={{ marginBottom: '1rem' }}>
+        <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>Live Snapshot</h2>
         {loading ? (
-          <p className="hint">최근 런 집계 불러오는 중...</p>
+          <p className="hint">Loading latest run metrics...</p>
         ) : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem' }}>
-            <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.65rem', padding: '0.75rem' }}>
-              <div className="hint">누적 런</div>
+          <div className="stats-grid">
+            <div className="stat-item">
+              <div className="hint">Total Runs</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{summary.totalRuns}</div>
             </div>
-            <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.65rem', padding: '0.75rem' }}>
-              <div className="hint">완료 리포트</div>
+            <div className="stat-item">
+              <div className="hint">Completed Reports</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{summary.completedRuns}</div>
             </div>
-            <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.65rem', padding: '0.75rem' }}>
-              <div className="hint">시드 감지</div>
+            <div className="stat-item">
+              <div className="hint">Seeded Detections</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{summary.seededRuns}</div>
             </div>
-            <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.65rem', padding: '0.75rem' }}>
-              <div className="hint">Persona 수</div>
+            <div className="stat-item">
+              <div className="hint">Active Personas</div>
               <div style={{ fontSize: '1.5rem', fontWeight: 700 }}>{personaCount ?? '-'}</div>
             </div>
           </div>
@@ -116,63 +121,42 @@ export default function HomePage() {
       </div>
 
       <div className="card" style={{ marginBottom: '1rem' }}>
-        <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>빠른 이동</h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '0.75rem' }}>
+        <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>Action Board</h2>
+        <div className="link-grid">
           <Link
             href="/reports"
-            style={{
-              display: 'block',
-              border: '1px solid var(--border)',
-              borderRadius: '0.75rem',
-              padding: '1rem',
-              background: 'var(--surface-subtle)',
-              textDecoration: 'none',
-            }}
+            className="quick-link-card"
           >
-            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>누적 리포트 보기</div>
-            <p className="hint" style={{ margin: 0 }}>완료된 시뮬레이션 리포트를 모아서 확인합니다.</p>
+            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Explore Reports</div>
+            <p className="hint" style={{ margin: 0 }}>Review every completed simulation in one place.</p>
           </Link>
 
           <Link
             href="/new"
-            style={{
-              display: 'block',
-              border: '1px solid var(--border)',
-              borderRadius: '0.75rem',
-              padding: '1rem',
-              background: 'var(--accent-primary-soft)',
-              textDecoration: 'none',
-            }}
+            className="quick-link-card quick-link-primary"
           >
-            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>새 시뮬레이션 시작</div>
-            <p className="hint" style={{ margin: 0 }}>nad.fun 토큰 런치 리액션을 예측합니다.</p>
+            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Start New Simulation</div>
+            <p className="hint" style={{ margin: 0 }}>Predict nad.fun token launch reaction before deployment.</p>
           </Link>
 
           <Link
             href="/personas"
-            style={{
-              display: 'block',
-              border: '1px solid var(--border)',
-              borderRadius: '0.75rem',
-              padding: '1rem',
-              background: 'var(--surface-card)',
-              textDecoration: 'none',
-            }}
+            className="quick-link-card"
           >
-            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Persona 목록</div>
+            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Persona Registry</div>
             <p className="hint" style={{ margin: 0 }}>
-              전체 Persona를 검색/확인합니다. 현재 {personaCount ?? '-'}개 로드됨
+              Search and inspect all personas. Currently loaded: {personaCount ?? '-'}.
             </p>
           </Link>
         </div>
       </div>
 
       <div className="card">
-        <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>운영 경로</h2>
+        <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>Production Endpoints</h2>
         <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-          <li>웹: <code>https://simvibe.studioliq.com</code></li>
+          <li>Web: <code>https://simvibe.studioliq.com</code></li>
           <li>API: <code>https://api-simvibe.studioliq.com</code></li>
-          <li>진단: <code>/api/diagnostics</code></li>
+          <li>Diagnostics: <code>/api/diagnostics</code></li>
         </ul>
       </div>
     </main>
