@@ -2453,7 +2453,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ## Milestone M16 — Pivot to nad.fun Launch Reaction Simulator (P0/P1)
 
-### [ ] MND-025 (P0) Redefine primary platform mode to `nad_fun`
+### [x] MND-025 (P0) Redefine primary platform mode to `nad_fun`
 **Goal:** Make nad.fun reaction prediction the default product behavior.
 
 **Deliverables**
@@ -2465,6 +2465,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - New runs are created as nad.fun-focused by default.
 
 **Dependencies:** MND-024
+
+**Completion notes:**
+- `PlatformModeSchema` updated: `['generic', 'product_hunt', 'nad_fun']` with default `nad_fun`
+- Input page: nad.fun is first radio option and pre-selected; Product Hunt marked as "(legacy)" with reduced opacity
+- Submit handler sends `platformMode` for all non-generic modes (was PH-only)
+- Backward compatible: existing runs with `generic`/`product_hunt` still parse fine
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-026 (P0) Replace PH-centric metrics with nad.fun launch metrics
 **Goal:** Align report output with token launch outcomes on nad.fun.

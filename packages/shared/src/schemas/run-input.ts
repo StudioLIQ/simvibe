@@ -13,7 +13,7 @@ export const PricingModelSchema = z.enum([
 
 export const RunModeSchema = z.enum(['quick', 'deep']).default('quick');
 
-export const PlatformModeSchema = z.enum(['generic', 'product_hunt']).default('generic');
+export const PlatformModeSchema = z.enum(['generic', 'product_hunt', 'nad_fun']).default('nad_fun');
 
 export const MediaAssetsSchema = z.object({
   thumbnailUrl: z.string().url('Invalid thumbnail URL').optional(),

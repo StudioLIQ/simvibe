@@ -31,7 +31,7 @@ export default function HomePage() {
   const [runMode, setRunMode] = useState<RunMode>('quick');
   const [personaSet, setPersonaSet] = useState<PersonaSetName | ''>('');
   const [customPersonaIds, setCustomPersonaIds] = useState('');
-  const [platformMode, setPlatformMode] = useState<PlatformMode>('generic');
+  const [platformMode, setPlatformMode] = useState<PlatformMode>('nad_fun');
   const [phProductName, setPhProductName] = useState('');
   const [phTagline, setPhTagline] = useState('');
   const [phDescription, setPhDescription] = useState('');
@@ -116,7 +116,7 @@ export default function HomePage() {
         runMode,
         personaIds: parsedPersonaIds,
         personaSet: personaSet || undefined,
-        platformMode: isPH ? 'product_hunt' : undefined,
+        platformMode: platformMode !== 'generic' ? platformMode : undefined,
         phSubmission,
       });
 
@@ -251,10 +251,33 @@ export default function HomePage() {
 
         <div className="card">
           <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Platform Mode</h2>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
             <label
               style={{
                 flex: 1,
+                minWidth: '140px',
+                padding: '1rem',
+                border: `2px solid ${platformMode === 'nad_fun' ? 'var(--accent-primary)' : 'var(--border)'}`,
+                borderRadius: '8px',
+                cursor: 'pointer',
+                background: platformMode === 'nad_fun' ? 'var(--accent-primary-soft)' : 'transparent',
+              }}
+            >
+              <input
+                type="radio"
+                name="platformMode"
+                value="nad_fun"
+                checked={platformMode === 'nad_fun'}
+                onChange={() => setPlatformMode('nad_fun')}
+                style={{ display: 'none' }}
+              />
+              <strong>nad.fun</strong>
+              <p className="hint" style={{ margin: '0.25rem 0 0' }}>Token launch reaction sim</p>
+            </label>
+            <label
+              style={{
+                flex: 1,
+                minWidth: '140px',
                 padding: '1rem',
                 border: `2px solid ${platformMode === 'generic' ? 'var(--accent-primary)' : 'var(--border)'}`,
                 borderRadius: '8px',
@@ -276,11 +299,13 @@ export default function HomePage() {
             <label
               style={{
                 flex: 1,
+                minWidth: '140px',
                 padding: '1rem',
                 border: `2px solid ${platformMode === 'product_hunt' ? 'var(--accent-primary)' : 'var(--border)'}`,
                 borderRadius: '8px',
                 cursor: 'pointer',
                 background: platformMode === 'product_hunt' ? 'var(--accent-primary-soft)' : 'transparent',
+                opacity: 0.7,
               }}
             >
               <input
@@ -291,7 +316,7 @@ export default function HomePage() {
                 onChange={() => setPlatformMode('product_hunt')}
                 style={{ display: 'none' }}
               />
-              <strong>Product Hunt</strong>
+              <strong>Product Hunt</strong> <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>(legacy)</span>
               <p className="hint" style={{ margin: '0.25rem 0 0' }}>PH launch simulation</p>
             </label>
           </div>
