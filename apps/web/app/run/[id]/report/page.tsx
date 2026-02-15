@@ -3,7 +3,16 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import type { Report, PersonaReport, FrictionItem, ActualOutcomes, ChainReceipt } from '@simvibe/shared';
+import type {
+  Report,
+  PersonaReport,
+  FrictionItem,
+  ActualOutcomes,
+  ChainReceipt,
+  NadLaunchInput,
+  LaunchReadiness,
+  LaunchRecord,
+} from '@simvibe/shared';
 
 interface PredictionErrors {
   signupError: number;
@@ -140,9 +149,29 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [chainEnabled, setChainEnabled] = useState(false);
 
+  // Launch state
+  const [launchReadiness, setLaunchReadiness] = useState<LaunchReadiness | null>(null);
+  const [launchInput, setLaunchInput] = useState<NadLaunchInput | null>(null);
+  const [launchRecord, setLaunchRecord] = useState<LaunchRecord | null>(null);
+  const [showLaunchPanel, setShowLaunchPanel] = useState(false);
+  const [isSavingLaunch, setIsSavingLaunch] = useState(false);
+  const [launchError, setLaunchError] = useState<string | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [editingLaunch, setEditingLaunch] = useState({
+    name: '',
+    symbol: '',
+    description: '',
+    website: '',
+    x: '',
+    telegram: '',
+    antiSnipe: false,
+    bundled: false,
+  });
+
   useEffect(() => {
     fetchRun();
     fetchReceiptStatus();
+    fetchLaunchData();
   }, [id]);
 
   useEffect(() => {
@@ -310,6 +339,71 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       setReceiptError(err instanceof Error ? err.message : 'Failed to create receipt');
     } finally {
       setIsCreatingReceipt(false);
+    }
+  };
+
+  const fetchLaunchData = async () => {
+    try {
+      const response = await fetch(`/api/run/${id}/launch`);
+      if (response.ok) {
+        const data = await response.json();
+        setLaunchReadiness(data.readiness);
+        setLaunchInput(data.launchInput);
+        setLaunchRecord(data.launchRecord);
+        if (data.launchInput) {
+          setEditingLaunch({
+            name: data.launchInput.name || '',
+            symbol: data.launchInput.symbol || '',
+            description: data.launchInput.description || '',
+            website: data.launchInput.website || '',
+            x: data.launchInput.x || '',
+            telegram: data.launchInput.telegram || '',
+            antiSnipe: data.launchInput.antiSnipe || false,
+            bundled: data.launchInput.bundled || false,
+          });
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching launch data:', err);
+    }
+  };
+
+  const saveLaunchPayload = async () => {
+    setIsSavingLaunch(true);
+    setLaunchError(null);
+
+    try {
+      const payload: Record<string, unknown> = {
+        name: editingLaunch.name,
+        symbol: editingLaunch.symbol,
+        description: editingLaunch.description,
+        antiSnipe: editingLaunch.antiSnipe,
+        bundled: editingLaunch.bundled,
+      };
+      if (editingLaunch.website) payload.website = editingLaunch.website;
+      if (editingLaunch.x) payload.x = editingLaunch.x;
+      if (editingLaunch.telegram) payload.telegram = editingLaunch.telegram;
+
+      const response = await fetch(`/api/run/${id}/launch`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to save launch payload');
+      }
+
+      setLaunchReadiness(data.readiness);
+      setLaunchInput(data.launchInput);
+      setLaunchRecord(data.launchRecord);
+      setShowConfirmModal(false);
+    } catch (err) {
+      setLaunchError(err instanceof Error ? err.message : 'Failed to save launch data');
+    } finally {
+      setIsSavingLaunch(false);
     }
   };
 
@@ -846,6 +940,387 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           </p>
         )}
       </div>
+
+      {/* Launch on nad.fun Panel */}
+      <div className="card" style={{ marginBottom: '1.5rem' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: showLaunchPanel ? '1rem' : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <h3 style={{ fontSize: '1rem' }}>Launch on nad.fun</h3>
+            {launchReadiness && (
+              <span style={{
+                fontSize: '0.75rem',
+                padding: '0.125rem 0.5rem',
+                borderRadius: '4px',
+                background: launchReadiness.status === 'ready' ? '#14532d' : '#450a0a',
+                color: launchReadiness.status === 'ready' ? '#86efac' : '#fca5a5',
+                border: `1px solid ${launchReadiness.status === 'ready' ? '#22c55e' : '#dc2626'}`,
+              }}>
+                {launchReadiness.status === 'ready' ? 'READY' : 'NOT READY'}
+              </span>
+            )}
+            {launchRecord && (
+              <span style={{
+                fontSize: '0.75rem',
+                padding: '0.125rem 0.5rem',
+                borderRadius: '4px',
+                background: '#1a1a2e',
+                color: '#a5a5ff',
+                border: '1px solid #2d2d44',
+              }}>
+                {launchRecord.status.toUpperCase()}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setShowLaunchPanel(!showLaunchPanel)}
+            className="btn"
+            style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+          >
+            {showLaunchPanel ? 'Hide' : 'Prepare Launch'}
+          </button>
+        </div>
+
+        {showLaunchPanel && (
+          <div>
+            {launchError && (
+              <div style={{
+                background: '#450a0a',
+                border: '1px solid #dc2626',
+                borderRadius: '0.5rem',
+                padding: '0.75rem',
+                marginBottom: '1rem',
+                fontSize: '0.875rem',
+                color: '#fca5a5',
+              }}>
+                {launchError}
+              </div>
+            )}
+
+            {/* Readiness Blockers */}
+            {launchReadiness && launchReadiness.blockers.length > 0 && (
+              <div style={{
+                background: launchReadiness.status === 'not_ready' ? '#1a0a0a' : '#1a1a0a',
+                border: `1px solid ${launchReadiness.status === 'not_ready' ? '#333' : '#333'}`,
+                borderRadius: '0.5rem',
+                padding: '1rem',
+                marginBottom: '1rem',
+              }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', color: '#ccc' }}>
+                  Readiness Checks ({launchReadiness.blockers.length} issue{launchReadiness.blockers.length !== 1 ? 's' : ''})
+                </div>
+                {launchReadiness.blockers.map((b, i) => (
+                  <div key={i} style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '0.5rem',
+                    marginBottom: '0.5rem',
+                    fontSize: '0.8rem',
+                  }}>
+                    <span style={{
+                      color: b.severity === 'critical' ? '#ef4444' : '#eab308',
+                      fontWeight: 600,
+                      minWidth: '70px',
+                    }}>
+                      {b.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
+                    </span>
+                    <span style={{ color: '#aaa' }}>{b.message}</span>
+                  </div>
+                ))}
+                {launchReadiness.recommendedActions.length > 0 && (
+                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #333' }}>
+                    <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Recommended:</div>
+                    {launchReadiness.recommendedActions.map((action, i) => (
+                      <div key={i} style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>
+                        - {action}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Confidence */}
+            {launchReadiness && (
+              <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
+                Readiness confidence: {(launchReadiness.confidence * 100).toFixed(0)}%
+              </div>
+            )}
+
+            {/* Editable Launch Payload */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                  Token Name *
+                </label>
+                <input
+                  type="text"
+                  value={editingLaunch.name}
+                  onChange={(e) => setEditingLaunch({ ...editingLaunch, name: e.target.value })}
+                  maxLength={100}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    fontSize: '0.875rem',
+                    border: '1px solid #333',
+                    borderRadius: '0.375rem',
+                    background: '#0a0a0a',
+                    color: '#ededed',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                  Symbol *
+                </label>
+                <input
+                  type="text"
+                  value={editingLaunch.symbol}
+                  onChange={(e) => setEditingLaunch({ ...editingLaunch, symbol: e.target.value.toUpperCase() })}
+                  maxLength={10}
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    fontSize: '0.875rem',
+                    border: '1px solid #333',
+                    borderRadius: '0.375rem',
+                    background: '#0a0a0a',
+                    color: '#ededed',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ marginBottom: '1rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                Description *
+              </label>
+              <textarea
+                value={editingLaunch.description}
+                onChange={(e) => setEditingLaunch({ ...editingLaunch, description: e.target.value })}
+                maxLength={1000}
+                rows={3}
+                style={{
+                  width: '100%',
+                  padding: '0.5rem',
+                  fontSize: '0.875rem',
+                  border: '1px solid #333',
+                  borderRadius: '0.375rem',
+                  background: '#0a0a0a',
+                  color: '#ededed',
+                  resize: 'vertical',
+                }}
+              />
+              <div style={{ fontSize: '0.7rem', color: '#666', textAlign: 'right' }}>
+                {editingLaunch.description.length}/1000
+              </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                  Website
+                </label>
+                <input
+                  type="url"
+                  value={editingLaunch.website}
+                  onChange={(e) => setEditingLaunch({ ...editingLaunch, website: e.target.value })}
+                  placeholder="https://..."
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    fontSize: '0.875rem',
+                    border: '1px solid #333',
+                    borderRadius: '0.375rem',
+                    background: '#0a0a0a',
+                    color: '#ededed',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                  X (Twitter)
+                </label>
+                <input
+                  type="url"
+                  value={editingLaunch.x}
+                  onChange={(e) => setEditingLaunch({ ...editingLaunch, x: e.target.value })}
+                  placeholder="https://x.com/..."
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    fontSize: '0.875rem',
+                    border: '1px solid #333',
+                    borderRadius: '0.375rem',
+                    background: '#0a0a0a',
+                    color: '#ededed',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                  Telegram
+                </label>
+                <input
+                  type="url"
+                  value={editingLaunch.telegram}
+                  onChange={(e) => setEditingLaunch({ ...editingLaunch, telegram: e.target.value })}
+                  placeholder="https://t.me/..."
+                  style={{
+                    width: '100%',
+                    padding: '0.5rem',
+                    fontSize: '0.875rem',
+                    border: '1px solid #333',
+                    borderRadius: '0.375rem',
+                    background: '#0a0a0a',
+                    color: '#ededed',
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#ccc', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={editingLaunch.antiSnipe}
+                  onChange={(e) => setEditingLaunch({ ...editingLaunch, antiSnipe: e.target.checked })}
+                />
+                Anti-Snipe Protection
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#ccc', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={editingLaunch.bundled}
+                  onChange={(e) => setEditingLaunch({ ...editingLaunch, bundled: e.target.checked })}
+                />
+                Bundled Launch
+              </label>
+            </div>
+
+            {/* Launch Actions */}
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={() => {
+                  if (launchReadiness?.status === 'not_ready') {
+                    setLaunchError('Cannot launch: readiness gate is NOT READY. Fix critical blockers first, or set LAUNCH_FORCE_OVERRIDE=true.');
+                    return;
+                  }
+                  setShowConfirmModal(true);
+                }}
+                disabled={!editingLaunch.name || !editingLaunch.symbol || !editingLaunch.description || isSavingLaunch}
+                className="btn btn-primary"
+                style={{
+                  flex: 1,
+                  opacity: launchReadiness?.status === 'not_ready' ? 0.5 : 1,
+                }}
+              >
+                {launchRecord ? 'Update Launch Payload' : 'Save Launch Payload'}
+              </button>
+            </div>
+
+            {launchReadiness?.status === 'not_ready' && (
+              <p style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.5rem', textAlign: 'center' }}>
+                Launch is blocked by critical readiness checks. Fix blockers above to proceed.
+              </p>
+            )}
+
+            {launchRecord && (
+              <div style={{
+                marginTop: '1rem',
+                padding: '0.75rem',
+                background: '#1a1a2e',
+                borderRadius: '0.5rem',
+                border: '1px solid #2d2d44',
+                fontSize: '0.8rem',
+              }}>
+                <div style={{ color: '#888' }}>
+                  Launch Record: <span style={{ color: '#a5a5ff' }}>{launchRecord.status}</span>
+                </div>
+                <div style={{ color: '#666', marginTop: '0.25rem' }}>
+                  Idempotency Key: {launchRecord.idempotencyKey}
+                </div>
+                <div style={{ color: '#666', marginTop: '0.25rem' }}>
+                  Created: {new Date(launchRecord.createdAt).toLocaleString()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!showLaunchPanel && (
+          <p style={{ fontSize: '0.875rem', color: '#666' }}>
+            Prepare and confirm your nad.fun token launch payload from simulation results
+          </p>
+        )}
+      </div>
+
+      {/* Confirm Modal */}
+      {showConfirmModal && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0, 0, 0, 0.8)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+        }}>
+          <div style={{
+            background: '#111',
+            border: '1px solid #333',
+            borderRadius: '0.75rem',
+            padding: '2rem',
+            maxWidth: '500px',
+            width: '90%',
+          }}>
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#fbbf24' }}>
+              Confirm Launch Payload
+            </h3>
+            <div style={{
+              background: '#1a0a0a',
+              border: '1px solid #854d0e',
+              borderRadius: '0.5rem',
+              padding: '1rem',
+              marginBottom: '1rem',
+              fontSize: '0.875rem',
+              color: '#fcd34d',
+            }}>
+              This will save your launch payload. The actual token launch (on-chain transaction) will be handled in a separate step.
+            </div>
+            <div style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>
+              <div style={{ color: '#888', marginBottom: '0.5rem' }}>
+                <strong>Name:</strong> {editingLaunch.name}
+              </div>
+              <div style={{ color: '#888', marginBottom: '0.5rem' }}>
+                <strong>Symbol:</strong> {editingLaunch.symbol}
+              </div>
+              <div style={{ color: '#888', marginBottom: '0.5rem' }}>
+                <strong>Description:</strong> {editingLaunch.description.slice(0, 100)}{editingLaunch.description.length > 100 ? '...' : ''}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="btn"
+                style={{ flex: 1, background: '#333', color: '#ccc' }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveLaunchPayload}
+                disabled={isSavingLaunch}
+                className="btn btn-primary"
+                style={{ flex: 1 }}
+              >
+                {isSavingLaunch ? 'Saving...' : 'Confirm & Save'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card">

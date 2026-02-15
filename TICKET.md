@@ -1586,7 +1586,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-038 (P0) Add report CTA: “Launch on nad.fun” with guarded UX
+### [x] SIM-038 (P0) Add report CTA: "Launch on nad.fun" with guarded UX
 **Goal:** Convert simulation insight into one-click launch flow from report page.
 
 **Deliverables**
@@ -1606,6 +1606,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - UI flow test: ready run enables launch button, not-ready run shows blockers only.
 
 **Dependencies:** SIM-037
+
+**Completion notes:**
+- Report page: "Launch on nad.fun" collapsible panel with readiness badge, blocker list, editable payload form
+- Readiness badge: READY (green) / NOT READY (red) with confidence percentage
+- Blocker checklist: CRITICAL/WARNING labels with messages and recommended actions
+- Editable form: name, symbol, description, website, X, telegram, antiSnipe, bundled
+- Confirm modal: shows payload summary with "this will save" warning before persisting
+- Disabled state: not_ready blocks save with "Fix critical blockers" message; cannot bypass without LAUNCH_FORCE_OVERRIDE=true
+- Launch record section: shows status, idempotency key, timestamps after save
+- Fetches /api/run/[id]/launch on page load to populate existing data
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 
