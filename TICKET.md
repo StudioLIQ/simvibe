@@ -2064,7 +2064,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Maps to existing `ReadinessPolicyConfig` from `packages/engine/src/launch/readiness-gate.ts`
 - Test: Gate ABI validates as JSON, 15 entries present
 
-### [ ] MND-008 (P0) Implement Readiness Gate contract + tests
+### [x] MND-008 (P0) Implement Readiness Gate contract + tests
 **Goal:** Smart-contract-based launch gate.
 
 **Deliverables**
@@ -2076,6 +2076,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Test Plan**
 - Contract tests in CI/local.
+
+**Completion notes:**
+- `contracts/src/SimVibeGate.sol`: Full implementation of ISimVibeGate interface
+- `contracts/test/SimVibeGate.t.sol`: 22 tests covering all paths
+- Tests: constructor, policy register/revoke, attester add/remove, attest success/notReady/event/nonOwnerAttester, revert unauthorized/invalidPolicy/duplicate/revokedPolicy, read not-found, multiple runs
+- Owner auto-granted attester role in constructor
+- `cd contracts && forge test -vv` — 37 tests total (15 Receipt + 22 Gate), all pass
 
 **Dependencies:** MND-007
 
