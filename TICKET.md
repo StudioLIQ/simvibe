@@ -1447,8 +1447,8 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-034 (P1) End-to-end smoke harness for web API path (demo mode)
-**Goal:** Prevent regressions between “engine works” and “web path actually works”.
+### [x] SIM-034 (P1) End-to-end smoke harness for web API path (demo mode)
+**Goal:** Prevent regressions between "engine works" and "web path actually works".
 
 **Deliverables**
 - Scripted smoke flow:
@@ -1466,6 +1466,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Intentionally break one API route and verify smoke harness fails.
 
 **Dependencies:** SIM-033
+
+**Completion notes:**
+- `scripts/smoke-test.ts`: 6-step smoke flow (diagnostics → create → start → poll → assert report → assert metrics)
+- Steps: GET /api/diagnostics, POST /api/run, POST /api/run/:id/start, poll until completed, assert report fields, assert metrics shape
+- Output: per-step PASS/FAIL with duration, final summary with run ID, total time, key metrics
+- `pnpm smoke`: run against existing dev server (BASE_URL configurable)
+- `pnpm ci:smoke`: run with DEMO_MODE=true DATABASE_URL=memory:// (no external deps, no API keys)
+- Non-zero exit on any failure → CI gate compatible
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 
