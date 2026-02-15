@@ -1551,7 +1551,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-037 (P0) Build launch-readiness gate from report metrics
+### [x] SIM-037 (P0) Build launch-readiness gate from report metrics
 **Goal:** Prevent low-quality simulations from launching directly to nad.fun.
 
 **Deliverables**
@@ -1561,7 +1561,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
   - fallback-agent count must be 0 (or explicitly overridden)
   - required proof/clarity checks from friction categories
 - Policy config in code + env overrides.
-- Report section: “Launch Readiness for nad.fun” with pass/fail reasons.
+- Report section: "Launch Readiness for nad.fun" with pass/fail reasons.
 
 **Acceptance Criteria**
 - Same report always yields same readiness decision.
@@ -1571,6 +1571,18 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Fixture tests for pass/fail boundary conditions and override path.
 
 **Dependencies:** SIM-036, SIM-035
+
+**Completion notes:**
+- `evaluateLaunchReadiness()` in packages/engine/src/launch/readiness-gate.ts: deterministic gate with 8 checks
+- Gates: run_not_completed, low_overall_score (critical), high_uncertainty, high_disagreement, too_many_fallbacks (critical), low_clarity, low_credibility, high_bounce_rate, early_stop
+- Policy config via `ReadinessPolicyConfig` with env overrides: LAUNCH_MIN_OVERALL_SCORE, LAUNCH_MAX_UNCERTAINTY, etc.
+- `LAUNCH_FORCE_OVERRIDE=true` bypasses all critical blockers
+- `formatReadinessMarkdown()` for report section rendering
+- `readinessPolicyFromEnv()` reads config from environment with safe defaults
+- API route updated: GET/POST /api/run/[id]/launch now uses real readiness gate
+- Fixture tests: 28 tests covering pass/fail/boundary/override/determinism/multiple-blockers
+- `pnpm --filter @simvibe/engine test:readiness` runs gate tests
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

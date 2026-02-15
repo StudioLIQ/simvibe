@@ -3,22 +3,21 @@ import crypto from 'crypto';
 import {
   validateNadLaunchInput,
   type NadLaunchInput,
-  type LaunchReadiness,
   type LaunchRecord,
 } from '@simvibe/shared';
 import {
   createStorage,
   storageConfigFromEnv,
+  evaluateLaunchReadiness,
+  readinessPolicyFromEnv,
 } from '@simvibe/engine';
 
 /**
  * Build a draft NadLaunchInput from a completed run's report and input.
  */
-function buildDraftLaunchInput(run: { input: { tagline: string; description: string; url?: string }; report?: { overallScore?: number } }): NadLaunchInput {
+function buildDraftLaunchInput(run: { input: { tagline: string; description: string; url?: string } }): NadLaunchInput {
   const tagline = run.input.tagline;
-  // Derive a token name from tagline (first 2–3 words, max 100 chars)
   const name = tagline.length > 100 ? tagline.slice(0, 97) + '...' : tagline;
-  // Derive a symbol from first letters of tagline words (max 10 chars)
   const words = tagline.replace(/[^a-zA-Z0-9\s]/g, '').split(/\s+/).filter(Boolean);
   const symbol = words.map(w => w[0]).join('').toUpperCase().slice(0, 10) || 'TKN';
 
@@ -29,42 +28,6 @@ function buildDraftLaunchInput(run: { input: { tagline: string; description: str
     website: run.input.url || undefined,
     antiSnipe: false,
     bundled: false,
-  };
-}
-
-/**
- * Build a basic readiness assessment from the run's report.
- * (SIM-037 will implement the full gate logic; this is a minimal placeholder.)
- */
-function buildBasicReadiness(run: { report?: { overallScore?: number }; status: string }): LaunchReadiness {
-  const blockers: LaunchReadiness['blockers'] = [];
-
-  if (run.status !== 'completed') {
-    blockers.push({
-      code: 'run_not_completed',
-      message: 'Simulation run has not completed yet.',
-      severity: 'critical',
-    });
-  }
-
-  if (!run.report) {
-    blockers.push({
-      code: 'no_report',
-      message: 'No simulation report available.',
-      severity: 'critical',
-    });
-  }
-
-  const hasCriticalBlockers = blockers.some(b => b.severity === 'critical');
-
-  return {
-    status: hasCriticalBlockers ? 'not_ready' : 'ready',
-    blockers,
-    confidence: run.report ? 0.5 : 0,
-    recommendedActions: hasCriticalBlockers
-      ? ['Complete the simulation run before launching.']
-      : ['Review the full readiness gate in a future iteration (SIM-037).'],
-    evaluatedAt: new Date().toISOString(),
   };
 }
 
@@ -93,15 +56,28 @@ export async function GET(
     // If already stored, return persisted data
     if (run.launchReadiness || run.launchInput) {
       await storage.close();
+
+      // Re-evaluate readiness from current report if available
+      const readiness = run.report
+        ? evaluateLaunchReadiness(run.report, run.status, readinessPolicyFromEnv())
+        : run.launchReadiness!;
+
       return NextResponse.json({
-        readiness: run.launchReadiness ?? buildBasicReadiness(run),
+        readiness,
         launchInput: run.launchInput ?? buildDraftLaunchInput(run),
         launchRecord: run.launchRecord ?? null,
       });
     }
 
-    // Build fresh draft
-    const readiness = buildBasicReadiness(run);
+    // Build fresh: readiness from report (or minimal if no report)
+    const policy = readinessPolicyFromEnv();
+    const readiness = run.report
+      ? evaluateLaunchReadiness(run.report, run.status, policy)
+      : evaluateLaunchReadiness(
+          { ...makeEmptyReport(run.id), overallScore: 0 } as any,
+          run.status,
+          policy,
+        );
     const draftInput = buildDraftLaunchInput(run);
 
     await storage.close();
@@ -118,6 +94,37 @@ export async function GET(
       { status: 500 }
     );
   }
+}
+
+/** Minimal report structure for readiness check when no report exists. */
+function makeEmptyReport(runId: string) {
+  return {
+    runId,
+    generatedAt: new Date().toISOString(),
+    tractionBand: 'very_low' as const,
+    confidence: 'low' as const,
+    metrics: {
+      expectedUpvotes: 0,
+      expectedSignups: 0,
+      expectedPays: 0,
+      bounceRate: 1,
+      shareRate: 0,
+      disagreementScore: 1,
+      uncertaintyScore: 1,
+    },
+    scores: {
+      clarity: 0,
+      credibility: 0,
+      differentiation: 0,
+      pricingFraming: 0,
+      conversionReadiness: 0,
+    },
+    overallScore: 0,
+    frictionList: [],
+    personaReports: [],
+    oneLineFixes: [],
+    calibrationApplied: false,
+  };
 }
 
 /**
@@ -162,8 +169,12 @@ export async function POST(
       );
     }
 
-    // Evaluate readiness
-    const readiness = buildBasicReadiness(run);
+    // Evaluate readiness using the real gate
+    const readiness = evaluateLaunchReadiness(
+      run.report,
+      run.status,
+      readinessPolicyFromEnv(),
+    );
 
     // Create initial launch record as draft
     const now = new Date().toISOString();
