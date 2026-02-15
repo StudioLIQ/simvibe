@@ -1232,7 +1232,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-028 (P1) Expose persona selection in web client path (`personaIds` / `personaSet`)
+### [x] SIM-028 (P1) Expose persona selection in web client path (`personaIds` / `personaSet`)
 **Goal:** Align UI/client behavior with run-level persona selection capabilities.
 
 **Problem observed**
@@ -1253,3 +1253,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Client payload matches shared `RunInput` capabilities.
 
 **Dependencies:** SIM-021C, SIM-026
+
+**Completion notes:**
+- `CreateRunRequest` in apps/web/lib/api.ts now includes `personaIds?: string[]` and `personaSet?: PersonaSetName`
+- Input page: new "Persona Configuration" card with:
+  - Persona set dropdown: Mode default / Quick (5) / Deep (11) / Custom
+  - Custom mode shows comma-separated persona IDs text input
+- Report page: run config summary bar showing mode, persona set, persona count, early-stop badge
+- Client payload now matches shared `RunInput` schema capabilities
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)

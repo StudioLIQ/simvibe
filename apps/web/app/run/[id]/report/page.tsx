@@ -379,6 +379,37 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         </div>
       )}
 
+      {/* Run Configuration Summary */}
+      <div style={{
+        display: 'flex',
+        gap: '1rem',
+        marginBottom: '1rem',
+        flexWrap: 'wrap',
+        fontSize: '0.8rem',
+        color: '#888',
+      }}>
+        {report.runMode && (
+          <span style={{ background: '#1a1a1a', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #333' }}>
+            Mode: <strong style={{ color: '#a78bfa' }}>{report.runMode}</strong>
+          </span>
+        )}
+        {report.personaSet && (
+          <span style={{ background: '#1a1a1a', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #333' }}>
+            Persona Set: <strong style={{ color: '#a78bfa' }}>{report.personaSet}</strong>
+          </span>
+        )}
+        {report.executedPersonaIds && (
+          <span style={{ background: '#1a1a1a', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #333' }}>
+            Personas: <strong style={{ color: '#a78bfa' }}>{report.executedPersonaIds.length}</strong>
+          </span>
+        )}
+        {report.earlyStopReason && (
+          <span style={{ background: '#422006', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #854d0e', color: '#fcd34d' }}>
+            Early Stop
+          </span>
+        )}
+      </div>
+
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card">
           <h2 style={{ fontSize: '3rem', fontWeight: 700, color: report.overallScore >= 70 ? '#22c55e' : report.overallScore >= 50 ? '#eab308' : '#ef4444' }}>
