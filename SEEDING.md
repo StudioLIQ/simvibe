@@ -38,8 +38,8 @@ pnpm seed:ph
 `web` 서비스가 살아난 뒤 실행되는 one-off/cron job에서 아래 명령을 사용하면 됩니다.
 
 ```bash
-API_BASE_URL=https://<your-web-domain> \
-WEB_BASE_URL=https://<your-web-domain> \
+API_BASE_URL=https://api-simvibe.studioliq.com \
+WEB_BASE_URL=https://simvibe.studioliq.com \
 WAIT_FOR_SERVER_SECONDS=180 \
 SEED_ONLY_MISSING=true \
 SEED_NAMESPACE=ph-demo-v1 \

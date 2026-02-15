@@ -14,6 +14,11 @@
 Vercel: UI + short API calls (run creation, report fetch)
 Worker: long-running simulation execution (2-10 min)
 Both share the same Postgres via DATABASE_URL.
+
+## Target Production URLs
+
+- Frontend: `https://simvibe.studioliq.com`
+- API: `https://api-simvibe.studioliq.com`
 ```
 
 ## 1. Railway Setup
@@ -70,6 +75,7 @@ GEMINI_API_KEY=<your-key>
 LLM_DAILY_TOKEN_LIMIT=2000000
 LLM_DAILY_COST_LIMIT_USD=5.00
 EXTRACTOR_PROVIDER=jina
+API_SERVER_ORIGIN=https://api-simvibe.studioliq.com
 NODE_ENV=production
 ```
 
@@ -194,8 +200,8 @@ pnpm dev:web
 2. 아래 명령으로 시딩
 
 ```bash
-API_BASE_URL=https://<your-web-domain> \
-WEB_BASE_URL=https://<your-web-domain> \
+API_BASE_URL=https://api-simvibe.studioliq.com \
+WEB_BASE_URL=https://simvibe.studioliq.com \
 WAIT_FOR_SERVER_SECONDS=180 \
 SEED_ONLY_MISSING=true \
 SEED_NAMESPACE=ph-demo-v1 \

@@ -5,7 +5,7 @@
  * Usage:
  *   API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 pnpm seed:ph
  *   API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 PRODUCT_COUNT=6 RUN_MODE=quick pnpm seed:ph
- *   API_BASE_URL=https://your-web.up.railway.app WEB_BASE_URL=https://your-web.up.railway.app \
+ *   API_BASE_URL=https://api-simvibe.studioliq.com WEB_BASE_URL=https://simvibe.studioliq.com \
  *     WAIT_FOR_SERVER_SECONDS=180 SEED_ONLY_MISSING=true pnpm seed:ph
  */
 
