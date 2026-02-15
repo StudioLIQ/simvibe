@@ -145,7 +145,7 @@ export default function HomePage() {
             }}
           >
             <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>새 시뮬레이션 시작</div>
-            <p className="hint" style={{ margin: 0 }}>Product Hunt/Generic 입력으로 새 런을 생성합니다.</p>
+            <p className="hint" style={{ margin: 0 }}>nad.fun 토큰 런치 리액션을 예측합니다.</p>
           </Link>
 
           <Link

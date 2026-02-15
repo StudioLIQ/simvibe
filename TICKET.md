@@ -2473,7 +2473,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Backward compatible: existing runs with `generic`/`product_hunt` still parse fine
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-026 (P0) Replace PH-centric metrics with nad.fun launch metrics
+### [x] MND-026 (P0) Replace PH-centric metrics with nad.fun launch metrics
 **Goal:** Align report output with token launch outcomes on nad.fun.
 
 **Deliverables**
@@ -2486,7 +2486,20 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Dependencies:** MND-025
 
-### [ ] MND-027 (P0) Update orchestrator prompts for nad.fun-native evaluation
+**Completion notes:**
+- `NadFunForecastSchema` in report.ts: buyIntent, holdIntent, earlyChurnRisk, snipeDumpRisk, communitySpreadPotential, launchViabilityScore (0-100), risks, narrativeStrength, tokenomicsClarity
+- `computeNadFunForecast()` in nad-forecast.ts: derives metrics from agent output action probabilities + trust signals
+- 9 risk detectors: buy/hold/churn/snipe/community/narrative/tokenomics/disagreement/differentiation
+- Report generator produces `nadFunForecast` when `platformMode === 'nad_fun'`
+- Report UI: "nad.fun Launch Forecast" card with viability score, 5-metric grid, risk list
+- Markdown formatter includes nad.fun forecast section
+- `nadFunForecast` added to patchable report sections
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 63 tests pass)
+
+---
+
+### [x] MND-027 (P0) Update orchestrator prompts for nad.fun-native evaluation
 **Goal:** Make persona reasoning grounded in launch economics and market behavior.
 
 **Deliverables**
@@ -2497,9 +2510,18 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 **Acceptance Criteria**
 - Agent outputs reference nad.fun launch considerations consistently.
 
+**Completion notes:**
+- `NAD_FUN_PROTOCOL_EXTENSION` in world-protocol.ts: 6 sections covering token launch economics, snipe/dump risk, community/virality, liquidity/trust, action rubric, evaluation rubric
+- Composer: injects nad.fun protocol when `platformMode === 'nad_fun'`, PH when `product_hunt`, nothing for `generic`
+- World protocol updated to mention nad.fun as primary platform alongside PH/HN
+- Action rubric: PAY=buy token, SIGNUP=follow/subscribe, UPVOTE=signal support, COMMENT=engage discussion, SHARE=shill, BOUNCE=scroll past
+- Additional rubric: narrative strength assessment, tokenomics clarity scoring, snipe attractiveness check
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm test:demo` passes (22 tests)
+
 **Dependencies:** MND-026
 
-### [ ] MND-028 (P0) Create nad.fun-focused persona sets (quick/deep)
+### [x] MND-028 (P0) Create nad.fun-focused persona sets (quick/deep)
 **Goal:** Ensure simulation participants match launch-day participant archetypes.
 
 **Deliverables**
@@ -2512,7 +2534,18 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 **Dependencies:** MND-027
 
-### [ ] MND-029 (P0) Replace FE input UX from PH submission to nad.fun launch prep
+**Completion notes:**
+- `nad_fun_quick` (5 personas): cynical_engineer, pragmatic_investor, community_manager_web3, smart_contract_dev, ph_grinder_crypto_marketer_comment_grinder
+- `nad_fun_deep` (12 personas): quick set + ruthless_marketer, agency_owner, skeptical_economist, elite_security_engineer_threat_modeler, elite_community_builder_high_signal, elite_growth_focused_founder, ph_grinder_crypto_marketer_maker_cosplayer
+- Executor auto-selects nad.fun persona sets when `platformMode === 'nad_fun'` with no explicit selection
+- `PersonaSetNameSchema` updated: added `nad_fun_quick`, `nad_fun_deep`
+- UI persona set dropdown includes nad.fun-specific options
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 63 tests pass)
+
+---
+
+### [x] MND-029 (P0) Replace FE input UX from PH submission to nad.fun launch prep
 **Goal:** Collect launch-relevant inputs instead of Product Hunt listing fields.
 
 **Deliverables**
@@ -2524,6 +2557,17 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Main form is clearly perceived as nad.fun launch simulator.
 
 **Dependencies:** MND-025
+
+**Completion notes:**
+- `/new` page: when `platformMode === 'nad_fun'` (default), shows 8 nad.fun fields: Token Name, Token Symbol, Launch Thesis, Token Narrative, Distribution Plan, Risk Assumptions, Anti-Snipe, Bundled
+- Card headers adapt per mode: "Token / Project Info", "Project URL / Content"
+- Placeholders and hints are nad.fun-contextual (token project language, nad.fun URLs)
+- Submit button says "Simulate Launch Reaction" in nad_fun mode
+- Client validation: allows submission without URL when nad.fun fields (tokenName/launchThesis/tokenNarrative) are provided
+- `nadFunSubmission` payload wired into `createRun()` call
+- PH path kept behind explicit `(legacy)` toggle; all primary-flow copy is nad.fun-first
+- Homepage card updated to "nad.fun 토큰 런치 리액션을 예측합니다"
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-030 (P0) Add API compatibility layer for legacy PH payloads
 **Goal:** Prevent breakage while pivoting to nad.fun primary mode.

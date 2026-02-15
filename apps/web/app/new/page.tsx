@@ -39,6 +39,15 @@ export default function HomePage() {
   const [makerFirstComment, setMakerFirstComment] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
+  // nad.fun fields
+  const [tokenName, setTokenName] = useState('');
+  const [tokenSymbol, setTokenSymbol] = useState('');
+  const [launchThesis, setLaunchThesis] = useState('');
+  const [distributionPlan, setDistributionPlan] = useState('');
+  const [tokenNarrative, setTokenNarrative] = useState('');
+  const [riskAssumptions, setRiskAssumptions] = useState('');
+  const [antiSnipe, setAntiSnipe] = useState(false);
+  const [bundled, setBundled] = useState(false);
   const [personaCount, setPersonaCount] = useState<number | null>(null);
 
   useEffect(() => {
@@ -76,12 +85,16 @@ export default function HomePage() {
       }
 
       const isPH = platformMode === 'product_hunt';
+      const isNadFun = platformMode === 'nad_fun';
       const hasPHFields = isPH && (phProductName.trim() || phTagline.trim() || phDescription.trim());
-      if (!url.trim() && !pastedContent.trim() && !hasPHFields) {
+      const hasNadFunFields = isNadFun && (launchThesis.trim() || tokenNarrative.trim() || tokenName.trim());
+      if (!url.trim() && !pastedContent.trim() && !hasPHFields && !hasNadFunFields) {
         throw new Error(
-          isPH
-            ? 'Provide a URL, pasted content, or at least one PH listing field (name, tagline, or description)'
-            : 'Please provide a URL or paste your landing page content'
+          isNadFun
+            ? 'Provide a URL, pasted content, or at least one nad.fun field (token name, launch thesis, or token narrative)'
+            : isPH
+              ? 'Provide a URL, pasted content, or at least one PH listing field (name, tagline, or description)'
+              : 'Please provide a URL or paste your landing page content'
         );
       }
 
@@ -105,6 +118,17 @@ export default function HomePage() {
         } : undefined,
       } : undefined;
 
+      const nadFunSubmission = isNadFun ? {
+        tokenName: tokenName.trim() || undefined,
+        tokenSymbol: tokenSymbol.trim() || undefined,
+        launchThesis: launchThesis.trim() || undefined,
+        distributionPlan: distributionPlan.trim() || undefined,
+        tokenNarrative: tokenNarrative.trim() || undefined,
+        riskAssumptions: riskAssumptions.trim() || undefined,
+        antiSnipe: antiSnipe || undefined,
+        bundled: bundled || undefined,
+      } : undefined;
+
       const result = await createRun({
         tagline: tagline.trim(),
         description: description.trim(),
@@ -118,6 +142,7 @@ export default function HomePage() {
         personaSet: personaSet || undefined,
         platformMode: platformMode !== 'generic' ? platformMode : undefined,
         phSubmission,
+        nadFunSubmission,
       });
 
       router.push(`/run/${result.runId}`);
@@ -140,9 +165,9 @@ export default function HomePage() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.25rem' }}>
           <Image src="/logo.png" alt="simvi.be logo" width={36} height={36} />
-          <h1 style={{ marginBottom: 0 }}>새 시뮬레이션</h1>
+          <h1 style={{ marginBottom: 0 }}>New Simulation</h1>
         </div>
-        <p>새 제품/메시지 입력으로 시뮬레이션 런을 생성합니다.</p>
+        <p>Predict nad.fun launch reaction before going live.</p>
       </header>
 
       <form onSubmit={handleSubmit}>
@@ -153,7 +178,9 @@ export default function HomePage() {
         )}
 
         <div className="card">
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Product Information</h2>
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
+            {platformMode === 'nad_fun' ? 'Token / Project Info' : 'Product Information'}
+          </h2>
 
           <div className="form-group">
             <label htmlFor="tagline">Tagline *</label>
@@ -162,11 +189,17 @@ export default function HomePage() {
               type="text"
               value={tagline}
               onChange={(e) => setTagline(e.target.value)}
-              placeholder="e.g., The AI-powered code review tool for teams"
+              placeholder={platformMode === 'nad_fun'
+                ? 'e.g., The community-driven DeFi token on Monad'
+                : 'e.g., The AI-powered code review tool for teams'}
               maxLength={200}
               required
             />
-            <p className="hint">A compelling one-liner that describes your product</p>
+            <p className="hint">
+              {platformMode === 'nad_fun'
+                ? 'A compelling one-liner for your token launch'
+                : 'A compelling one-liner that describes your product'}
+            </p>
           </div>
 
           <div className="form-group">
@@ -175,7 +208,9 @@ export default function HomePage() {
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Describe what your product does, who it's for, and what makes it unique..."
+              placeholder={platformMode === 'nad_fun'
+                ? 'Describe your token project: what it does, target community, utility, and what makes it unique...'
+                : 'Describe what your product does, who it\'s for, and what makes it unique...'}
               maxLength={2000}
               required
             />
@@ -222,27 +257,42 @@ export default function HomePage() {
         </div>
 
         <div className="card">
-          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Landing Page</h2>
+          <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>
+            {platformMode === 'nad_fun' ? 'Project URL / Content' : 'Landing Page'}
+          </h2>
+          {platformMode === 'nad_fun' && (
+            <p className="hint" style={{ marginBottom: '0.75rem' }}>
+              Optional if you filled in nad.fun launch fields above.
+            </p>
+          )}
 
           <div className="form-group">
-            <label htmlFor="url">Landing Page URL</label>
+            <label htmlFor="url">
+              {platformMode === 'nad_fun' ? 'Project / Token URL' : 'Landing Page URL'}
+            </label>
             <input
               id="url"
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="https://yourproduct.com"
+              placeholder={platformMode === 'nad_fun' ? 'https://yourtoken.xyz or nad.fun/token/...' : 'https://yourproduct.com'}
             />
-            <p className="hint">We'll extract content from your landing page</p>
+            <p className="hint">
+              {platformMode === 'nad_fun'
+                ? "We'll extract content from your project page (optional for nad.fun mode)"
+                : "We'll extract content from your landing page"}
+            </p>
           </div>
 
           <div className="form-group">
-            <label htmlFor="pastedContent">Or paste your landing page content</label>
+            <label htmlFor="pastedContent">Or paste content directly</label>
             <textarea
               id="pastedContent"
               value={pastedContent}
               onChange={(e) => setPastedContent(e.target.value)}
-              placeholder="Paste the text content from your landing page here if you don't have a URL..."
+              placeholder={platformMode === 'nad_fun'
+                ? 'Paste your token project description, whitepaper excerpt, or community pitch...'
+                : 'Paste the text content from your landing page here if you don\'t have a URL...'}
               style={{ minHeight: '150px' }}
             />
             <p className="hint">Use this if your page is not public or extraction fails</p>
@@ -320,6 +370,128 @@ export default function HomePage() {
               <p className="hint" style={{ margin: '0.25rem 0 0' }}>PH launch simulation</p>
             </label>
           </div>
+
+          {platformMode === 'nad_fun' && (
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+              <p className="hint" style={{ marginBottom: '1rem' }}>
+                Enter your nad.fun token launch details. You can run without a landing URL if you fill in launch fields.
+              </p>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label htmlFor="tokenName">
+                    Token Name <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 100 chars)</span>
+                  </label>
+                  <input
+                    id="tokenName"
+                    type="text"
+                    value={tokenName}
+                    onChange={(e) => setTokenName(e.target.value)}
+                    placeholder="e.g., SimVibe Token"
+                    maxLength={100}
+                  />
+                  <p className="hint">{tokenName.length}/100</p>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="tokenSymbol">
+                    Token Symbol <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 10 chars)</span>
+                  </label>
+                  <input
+                    id="tokenSymbol"
+                    type="text"
+                    value={tokenSymbol}
+                    onChange={(e) => setTokenSymbol(e.target.value.toUpperCase())}
+                    placeholder="e.g., SVIBE"
+                    maxLength={10}
+                  />
+                  <p className="hint">{tokenSymbol.length}/10</p>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="launchThesis">
+                  Launch Thesis <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 1000 chars)</span>
+                </label>
+                <textarea
+                  id="launchThesis"
+                  value={launchThesis}
+                  onChange={(e) => setLaunchThesis(e.target.value)}
+                  placeholder="Why are you launching this token? What problem does it solve? What's the core value proposition?"
+                  maxLength={1000}
+                  style={{ minHeight: '100px' }}
+                />
+                <p className="hint">{launchThesis.length}/1000</p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="tokenNarrative">
+                  Token Narrative <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 1000 chars)</span>
+                </label>
+                <textarea
+                  id="tokenNarrative"
+                  value={tokenNarrative}
+                  onChange={(e) => setTokenNarrative(e.target.value)}
+                  placeholder="What story does this token tell? How does it fit into current market narratives? What memes or cultural hooks does it leverage?"
+                  maxLength={1000}
+                  style={{ minHeight: '100px' }}
+                />
+                <p className="hint">{tokenNarrative.length}/1000</p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="distributionPlan">
+                  Distribution Plan <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 1000 chars)</span>
+                </label>
+                <textarea
+                  id="distributionPlan"
+                  value={distributionPlan}
+                  onChange={(e) => setDistributionPlan(e.target.value)}
+                  placeholder="How will you drive initial attention and buyers? Community channels, KOLs, raids, social campaigns..."
+                  maxLength={1000}
+                  style={{ minHeight: '80px' }}
+                />
+                <p className="hint">{distributionPlan.length}/1000</p>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="riskAssumptions">
+                  Risk Assumptions <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 1000 chars)</span>
+                </label>
+                <textarea
+                  id="riskAssumptions"
+                  value={riskAssumptions}
+                  onChange={(e) => setRiskAssumptions(e.target.value)}
+                  placeholder="Known risks: snipe exposure, low initial liquidity, team token concentration, regulatory concerns..."
+                  maxLength={1000}
+                  style={{ minHeight: '80px' }}
+                />
+                <p className="hint">{riskAssumptions.length}/1000</p>
+              </div>
+
+              <div className="form-row" style={{ marginTop: '0.5rem' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={antiSnipe}
+                    onChange={(e) => setAntiSnipe(e.target.checked)}
+                    style={{ width: 'auto' }}
+                  />
+                  <span>Anti-Snipe Protection</span>
+                  <span className="hint" style={{ margin: 0 }}>Delay early buys to reduce sniper advantage</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={bundled}
+                    onChange={(e) => setBundled(e.target.checked)}
+                    style={{ width: 'auto' }}
+                  />
+                  <span>Bundled Launch</span>
+                  <span className="hint" style={{ margin: 0 }}>Bundle initial liquidity with token creation</span>
+                </label>
+              </div>
+            </div>
+          )}
 
           {platformMode === 'product_hunt' && (
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
@@ -532,7 +704,7 @@ export default function HomePage() {
           disabled={loading}
           style={{ width: '100%', marginTop: '1rem' }}
         >
-          {loading ? 'Creating World...' : 'Create World'}
+          {loading ? 'Creating Simulation...' : platformMode === 'nad_fun' ? 'Simulate Launch Reaction' : 'Create World'}
         </button>
       </form>
     </main>
