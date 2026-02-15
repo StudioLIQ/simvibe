@@ -1687,7 +1687,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-041 (P0) Add E2E smoke: simulate -> readiness -> launch-prep -> launch-exec
+### [x] SIM-041 (P0) Add E2E smoke: simulate -> readiness -> launch-prep -> launch-exec
 **Goal:** Guard the full value path end-to-end.
 
 **Deliverables**
@@ -1708,3 +1708,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Break launch schema or executor and verify smoke fails deterministically.
 
 **Dependencies:** SIM-039, SIM-040
+
+**Completion notes:**
+- `scripts/smoke-launch.ts`: 10-step E2E smoke covering full launch pipeline
+- Steps: create run → start simulation → poll → fetch readiness/draft → submit payload → execute → confirm submitted → confirm success → verify status/events → verify idempotency (409)
+- `pnpm smoke:launch` runs against existing dev server
+- `pnpm ci:smoke:launch` runs with DEMO_MODE=true DATABASE_URL=memory://
+- `pnpm test:readiness` runs readiness gate fixture tests (28 tests)
+- Non-zero exit on any failure → CI gate compatible
+- Smoke output includes runId, readiness verdict, tx hash, launch status, event count
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm test:readiness` passes (28 tests)
