@@ -1,203 +1,187 @@
-# Deploying simvi.be on Railway
+# simvibe Railway 배포 가이드 (한글)
 
-## Architecture
+이 문서는 아래 운영 도메인 기준으로, **Railway에 실제 배포**하는 절차를 처음부터 끝까지 정리한 가이드입니다.
 
-```
-┌─────────────┐     ┌──────────────────────────────────┐
-│  Vercel      │     │  Railway                         │
-│  (Frontend)  │────▶│  ┌──────────┐  ┌──────────────┐ │
-│  apps/web    │     │  │ Postgres │◀─│ Worker       │ │
-│  Next.js     │────▶│  │          │  │ apps/worker  │ │
-│              │     │  └──────────┘  └──────────────┘ │
-└─────────────┘     └──────────────────────────────────┘
-
-Vercel: UI + short API calls (run creation, report fetch)
-Worker: long-running simulation execution (2-10 min)
-Both share the same Postgres via DATABASE_URL.
-
-## Target Production URLs
-
-- Frontend: `https://simvibe.studioliq.com`
+- FE(웹): `https://simvibe.studioliq.com`
 - API: `https://api-simvibe.studioliq.com`
+
+---
+
+## 0. 최종 구조
+
+```text
+[User Browser]
+   └─ https://simvibe.studioliq.com   (web 서비스)
+         └─ /api/* 요청은 서버 리라이트로
+            https://api-simvibe.studioliq.com/api/* 로 전달
+
+[Railway Project]
+  1) Postgres 서비스
+  2) API 서비스    (Next.js @simvibe/web)
+  3) WEB 서비스    (Next.js @simvibe/web, API_SERVER_ORIGIN 사용)
+  4) Worker 서비스 (apps/worker, pg-boss consumer)
 ```
 
-## 1. Railway Setup
+핵심 포인트:
+- API/WEB을 분리해서 도메인을 명확히 나눕니다.
+- Worker는 공개 도메인 없이 내부에서 큐만 소비합니다.
+- DB는 Postgres 하나를 API/WEB/Worker가 공용으로 사용합니다.
 
-### Create services
+---
 
-1. **Postgres** — Add Postgres plugin from Railway dashboard.
-2. **Worker** — New service from GitHub repo.
-   - Root directory: `/` (monorepo root)
-   - Dockerfile path: `apps/worker/Dockerfile`
-   - No public domain needed (internal only).
+## 1. 사전 준비
 
-### Worker environment variables
+1. Railway 계정 + 프로젝트 생성 권한
+2. GitHub repo 연결 가능 상태
+3. Gemini API Key 준비
+4. DNS 제어 권한 (`studioliq.com`)
 
-Set these in Railway dashboard for the Worker service:
+---
 
-```
-DATABASE_URL=${{Postgres.DATABASE_URL}}
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=<your-key>
-LLM_DAILY_TOKEN_LIMIT=2000000
-LLM_DAILY_COST_LIMIT_USD=5.00
-EXTRACTOR_PROVIDER=jina
-WORKER_PORT=8080
-WORKER_RUN_TIMEOUT_MS=600000
-NODE_ENV=production
-```
+## 2. Railway 서비스 생성
 
-### Run migrations
+### 2-1. Postgres
 
-After Postgres is up, run from local machine:
+1. Railway 프로젝트에서 `New` -> `Database` -> `PostgreSQL` 추가
+2. 생성 후 `DATABASE_URL`이 발급되는지 확인
+
+### 2-2. API 서비스
+
+1. `New` -> `GitHub Repo`로 현재 저장소 연결
+2. Service 이름: `simvibe-api` (권장)
+3. Root Directory: `/`
+4. Build Command:
 
 ```bash
-DATABASE_URL=<railway-postgres-url> pnpm db:migrate
-DATABASE_URL=<railway-postgres-url> pnpm personas:sync
+pnpm install --frozen-lockfile && pnpm build
 ```
 
-## 2. Vercel Setup
-
-### Deploy
-
-1. Import repo on Vercel.
-2. Framework: **Next.js**
-3. Root directory: `apps/web`
-4. Build command: `cd ../.. && pnpm install && pnpm --filter @simvibe/web build`
-5. Output directory: `apps/web/.next`
-
-### Vercel environment variables
-
-```
-DATABASE_URL=<railway-postgres-external-url>
-LLM_PROVIDER=gemini
-GEMINI_API_KEY=<your-key>
-LLM_DAILY_TOKEN_LIMIT=2000000
-LLM_DAILY_COST_LIMIT_USD=5.00
-EXTRACTOR_PROVIDER=jina
-API_SERVER_ORIGIN=https://api-simvibe.studioliq.com
-NODE_ENV=production
-```
-
-> Vercel handles inline execution for SQLite/dev mode. In production with
-> Postgres, it enqueues jobs to pg-boss and Railway Worker picks them up.
-
-## 3. Gemini Cost Protection
-
-Three layers of defense against billing spikes:
-
-### Layer 1: Daily token cap
-
-```
-LLM_DAILY_TOKEN_LIMIT=2000000   # 2M tokens/day
-```
-
-Once cumulative input+output tokens exceed this, all new LLM calls are rejected
-until midnight (server time) reset. A run in progress will fail gracefully
-(fallback agent outputs + partial report).
-
-### Layer 2: Daily USD cap
-
-```
-LLM_DAILY_COST_LIMIT_USD=5.00   # $5/day
-```
-
-Tracks estimated cost using known model pricing. Same rejection behavior.
-Works alongside token cap (whichever hits first).
-
-### Layer 3: Per-run token budget (built-in)
-
-Already enforced by run mode configs:
-- **Quick**: 2048 max tokens/agent, 5 agents = ~10K output tokens max
-- **Deep**: 4096 max tokens/agent, 11 agents = ~45K output tokens max
-
-### Gemini model pricing reference
-
-| Model | Input $/M | Output $/M | Notes |
-|-------|-----------|------------|-------|
-| gemini-2.0-flash | $0.10 | $0.40 | Default, cheapest |
-| gemini-2.5-flash | $0.15 | $0.60 | Thinking model |
-| gemini-1.5-pro | $1.25 | $5.00 | Higher quality |
-| gemini-2.5-pro | $1.25 | $10.00 | Best quality |
-
-With `gemini-2.0-flash` at defaults:
-- One quick run (~10K in + ~10K out) ≈ **$0.005** (~0.5 cents)
-- One deep run (~50K in + ~45K out) ≈ **$0.023** (~2.3 cents)
-- $5/day cap ≈ **~200 deep runs** before cutoff
-
-### Override model
-
-```
-LLM_MODEL=gemini-2.5-flash   # use a different model
-```
-
-## 4. Local Development
+5. Start Command:
 
 ```bash
-pnpm install
-cp .env.example .env
-# Fill in GEMINI_API_KEY and DATABASE_URL
+pnpm --filter @simvibe/web start --port $PORT
 ```
 
-### Local Postgres (recommended)
+### 2-3. WEB 서비스
+
+1. `New` -> `GitHub Repo`로 동일 저장소 재연결
+2. Service 이름: `simvibe-web` (권장)
+3. Root Directory: `/`
+4. Build Command:
 
 ```bash
-docker run --name simvibe-postgres \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
-  -e POSTGRES_DB=simvibe \
-  -p 5432:5432 \
-  -d postgres:16
+pnpm install --frozen-lockfile && pnpm build
 ```
 
-`.env` example:
+5. Start Command:
 
 ```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/simvibe
-PORT=5555
-NODE_ENV=development
+pnpm --filter @simvibe/web start --port $PORT
 ```
 
-Run migrations + persona sync:
+### 2-4. Worker 서비스
+
+1. `New` -> `GitHub Repo`로 동일 저장소 재연결
+2. Service 이름: `simvibe-worker` (권장)
+3. Root Directory: `/`
+4. Dockerfile Path: `apps/worker/Dockerfile`
+5. 공개 도메인 불필요
+
+---
+
+## 3. 환경변수 설정
+
+아래 값은 서비스별로 설정합니다.
+
+### 3-1. 공통(최소)
+
+- `DATABASE_URL=${{Postgres.DATABASE_URL}}`
+- `NODE_ENV=production`
+- `LLM_PROVIDER=gemini`
+- `GEMINI_API_KEY=<실제 키>`
+- `LLM_DAILY_TOKEN_LIMIT=2000000`
+- `LLM_DAILY_COST_LIMIT_USD=5.00`
+
+### 3-2. 추출기(데모/운영 선택)
+
+데모 위주(외부 추출기 호출 최소화):
+- `EXTRACTOR_PROVIDER=pasted`
+
+운영 위주(URL 추출 사용):
+- `EXTRACTOR_PROVIDER=jina`
+- (선택) `JINA_API_KEY=<key>`
+
+### 3-3. API 서비스 전용
+
+- (선택) `PORT`는 Railway가 자동 주입
+- 추가 설정 없음
+
+### 3-4. WEB 서비스 전용
+
+- `API_SERVER_ORIGIN=https://api-simvibe.studioliq.com`
+
+설명:
+- WEB 서비스는 `/api/*` 요청을 API 도메인으로 프록시합니다.
+
+### 3-5. Worker 서비스 전용
+
+- `WORKER_PORT=8080`
+- `WORKER_RUN_TIMEOUT_MS=600000`
+
+---
+
+## 4. 도메인 연결
+
+Railway 각 서비스의 `Settings -> Domains`에서 연결:
+
+1. WEB 서비스 -> `simvibe.studioliq.com`
+2. API 서비스 -> `api-simvibe.studioliq.com`
+
+Railway가 안내하는 CNAME/TXT 값을 DNS에 추가하고, SSL 발급 완료까지 대기합니다.
+
+---
+
+## 5. DB 마이그레이션 + 페르소나 동기화 (필수)
+
+배포 후 **한 번** 실행:
 
 ```bash
 pnpm db:migrate
 pnpm personas:sync
 ```
 
-Start split dev servers:
+실행 방법:
+- Railway 대시보드에서 API 서비스 `Shell` 또는 One-off command로 실행
+- 반드시 `DATABASE_URL`이 Postgres를 바라보는 상태여야 함
 
-```bash
-# Terminal 1 (API server)
-pnpm dev:api      # http://localhost:5555
+---
 
-# Terminal 2 (FE)
-pnpm dev:web      # http://localhost:5556
-```
+## 6. 배포 검증 체크리스트
 
-Open:
-- `http://localhost:5556` (UI)
-- `http://localhost:5555/api/diagnostics` (API health)
+### 6-1. API 확인
 
-### Zero-cost demo mode
+- `https://api-simvibe.studioliq.com/api/diagnostics`
+- 기대값:
+  - `storage.activeBackend`가 `postgres`
+  - persona registry count 표시
 
-In demo mode, landing extraction is forced to `pasted` (Jina/Firecrawl are not called).
+### 6-2. WEB 확인
 
-```bash
-DEMO_MODE=true DATABASE_URL=memory:// pnpm dev:api
-pnpm dev:web
-```
+- `https://simvibe.studioliq.com` 접속
+- 월드 생성/시뮬레이션 시작/리포트 조회까지 동작 확인
 
-## 5. Railway Auto Seeding (Optional)
+### 6-3. Worker 확인
 
-데모용 Product Hunt 리포트를 배포 직후 자동으로 채우고 싶을 때 사용합니다.
+- Worker 로그에서 큐 소비 시작 로그 확인
+- 시뮬레이션 실행 시 Worker에서 run 처리 로그 확인
 
-시드 상세 목록:
-- `SEEDING.md`
+---
 
-권장 방식:
-1. `web` 서비스가 healthy 된 뒤 실행되는 one-off job 또는 cron job에서 실행
-2. 아래 명령으로 시딩
+## 7. Product Hunt 시드 자동화 (권장)
+
+시드 상세 목록은 `SEEDING.md` 참고.
+
+### 7-1. 수동 1회 시딩
 
 ```bash
 API_BASE_URL=https://api-simvibe.studioliq.com \
@@ -210,35 +194,35 @@ RUN_MODE=quick \
 pnpm seed:ph:railway
 ```
 
-메모:
-- `SEED_ONLY_MISSING=true`면 기존 시드 런을 감지해서 중복 생성을 건너뜁니다.
-- 강제 재시딩은 `SEED_ONLY_MISSING=false`로 실행합니다.
-- `RAILWAY_PUBLIC_DOMAIN` 환경변수가 있으면 `API_BASE_URL`/`WEB_BASE_URL` 생략 시 자동 사용됩니다.
+### 7-2. 자동 시딩(크론)
 
-## 6. Monitoring
+Railway Cron/Job 서비스에서 위 명령을 스케줄 실행.
 
-### Cost guard state
+권장:
+- 배포 직후 1회 실행
+- 필요 시 하루 1회 재실행(중복은 `SEED_ONLY_MISSING=true`로 방지)
 
-The `/api/diagnostics` endpoint shows current cost guard status.
+---
 
-### Worker health
+## 8. 운영 팁
 
-Worker exposes `/health` on `WORKER_PORT`:
+1. 비용 보호는 반드시 켜두세요.
+- `LLM_DAILY_TOKEN_LIMIT`
+- `LLM_DAILY_COST_LIMIT_USD`
 
-```json
-{
-  "status": "healthy",
-  "activeRun": null,
-  "uptime": 3600,
-  "storage": "postgres",
-  "queue": "pgboss"
-}
-```
+2. 데모 안정성이 최우선이면 추출기를 `pasted`로 유지하세요.
+- URL 추출 의존도가 줄어 장애 지점이 감소합니다.
 
-### Logs
+3. API/WEB 분리 도메인에서는 WEB의 `API_SERVER_ORIGIN` 오타가 가장 흔한 장애 원인입니다.
+- 값이 정확히 `https://api-simvibe.studioliq.com`인지 확인하세요.
 
-Worker outputs structured JSON logs suitable for Railway log aggregation:
+---
 
-```json
-{"ts":"...","level":"info","service":"simvibe-worker","message":"Run completed","runId":"...","durationMs":12345}
-```
+## 9. 장애 시 빠른 점검 순서
+
+1. API `/api/diagnostics` 정상 여부
+2. Postgres 연결 여부(`DATABASE_URL`)
+3. Worker 로그에서 큐 소비 여부
+4. WEB의 `API_SERVER_ORIGIN` 값 확인
+5. 도메인 DNS/SSL 상태 확인
+
