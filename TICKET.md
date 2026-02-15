@@ -2013,7 +2013,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - 503 when Monad config missing (with list of missing env vars)
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-006 (P0) Add report UI action: Publish to Monad
+### [x] MND-006 (P0) Add report UI action: Publish to Monad
 **Goal:** One-click receipt publish from report page.
 
 **Deliverables**
@@ -2028,6 +2028,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Manual FE flow + mocked error handling.
 
 **Dependencies:** MND-005
+
+**Completion notes:**
+- Report page: "Publish to Monad" button in receipt section (two locations: when receipt exists offline, when no receipt yet)
+- Fetches Monad publisher config status on page load (`GET /api/run/:id/receipt/publish`)
+- Button only shown when `monadConfigured=true` (RECEIPT_* env vars present)
+- States: idle, "Publishing to Monad...", success (shows on-chain receipt with txHash, chainId, contract, block), error
+- On-chain receipt display: shows "On-chain Receipt (Monad)" badge with contract address
+- Error display: red alert box with failure reason
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-007 (P0) Define onchain readiness gate interface
 **Goal:** Standardize launch-readiness verification on Monad.

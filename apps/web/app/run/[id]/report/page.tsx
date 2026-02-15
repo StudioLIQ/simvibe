@@ -148,6 +148,9 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [isCreatingReceipt, setIsCreatingReceipt] = useState(false);
   const [receiptError, setReceiptError] = useState<string | null>(null);
   const [chainEnabled, setChainEnabled] = useState(false);
+  const [isPublishingToMonad, setIsPublishingToMonad] = useState(false);
+  const [monadPublishError, setMonadPublishError] = useState<string | null>(null);
+  const [monadConfigured, setMonadConfigured] = useState(false);
 
   // Launch state
   const [launchReadiness, setLaunchReadiness] = useState<LaunchReadiness | null>(null);
@@ -173,6 +176,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   useEffect(() => {
     fetchRun();
     fetchReceiptStatus();
+    fetchMonadStatus();
     fetchLaunchData();
   }, [id]);
 
@@ -341,6 +345,45 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       setReceiptError(err instanceof Error ? err.message : 'Failed to create receipt');
     } finally {
       setIsCreatingReceipt(false);
+    }
+  };
+
+  const fetchMonadStatus = async () => {
+    try {
+      const response = await fetch(`/api/run/${id}/receipt/publish`);
+      if (response.ok) {
+        const data = await response.json();
+        setMonadConfigured(data.configured);
+      }
+    } catch (err) {
+      console.error('Error fetching Monad status:', err);
+    }
+  };
+
+  const publishToMonad = async () => {
+    setIsPublishingToMonad(true);
+    setMonadPublishError(null);
+
+    try {
+      const response = await fetch(`/api/run/${id}/receipt/publish`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to publish receipt');
+      }
+
+      if (data.error) {
+        setMonadPublishError(data.error);
+      }
+
+      await fetchRun();
+    } catch (err) {
+      setMonadPublishError(err instanceof Error ? err.message : 'Failed to publish to Monad');
+    } finally {
+      setIsPublishingToMonad(false);
     }
   };
 
@@ -948,7 +991,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 fontSize: '0.875rem',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <span style={{ color: 'var(--success-soft)', fontWeight: 500 }}>On-chain Receipt</span>
+                  <span style={{ color: 'var(--success-soft)', fontWeight: 500 }}>On-chain Receipt (Monad)</span>
                   {run.receipt.chainId && (
                     <span style={{ fontSize: '0.75rem', color: 'var(--success-soft)', background: 'var(--success-border)', padding: '0.125rem 0.5rem', borderRadius: '4px' }}>
                       Chain ID: {run.receipt.chainId}
@@ -970,25 +1013,97 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     Block: {run.receipt.blockNumber}
                   </div>
                 )}
+                {run.receipt.contractAddress && (
+                  <div style={{ fontSize: '0.75rem', color: 'var(--success-soft)', marginTop: '0.25rem' }}>
+                    Contract: <code style={{ fontSize: '0.7rem' }}>{run.receipt.contractAddress}</code>
+                  </div>
+                )}
               </div>
             ) : (
+              <div>
+                <div style={{
+                  background: 'var(--indigo-bg)',
+                  border: '1px solid var(--indigo-border)',
+                  borderRadius: '0.5rem',
+                  padding: '0.75rem',
+                  fontSize: '0.875rem',
+                  color: 'var(--indigo-text)',
+                  marginBottom: monadConfigured ? '0.75rem' : 0,
+                }}>
+                  Offline receipt (not yet published on-chain)
+                </div>
+                {monadConfigured && (
+                  <button
+                    onClick={publishToMonad}
+                    disabled={isPublishingToMonad}
+                    className="btn"
+                    style={{
+                      background: 'var(--accent-primary)',
+                      color: 'white',
+                      padding: '0.5rem 1rem',
+                      fontSize: '0.875rem',
+                      width: '100%',
+                      cursor: isPublishingToMonad ? 'not-allowed' : 'pointer',
+                      opacity: isPublishingToMonad ? 0.6 : 1,
+                    }}
+                  >
+                    {isPublishingToMonad ? 'Publishing to Monad...' : 'Publish to Monad'}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {monadPublishError && (
               <div style={{
-                background: 'var(--indigo-bg)',
-                border: '1px solid var(--indigo-border)',
+                background: 'var(--danger-bg)',
+                border: '1px solid var(--status-danger)',
                 borderRadius: '0.5rem',
                 padding: '0.75rem',
+                marginTop: '0.75rem',
                 fontSize: '0.875rem',
-                color: 'var(--indigo-text)',
+                color: 'var(--danger-soft)',
               }}>
-                Offline receipt (chain write disabled)
+                {monadPublishError}
               </div>
             )}
           </div>
         ) : (
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-dim)' }}>
-            Generate a tamper-evident receipt with SHA-256 hashes of your simulation
-            {chainEnabled && ' (will be written to blockchain)'}
-          </p>
+          <div>
+            <p style={{ fontSize: '0.875rem', color: 'var(--text-dim)', marginBottom: monadConfigured ? '0.75rem' : 0 }}>
+              Generate a tamper-evident receipt with SHA-256 hashes of your simulation
+              {chainEnabled && ' (will be written to blockchain)'}
+            </p>
+            {monadConfigured && (
+              <button
+                onClick={publishToMonad}
+                disabled={isPublishingToMonad}
+                className="btn"
+                style={{
+                  background: 'var(--accent-primary)',
+                  color: 'white',
+                  padding: '0.5rem 1rem',
+                  fontSize: '0.875rem',
+                  cursor: isPublishingToMonad ? 'not-allowed' : 'pointer',
+                  opacity: isPublishingToMonad ? 0.6 : 1,
+                }}
+              >
+                {isPublishingToMonad ? 'Publishing to Monad...' : 'Publish to Monad'}
+              </button>
+            )}
+            {monadPublishError && (
+              <div style={{
+                background: 'var(--danger-bg)',
+                border: '1px solid var(--status-danger)',
+                borderRadius: '0.5rem',
+                padding: '0.75rem',
+                marginTop: '0.75rem',
+                fontSize: '0.875rem',
+                color: 'var(--danger-soft)',
+              }}>
+                {monadPublishError}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
