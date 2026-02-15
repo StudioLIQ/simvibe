@@ -4,6 +4,9 @@
 1. Ensure `DEMO_MODE=true` in `.env` (uses cached extracts, no API calls)
 2. Start the app: `pnpm dev`
 3. Open http://localhost:3000
+4. (Optional) Seed Product Hunt-style runs for instant report links:
+   - `BASE_URL=http://localhost:3000 PRODUCT_COUNT=5 pnpm seed:ph`
+   - links saved at `artifacts_runs/ph-seed-report-links.md`
 
 ---
 
