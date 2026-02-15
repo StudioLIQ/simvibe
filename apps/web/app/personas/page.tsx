@@ -24,8 +24,40 @@ interface PersonaApiResponse {
   personas: PersonaItem[];
 }
 
+type SortKey = 'id_asc' | 'budget_desc' | 'skepticism_desc' | 'red_flags_desc';
+
+const SKEPTICISM_RANK: Record<string, number> = {
+  very_low: 0,
+  low: 1,
+  moderate: 2,
+  medium: 2,
+  high: 3,
+  very_high: 4,
+  extreme: 5,
+};
+
+function normalize(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function toLabel(value: string): string {
+  return value
+    .split('_')
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(' ');
+}
+
+function skepticismRank(value: string): number {
+  return SKEPTICISM_RANK[value] ?? 1;
+}
+
 export default function PersonasPage() {
   const [query, setQuery] = useState('');
+  const [skepticismFilter, setSkepticismFilter] = useState('all');
+  const [cryptoFilter, setCryptoFilter] = useState('all');
+  const [degenFilter, setDegenFilter] = useState('all');
+  const [decisionFilter, setDecisionFilter] = useState('all');
+  const [sortBy, setSortBy] = useState<SortKey>('id_asc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [response, setResponse] = useState<PersonaApiResponse | null>(null);
@@ -37,9 +69,7 @@ export default function PersonasPage() {
       setLoading(true);
       setError(null);
       try {
-        const q = query.trim();
-        const url = q ? `/api/personas?q=${encodeURIComponent(q)}&limit=2000` : '/api/personas?limit=2000';
-        const res = await fetch(url);
+        const res = await fetch('/api/personas?limit=5000');
         if (!res.ok) {
           throw new Error(`Failed to load personas (${res.status})`);
         }
@@ -58,49 +88,127 @@ export default function PersonasPage() {
       }
     };
 
-    const timer = setTimeout(() => {
-      void load();
-    }, 200);
+    void load();
 
     return () => {
       cancelled = true;
-      clearTimeout(timer);
     };
-  }, [query]);
+  }, []);
 
-  const personas = response?.personas || [];
+  const personas = response?.personas ?? [];
+
+  const skepticismOptions = useMemo(
+    () =>
+      Array.from(new Set(personas.map((persona) => persona.skepticismLevel)))
+        .sort((a, b) => skepticismRank(a) - skepticismRank(b)),
+    [personas],
+  );
+
+  const cryptoOptions = useMemo(
+    () =>
+      Array.from(new Set(personas.map((persona) => persona.cryptoInvestmentExperience)))
+        .sort((a, b) => a.localeCompare(b)),
+    [personas],
+  );
+
+  const degenOptions = useMemo(
+    () =>
+      Array.from(new Set(personas.map((persona) => persona.degenLevel)))
+        .sort((a, b) => a.localeCompare(b)),
+    [personas],
+  );
+
+  const decisionOptions = useMemo(
+    () =>
+      Array.from(new Set(personas.map((persona) => persona.decisionStyle)))
+        .sort((a, b) => a.localeCompare(b)),
+    [personas],
+  );
+
+  const filteredPersonas = useMemo(() => {
+    const normalizedQuery = normalize(query);
+
+    const next = personas.filter((persona) => {
+      if (skepticismFilter !== 'all' && persona.skepticismLevel !== skepticismFilter) return false;
+      if (cryptoFilter !== 'all' && persona.cryptoInvestmentExperience !== cryptoFilter) return false;
+      if (degenFilter !== 'all' && persona.degenLevel !== degenFilter) return false;
+      if (decisionFilter !== 'all' && persona.decisionStyle !== decisionFilter) return false;
+
+      if (!normalizedQuery) return true;
+
+      const haystack = normalize(
+        `${persona.id} ${persona.name} ${persona.role} ${persona.decisionStyle} ` +
+          `${persona.cryptoInvestmentExperience} ${persona.degenLevel} ${persona.skepticismLevel}`,
+      );
+      return haystack.includes(normalizedQuery);
+    });
+
+    next.sort((a, b) => {
+      if (sortBy === 'budget_desc') {
+        const diff = b.budgetRange.max - a.budgetRange.max;
+        return diff !== 0 ? diff : a.id.localeCompare(b.id);
+      }
+      if (sortBy === 'skepticism_desc') {
+        const diff = skepticismRank(b.skepticismLevel) - skepticismRank(a.skepticismLevel);
+        return diff !== 0 ? diff : a.id.localeCompare(b.id);
+      }
+      if (sortBy === 'red_flags_desc') {
+        const diff = b.redFlagsCount - a.redFlagsCount;
+        return diff !== 0 ? diff : a.id.localeCompare(b.id);
+      }
+      return a.id.localeCompare(b.id);
+    });
+
+    return next;
+  }, [personas, query, skepticismFilter, cryptoFilter, degenFilter, decisionFilter, sortBy]);
 
   const summary = useMemo(() => {
-    const bySkepticism = personas.reduce<Record<string, number>>((acc, p) => {
-      acc[p.skepticismLevel] = (acc[p.skepticismLevel] || 0) + 1;
+    const bySkepticism = filteredPersonas.reduce<Record<string, number>>((acc, persona) => {
+      acc[persona.skepticismLevel] = (acc[persona.skepticismLevel] || 0) + 1;
       return acc;
     }, {});
-    const byCryptoExperience = personas.reduce<Record<string, number>>((acc, p) => {
-      acc[p.cryptoInvestmentExperience] = (acc[p.cryptoInvestmentExperience] || 0) + 1;
-      return acc;
-    }, {});
-    const byDegen = personas.reduce<Record<string, number>>((acc, p) => {
-      acc[p.degenLevel] = (acc[p.degenLevel] || 0) + 1;
-      return acc;
-    }, {});
+
+    const averageMaxBudget = filteredPersonas.length > 0
+      ? Math.round(
+          filteredPersonas.reduce((acc, persona) => acc + persona.budgetRange.max, 0) /
+            filteredPersonas.length,
+        )
+      : 0;
 
     return {
       bySkepticism,
-      byCryptoExperience,
-      byDegen,
+      averageMaxBudget,
     };
-  }, [personas]);
+  }, [filteredPersonas]);
+
+  const activeFilters = useMemo(() => {
+    const chips: string[] = [];
+    if (skepticismFilter !== 'all') chips.push(`Skepticism: ${toLabel(skepticismFilter)}`);
+    if (cryptoFilter !== 'all') chips.push(`Crypto: ${toLabel(cryptoFilter)}`);
+    if (degenFilter !== 'all') chips.push(`Degen: ${toLabel(degenFilter)}`);
+    if (decisionFilter !== 'all') chips.push(`Decision: ${toLabel(decisionFilter)}`);
+    return chips;
+  }, [skepticismFilter, cryptoFilter, degenFilter, decisionFilter]);
+
+  const clearFilters = () => {
+    setQuery('');
+    setSkepticismFilter('all');
+    setCryptoFilter('all');
+    setDegenFilter('all');
+    setDecisionFilter('all');
+    setSortBy('id_asc');
+  };
 
   return (
     <main className="container">
-      <header className="header" style={{ marginBottom: '1rem' }}>
+      <header className="header header-hero persona-hero" style={{ marginBottom: '1rem' }}>
         <div className="top-nav">
           <Link href="/">&larr; Hub</Link>
           <Link href="/reports">Reports</Link>
           <Link href="/new">Start Simulation</Link>
         </div>
         <h1>Persona Registry</h1>
-        <p>Browse currently loaded personas and inspect their behavior profiles.</p>
+        <p>Search, segment, and inspect personas by skepticism, budget power, and decision behavior.</p>
       </header>
 
       <div className="card" style={{ marginBottom: '1rem' }}>
@@ -115,37 +223,109 @@ export default function PersonasPage() {
           />
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.65rem' }}>
-          <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
-            <div className="hint">Total Personas</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>{response?.total ?? '-'}</div>
+        <div className="persona-filter-grid">
+          <div className="form-group">
+            <label htmlFor="persona-filter-skepticism">Skepticism</label>
+            <select
+              id="persona-filter-skepticism"
+              value={skepticismFilter}
+              onChange={(e) => setSkepticismFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              {skepticismOptions.map((value) => (
+                <option key={value} value={value}>{toLabel(value)}</option>
+              ))}
+            </select>
           </div>
-          <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
-            <div className="hint">Current Results</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>{response?.count ?? '-'}</div>
+          <div className="form-group">
+            <label htmlFor="persona-filter-crypto">Crypto Experience</label>
+            <select
+              id="persona-filter-crypto"
+              value={cryptoFilter}
+              onChange={(e) => setCryptoFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              {cryptoOptions.map((value) => (
+                <option key={value} value={value}>{toLabel(value)}</option>
+              ))}
+            </select>
           </div>
-          <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
-            <div className="hint">High+ Skepticism</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>
-              {(summary.bySkepticism.high || 0) + (summary.bySkepticism.very_high || 0)}
-            </div>
+          <div className="form-group">
+            <label htmlFor="persona-filter-degen">Degen Level</label>
+            <select
+              id="persona-filter-degen"
+              value={degenFilter}
+              onChange={(e) => setDegenFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              {degenOptions.map((value) => (
+                <option key={value} value={value}>{toLabel(value)}</option>
+              ))}
+            </select>
           </div>
-          <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
-            <div className="hint">High+ Crypto Exp</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>
-              {(summary.byCryptoExperience.high || 0) + (summary.byCryptoExperience.very_high || 0)}
-            </div>
+          <div className="form-group">
+            <label htmlFor="persona-filter-decision">Decision Style</label>
+            <select
+              id="persona-filter-decision"
+              value={decisionFilter}
+              onChange={(e) => setDecisionFilter(e.target.value)}
+            >
+              <option value="all">All</option>
+              {decisionOptions.map((value) => (
+                <option key={value} value={value}>{toLabel(value)}</option>
+              ))}
+            </select>
           </div>
-          <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
-            <div className="hint">High+ Degen</div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 700 }}>
-              {(summary.byDegen.high || 0) + (summary.byDegen.extreme || 0)}
-            </div>
+          <div className="form-group">
+            <label htmlFor="persona-filter-sort">Sort</label>
+            <select
+              id="persona-filter-sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+            >
+              <option value="id_asc">ID (A-Z)</option>
+              <option value="budget_desc">Budget (High to Low)</option>
+              <option value="skepticism_desc">Skepticism (High to Low)</option>
+              <option value="red_flags_desc">Red Flags (High to Low)</option>
+            </select>
           </div>
-          <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border)', borderRadius: '0.6rem', padding: '0.7rem' }}>
-            <div className="hint">Registry Source</div>
-            <div style={{ fontSize: '1.05rem', fontWeight: 700 }}>{response?.source || '-'}</div>
+
+          <div className="persona-actions">
+            <button type="button" className="btn" onClick={clearFilters}>Reset Filters</button>
           </div>
+        </div>
+
+        {activeFilters.length > 0 && (
+          <div className="persona-active-filters">
+            {activeFilters.map((value) => (
+              <span key={value} className="persona-badge">{value}</span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      <div className="persona-summary-grid" style={{ marginBottom: '1rem' }}>
+        <div className="persona-stat-card">
+          <div className="persona-stat-label">Total Personas</div>
+          <div className="persona-stat-value">{response?.total ?? '-'}</div>
+        </div>
+        <div className="persona-stat-card">
+          <div className="persona-stat-label">Showing</div>
+          <div className="persona-stat-value">{filteredPersonas.length}</div>
+        </div>
+        <div className="persona-stat-card">
+          <div className="persona-stat-label">High+ Skepticism</div>
+          <div className="persona-stat-value">
+            {(summary.bySkepticism.high || 0) + (summary.bySkepticism.very_high || 0)}
+          </div>
+        </div>
+        <div className="persona-stat-card">
+          <div className="persona-stat-label">Avg Max Budget</div>
+          <div className="persona-stat-value">${summary.averageMaxBudget || 0}</div>
+        </div>
+        <div className="persona-stat-card">
+          <div className="persona-stat-label">Registry Source</div>
+          <div className="persona-stat-value persona-stat-value--small">{response?.source || '-'}</div>
         </div>
       </div>
 
@@ -153,42 +333,34 @@ export default function PersonasPage() {
         {loading && <p className="hint">Loading personas...</p>}
         {error && <div className="error-message">{error}</div>}
 
-        {!loading && !error && personas.length === 0 && (
+        {!loading && !error && filteredPersonas.length === 0 && (
           <p className="hint">No personas to display.</p>
         )}
 
-        {!loading && !error && personas.length > 0 && (
-          <div style={{ display: 'grid', gap: '0.65rem' }}>
-            {personas.map((persona) => (
-              <div
-                key={persona.id}
-                style={{
-                  border: '1px solid var(--border)',
-                  borderRadius: '0.7rem',
-                  padding: '0.8rem',
-                  background: 'var(--surface-card)',
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'flex-start' }}>
+        {!loading && !error && filteredPersonas.length > 0 && (
+          <div className="persona-list">
+            {filteredPersonas.map((persona) => (
+              <article key={persona.id} className="persona-card">
+                <div className="persona-card-head">
                   <div>
-                    <div style={{ fontWeight: 700 }}>{persona.name}</div>
-                    <div className="hint" style={{ marginTop: '0.1rem' }}>{persona.id}</div>
+                    <h3 className="persona-title">{persona.name}</h3>
+                    <div className="persona-id">{persona.id}</div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>{persona.skepticismLevel}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>${persona.budgetRange.min} - ${persona.budgetRange.max}</div>
-                    <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                      crypto {persona.cryptoInvestmentExperience} · degen {persona.degenLevel}
-                    </div>
+                  <div className="persona-badge-row">
+                    <span className="persona-badge">Skepticism: {toLabel(persona.skepticismLevel)}</span>
+                    <span className="persona-badge">Crypto: {toLabel(persona.cryptoInvestmentExperience)}</span>
+                    <span className="persona-badge">Degen: {toLabel(persona.degenLevel)}</span>
                   </div>
                 </div>
 
-                <div style={{ marginTop: '0.45rem', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>{persona.role}</div>
-
-                <div className="hint" style={{ marginTop: '0.4rem' }}>
-                  decision: {persona.decisionStyle} · priorities: {persona.prioritiesCount} · red flags: {persona.redFlagsCount}
+                <p className="persona-role">{persona.role}</p>
+                <div className="persona-meta">
+                  <span>Budget: ${persona.budgetRange.min} - ${persona.budgetRange.max}</span>
+                  <span>Decision: {toLabel(persona.decisionStyle)}</span>
+                  <span>Priorities: {persona.prioritiesCount}</span>
+                  <span>Red Flags: {persona.redFlagsCount}</span>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
