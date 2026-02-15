@@ -1881,3 +1881,241 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
   - `pnpm typecheck` passes
   - deep E2E passes with launch success
   - manual deep run shows debate events and debate-filled outputs
+
+---
+
+## Milestone M14 — Monad Deep Integration (P0/P1)
+
+### [ ] MND-001 (P0) Define onchain Run Receipt spec
+**Goal:** Fix contract interface for immutable simulation receipt publishing.
+
+**Deliverables**
+- Receipt schema fixed: `runId`, `inputHash`, `reportHash`, `scoreBand`, `timestamp`.
+- Event schema fixed: `ReceiptPublished` fields + indexed params.
+- Error codes + duplicate publish policy documented.
+
+**Acceptance Criteria**
+- ABI frozen in repo docs.
+- App/backend integration points explicitly mapped.
+
+**Test Plan**
+- Spec review checklist + contract interface snapshot committed.
+
+**Dependencies:** None
+
+### [ ] MND-002 (P0) Implement Receipt contract + tests
+**Goal:** Deployable Solidity contract for publishing receipts on Monad.
+
+**Deliverables**
+- `publishReceipt(...)` with duplicate protection.
+- `getReceiptByRunId(...)` read path.
+- Unit tests for success, duplicate, invalid params.
+
+**Acceptance Criteria**
+- Test suite green.
+- Event emitted exactly once per runId/idempotency key.
+
+**Test Plan**
+- Contract test command in CI/local docs.
+
+**Dependencies:** MND-001
+
+### [ ] MND-003 (P0) Deploy Receipt contract to Monad testnet
+**Goal:** Operational contract address for app integration.
+
+**Deliverables**
+- Deployment script + network config.
+- `.env` keys for `RECEIPT_CONTRACT_ADDRESS`, `RECEIPT_CHAIN_ID`, explorer URL.
+- Deployment tx hash recorded.
+
+**Acceptance Criteria**
+- Contract callable from backend runtime.
+- Address/version tracked in docs.
+
+**Test Plan**
+- One manual publish tx succeeds on testnet.
+
+**Dependencies:** MND-002
+
+### [ ] MND-004 (P0) Persist receipt linkage in storage
+**Goal:** Store onchain receipt status per run in DB.
+
+**Deliverables**
+- DB migration: `receipt_tx_hash`, `receipt_contract`, `receipt_chain_id`, `receipt_published_at`.
+- Storage layer read/write wired.
+
+**Acceptance Criteria**
+- Run fetch includes receipt linkage data.
+
+**Test Plan**
+- DB migration test + API response inspection.
+
+**Dependencies:** MND-003
+
+### [ ] MND-005 (P0) Add API endpoint to publish receipt on Monad
+**Goal:** Backend route to publish run/report hash onchain.
+
+**Deliverables**
+- `POST /api/run/:id/receipt/publish`.
+- Validation: completed run/report required.
+- Idempotency: duplicate publish returns deterministic response (or 409).
+
+**Acceptance Criteria**
+- Returns tx hash + contract + chain id.
+- Errors normalized for FE handling.
+
+**Test Plan**
+- API integration tests for success/failure/idempotent retry.
+
+**Dependencies:** MND-004
+
+### [ ] MND-006 (P0) Add report UI action: Publish to Monad
+**Goal:** One-click receipt publish from report page.
+
+**Deliverables**
+- `Publish to Monad` button in report UI.
+- Pending/success/failure states.
+- Explorer deep-link on success.
+
+**Acceptance Criteria**
+- User can publish receipt without leaving report page.
+
+**Test Plan**
+- Manual FE flow + mocked error handling.
+
+**Dependencies:** MND-005
+
+### [ ] MND-007 (P0) Define onchain readiness gate interface
+**Goal:** Standardize launch-readiness verification on Monad.
+
+**Deliverables**
+- Gate interface spec: `isLaunchReady(...)` and/or signed policy hash checks.
+- Policy hash format + versioning rules.
+
+**Acceptance Criteria**
+- API and contract teams use identical interface spec.
+
+**Test Plan**
+- Spec fixture vectors committed.
+
+**Dependencies:** MND-001
+
+### [ ] MND-008 (P0) Implement Readiness Gate contract + tests
+**Goal:** Smart-contract-based launch gate.
+
+**Deliverables**
+- Gate contract with policy validation logic.
+- Tests: ready/not_ready/expired/invalid hash.
+
+**Acceptance Criteria**
+- Deterministic gate result for same inputs.
+
+**Test Plan**
+- Contract tests in CI/local.
+
+**Dependencies:** MND-007
+
+### [ ] MND-009 (P0) Enforce onchain preflight in launch API
+**Goal:** Prevent launch execution unless Monad gate returns ready.
+
+**Deliverables**
+- Launch execute path calls gate preflight.
+- 403 response with blocker reason when not ready.
+
+**Acceptance Criteria**
+- Non-ready runs cannot proceed to launch execute.
+
+**Test Plan**
+- API integration test for blocked and allowed paths.
+
+**Dependencies:** MND-008
+
+### [ ] MND-010 (P1) Show readiness-onchain status in FE launch panel
+**Goal:** Make onchain gate decision visible before launch.
+
+**Deliverables**
+- Badge: `Ready on Monad` / `Blocked on Monad`.
+- Block reason + next action hint.
+
+**Acceptance Criteria**
+- Launch UX exposes gate status clearly before user action.
+
+**Test Plan**
+- FE interaction test with mocked gate outcomes.
+
+**Dependencies:** MND-009
+
+### [ ] MND-011 (P0) Persist nad.fun launch linkage fields
+**Goal:** Track launch tx + token address as first-class run artifacts.
+
+**Deliverables**
+- DB migration for `launch_tx_hash`, `token_contract_address`, `nad_launch_url`, `launch_confirmed_at`.
+- API model/schema updates.
+
+**Acceptance Criteria**
+- Launch-confirmed runs expose token contract address.
+
+**Test Plan**
+- Migration + run payload roundtrip verification.
+
+**Dependencies:** SIM-039, MND-004
+
+### [ ] MND-012 (P0) Wire nad.fun confirm flow to store live token address
+**Goal:** Ensure post-launch confirm writes canonical contract address.
+
+**Deliverables**
+- Confirm endpoint requires/stores `tokenAddress` on success.
+- Address format/chain validation.
+
+**Acceptance Criteria**
+- Successful launch always has persisted `token_contract_address`.
+
+**Test Plan**
+- Launch confirm API tests (valid/invalid address, duplicate confirm).
+
+**Dependencies:** MND-011
+
+### [ ] MND-013 (P0) Expose live launch evidence in report page
+**Goal:** Show proof that token is live on nad.fun.
+
+**Deliverables**
+- Report section with `Token Contract Address`, launch tx hash, nad.fun URL.
+- Copy button + explorer/nad.fun links.
+
+**Acceptance Criteria**
+- Reviewer can verify live token directly from report UI.
+
+**Test Plan**
+- FE regression for success/pending/not-launched states.
+
+**Dependencies:** MND-012
+
+### [ ] MND-014 (P0) Build end-to-end flow script for hackathon demo
+**Goal:** Automate proof path: simulate -> publish receipt -> gate -> launch -> verify.
+
+**Deliverables**
+- Single E2E script producing artifact JSON/MD with URLs and tx hashes.
+- Failure diagnostics at each stage.
+
+**Acceptance Criteria**
+- Script output contains report URL + token contract address + launch URL.
+
+**Test Plan**
+- Run on staging with Monad testnet and capture artifacts.
+
+**Dependencies:** MND-013
+
+### [ ] MND-015 (P0) Add hackathon submission checklist + guardrails
+**Goal:** No-miss checklist for required submission fields.
+
+**Deliverables**
+- Checklist: project URL, demo video, tx hashes, token contract address, nad.fun live proof.
+- Operational guardrails: retry policy, duplicate prevention, rollback notes.
+
+**Acceptance Criteria**
+- Anyone on team can follow checklist and produce valid submission package.
+
+**Test Plan**
+- Dry-run checklist execution by non-author teammate.
+
+**Dependencies:** MND-014

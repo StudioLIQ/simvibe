@@ -229,7 +229,46 @@ pnpm seed:ph:railway
 
 ---
 
-## 8. 비용/안정성 운영 팁
+## 8. 해커톤 제출 대응 (Token Contract Address / Must be live on Nad.fun)
+
+해커톤 제출 폼에서 아래 요구가 있으면, 이 순서로 준비하는 것이 안전합니다.
+
+### 8-1. Token Contract Address 필드
+
+권장 값:
+- `nad.fun`에서 실제 launch 성공 후 생성된 토큰 컨트랙트 주소
+
+금지 값:
+- 로컬/임시 컨트랙트 주소
+- launch 실패 상태의 미확정 주소
+
+### 8-2. Must be live on Nad.fun 대응
+
+최소 증빙 3종:
+1. `nad.fun` 토큰 페이지 URL
+2. launch tx hash (Monad explorer 링크)
+3. token contract address
+
+`simvi.be` report에서 위 3개를 한 섹션에 노출하면 심사자가 즉시 검증할 수 있습니다.
+
+### 8-3. 제출 직전 권장 절차
+
+1. 시뮬레이션 완료 + 리포트 확정
+2. 필요 시 `Publish to Monad`로 receipt 기록
+3. `Launch on nad.fun` 실행 + confirm
+4. report에서 `Token Contract Address`/launch tx/nad.fun URL 확인
+5. 해커톤 폼에 동일 값 입력
+
+### 8-4. 실수 방지 팁
+
+1. 제출용 launch runId를 데모 runId와 분리
+2. launch confirm은 idempotent 처리 유지
+3. 주소 형식 검증(`0x` + 40 hex) 후 저장
+4. 제출 직전 증빙 링크/스크린샷 백업
+
+---
+
+## 9. 비용/안정성 운영 팁
 
 1. 비용 제한은 항상 켜두기
 - `LLM_DAILY_TOKEN_LIMIT`
@@ -245,11 +284,10 @@ pnpm seed:ph:railway
 
 ---
 
-## 9. 장애 대응 순서
+## 10. 장애 대응 순서
 
 1. API `/api/diagnostics` 확인
 2. Railway Postgres 연결 확인 (`DATABASE_URL`)
 3. Worker 로그(큐 소비/에러) 확인
 4. Vercel 환경변수 `API_SERVER_ORIGIN` 재확인
 5. DNS/SSL 상태 확인
-
