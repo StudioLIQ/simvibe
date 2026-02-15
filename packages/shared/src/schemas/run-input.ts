@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { PersonaIdSchema } from './agent-output';
+import { PersonaSetNameSchema } from './persona-snapshot';
 
 export const PricingModelSchema = z.enum([
   'free',
@@ -32,6 +33,7 @@ export const RunInputSchema = z.object({
   pastedContent: z.string().optional(),
   runMode: RunModeSchema.optional(),
   personaIds: z.array(PersonaIdSchema).min(1).optional(),
+  personaSet: PersonaSetNameSchema.optional(),
 });
 
 export type PricingModel = z.infer<typeof PricingModelSchema>;

@@ -10,6 +10,7 @@ import type {
   CalibrationPrior,
   RunDiagnostics,
   ChainReceipt,
+  PersonaSnapshots,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 
@@ -25,6 +26,7 @@ const INIT_SQL = `
     actuals TEXT,
     diagnostics TEXT,
     receipt TEXT,
+    persona_snapshots TEXT,
     variant_of TEXT,
     error TEXT
   );
@@ -67,6 +69,19 @@ export class SQLiteStorage implements Storage {
     this.db = new Database(dbPath);
     this.db.pragma('journal_mode = WAL');
     this.db.exec(INIT_SQL);
+    this.migrateSchema();
+  }
+
+  /**
+   * Apply incremental schema migrations for existing databases.
+   */
+  private migrateSchema(): void {
+    // Add persona_snapshots column if missing (SIM-022)
+    const columns = this.db.pragma('table_info(runs)') as { name: string }[];
+    const hasSnapshots = columns.some(c => c.name === 'persona_snapshots');
+    if (!hasSnapshots) {
+      this.db.exec('ALTER TABLE runs ADD COLUMN persona_snapshots TEXT');
+    }
   }
 
   async createRun(input: RunInput): Promise<Run> {
@@ -103,6 +118,7 @@ export class SQLiteStorage implements Storage {
       actuals: string | null;
       diagnostics: string | null;
       receipt: string | null;
+      persona_snapshots: string | null;
       variant_of: string | null;
       error: string | null;
     } | undefined;
@@ -130,6 +146,7 @@ export class SQLiteStorage implements Storage {
       actuals: row.actuals ? JSON.parse(row.actuals) : undefined,
       diagnostics: row.diagnostics ? JSON.parse(row.diagnostics) : undefined,
       receipt: row.receipt ? JSON.parse(row.receipt) : undefined,
+      personaSnapshots: row.persona_snapshots ? JSON.parse(row.persona_snapshots) : undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
       events: events.map((e) => JSON.parse(e.data)),
@@ -255,6 +272,17 @@ export class SQLiteStorage implements Storage {
     const result = this.db.prepare(`
       UPDATE runs SET receipt = ?, updated_at = ? WHERE id = ?
     `).run(JSON.stringify(receipt), now, runId);
+
+    if (result.changes === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async savePersonaSnapshots(runId: string, snapshots: PersonaSnapshots): Promise<void> {
+    const now = new Date().toISOString();
+    const result = this.db.prepare(`
+      UPDATE runs SET persona_snapshots = ?, updated_at = ? WHERE id = ?
+    `).run(JSON.stringify(snapshots), now, runId);
 
     if (result.changes === 0) {
       throw new Error(`Run not found: ${runId}`);

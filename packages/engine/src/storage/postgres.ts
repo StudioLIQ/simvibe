@@ -10,6 +10,7 @@ import type {
   CalibrationPrior,
   RunDiagnostics,
   ChainReceipt,
+  PersonaSnapshots,
 } from '@simvibe/shared';
 import type { Storage, Run, RunStatus } from './types';
 import { runMigrations } from './migrate';
@@ -97,6 +98,9 @@ export class PostgresStorage implements Storage {
         : undefined,
       receipt: row.receipt
         ? (typeof row.receipt === 'string' ? JSON.parse(row.receipt) : row.receipt)
+        : undefined,
+      personaSnapshots: row.persona_snapshots
+        ? (typeof row.persona_snapshots === 'string' ? JSON.parse(row.persona_snapshots) : row.persona_snapshots)
         : undefined,
       variantOf: row.variant_of ?? undefined,
       error: row.error ?? undefined,
@@ -237,6 +241,18 @@ export class PostgresStorage implements Storage {
     const result = await this.pool.query(
       `UPDATE runs SET receipt = $1, updated_at = $2 WHERE id = $3`,
       [JSON.stringify(receipt), now, runId]
+    );
+
+    if (result.rowCount === 0) {
+      throw new Error(`Run not found: ${runId}`);
+    }
+  }
+
+  async savePersonaSnapshots(runId: string, snapshots: PersonaSnapshots): Promise<void> {
+    const now = new Date().toISOString();
+    const result = await this.pool.query(
+      `UPDATE runs SET persona_snapshots = $1, updated_at = $2 WHERE id = $3`,
+      [JSON.stringify(snapshots), now, runId]
     );
 
     if (result.rowCount === 0) {

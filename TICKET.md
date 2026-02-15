@@ -1025,7 +1025,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-022 (P1) Persona sets + run snapshotting (reproducible reports)
+### [x] SIM-022 (P1) Persona sets + run snapshotting (reproducible reports)
 **Goal:** Support curated persona bundles (Quick/Deep) and keep runs reproducible even if personas change later.
 
 **Deliverables**
@@ -1034,7 +1034,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
   - Ability for a run to specify a set
 - Snapshot on run start:
   - Persist the exact persona definitions used (or version hashes) onto the run record
-  - Report renders from the snapshot to avoid “drifting” results
+  - Report renders from the snapshot to avoid "drifting" results
 
 **Acceptance Criteria**
 - Changing a persona file does not change historical reports
@@ -1044,6 +1044,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Run once, change persona content, re-open old report: unchanged
 
 **Dependencies:** SIM-021, SIM-018B
+
+**Completion notes:**
+- PersonaSnapshot schema in packages/shared/src/schemas/persona-snapshot.ts (PersonaSnapshots, PersonaSetName)
+- Named persona sets: PERSONA_SETS config in packages/engine/src/config/run-modes.ts (quick/deep bundles)
+- RunInput accepts optional `personaSet: 'quick' | 'deep' | 'custom'` field
+- Executor snapshots full persona definitions at run start via `buildPersonaSnapshots()`
+- Snapshots persisted on run record (`savePersonaSnapshots`) in all 3 storage backends (SQLite, Postgres, Memory)
+- Postgres migration: 002_persona_snapshots.sql adds `persona_snapshots JSONB` column
+- SQLite auto-migration: `migrateSchema()` adds column to existing DBs
+- Report includes `personaSet` and `personaSnapshots` fields for self-contained reproducibility
+- Persona resolution hierarchy: explicit personaIds > personaSet > mode defaults
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 50 tests pass)
 
 ---
 

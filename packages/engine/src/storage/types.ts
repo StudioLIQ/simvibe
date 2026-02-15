@@ -8,6 +8,7 @@ import type {
   CalibrationPrior,
   RunDiagnostics,
   ChainReceipt,
+  PersonaSnapshots,
 } from '@simvibe/shared';
 
 export type RunStatus = 'pending' | 'queued' | 'running' | 'completed' | 'failed';
@@ -25,6 +26,7 @@ export interface Run {
   actuals?: ActualOutcomes;
   diagnostics?: RunDiagnostics;
   receipt?: ChainReceipt;
+  personaSnapshots?: PersonaSnapshots;
   variantOf?: string;
   error?: string;
 }
@@ -42,6 +44,7 @@ export interface Storage {
   saveActuals(runId: string, actuals: ActualOutcomes): Promise<void>;
   saveDiagnostics(runId: string, diagnostics: RunDiagnostics): Promise<void>;
   saveReceipt(runId: string, receipt: ChainReceipt): Promise<void>;
+  savePersonaSnapshots(runId: string, snapshots: PersonaSnapshots): Promise<void>;
   getCalibrationPrior(key: string): Promise<CalibrationPrior | null>;
   saveCalibrationPrior(prior: CalibrationPrior): Promise<void>;
   listRuns(limit?: number): Promise<Run[]>;

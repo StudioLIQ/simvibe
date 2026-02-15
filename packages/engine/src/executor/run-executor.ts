@@ -1,10 +1,10 @@
-import type { RunDiagnostics, PhaseTiming } from '@simvibe/shared';
+import type { RunDiagnostics, PhaseTiming, PersonaSnapshots } from '@simvibe/shared';
 import { createInitialDiagnostics, getCalibrationKey } from '@simvibe/shared';
 import type { Storage } from '../storage/types';
 import { createExtractor, type ExtractorConfig } from '../extractor';
 import { createOrchestrator, type OrchestratorConfig } from '../orchestrator';
 import { generateReport } from '../aggregator';
-import { getRunModeConfig } from '../config';
+import { getRunModeConfig, getPersonaSetIds } from '../config';
 import { getPersonaRegistry } from '../personas/registry';
 import { runDiffusionSimulation } from '../diffusion';
 
@@ -18,6 +18,34 @@ export interface ExecuteRunResult {
   success: boolean;
   durationMs: number;
   error?: string;
+}
+
+/**
+ * Build a persona snapshot from the registry for the given persona IDs.
+ * Captures the exact definitions used at run time so historical reports don't drift.
+ */
+function buildPersonaSnapshots(personaIds: string[]): PersonaSnapshots {
+  const registry = getPersonaRegistry();
+  const snapshots: PersonaSnapshots = {};
+
+  for (const id of personaIds) {
+    const persona = registry.get(id);
+    if (persona) {
+      snapshots[id] = {
+        id: persona.id,
+        name: persona.name,
+        role: persona.role,
+        context: persona.context,
+        priorities: persona.priorities,
+        redFlags: persona.redFlags,
+        budgetRange: persona.budgetRange,
+        skepticismLevel: persona.skepticismLevel,
+        decisionStyle: persona.decisionStyle,
+      };
+    }
+  }
+
+  return snapshots;
 }
 
 /**
@@ -80,10 +108,20 @@ export async function executeRun(
     currentPhase = { phase: 'simulation', startedAt: new Date().toISOString() };
     const modeConfig = getRunModeConfig(run.input.runMode);
 
-    // Resolve persona IDs: explicit input > mode defaults
-    const resolvedPersonaIds = (run.input.personaIds && run.input.personaIds.length > 0)
-      ? run.input.personaIds
-      : modeConfig.personaIds;
+    // Resolve persona IDs: explicit personaIds > personaSet > mode defaults
+    let resolvedPersonaIds: string[];
+    let resolvedSetName = modeConfig.personaSetName;
+
+    if (run.input.personaIds && run.input.personaIds.length > 0) {
+      resolvedPersonaIds = run.input.personaIds;
+      resolvedSetName = 'custom';
+    } else if (run.input.personaSet && run.input.personaSet !== 'custom') {
+      const setIds = getPersonaSetIds(run.input.personaSet);
+      resolvedPersonaIds = setIds ?? modeConfig.personaIds;
+      resolvedSetName = run.input.personaSet;
+    } else {
+      resolvedPersonaIds = modeConfig.personaIds;
+    }
 
     // Validate persona IDs against registry before running
     const registry = getPersonaRegistry();
@@ -95,6 +133,10 @@ export async function executeRun(
         `Available: ${registry.getAllIds().slice(0, 10).join(', ')}...`
       );
     }
+
+    // Snapshot persona definitions for reproducibility
+    const personaSnapshots = buildPersonaSnapshots(resolvedPersonaIds);
+    await storage.savePersonaSnapshots(runId, personaSnapshots);
 
     const modeAwareConfig: typeof orchestratorConfig = {
       ...orchestratorConfig,
@@ -163,7 +205,9 @@ export async function executeRun(
         runMode,
         undefined, // earlyStopReason
         resolvedPersonaIds,
-        diffusionTimeline
+        diffusionTimeline,
+        resolvedSetName,
+        personaSnapshots
       );
 
       currentPhase.endedAt = new Date().toISOString();

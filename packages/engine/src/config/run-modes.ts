@@ -1,9 +1,10 @@
-import type { PersonaId, RunMode } from '@simvibe/shared';
+import type { PersonaId, RunMode, PersonaSetName } from '@simvibe/shared';
 import { CORE_PERSONA_IDS } from '@simvibe/shared';
 
 export interface RunModeConfig {
   mode: RunMode;
   personaIds: PersonaId[];
+  personaSetName: PersonaSetName;
   maxTokensPerAgent: number;
   temperature: number;
   enableDebate: boolean;
@@ -14,11 +15,29 @@ export interface RunModeConfig {
 }
 
 /**
+ * Named persona sets: curated bundles of persona IDs for each run mode.
+ * Adding a new set only requires adding an entry here + referencing it in a mode config.
+ */
+export const PERSONA_SETS: Record<string, PersonaId[]> = {
+  quick: [...CORE_PERSONA_IDS],
+  deep: [...CORE_PERSONA_IDS],
+};
+
+/**
+ * Resolve persona IDs from a set name.
+ * Returns undefined if the set name is not found (e.g. 'custom').
+ */
+export function getPersonaSetIds(setName: PersonaSetName): PersonaId[] | undefined {
+  return PERSONA_SETS[setName] ? [...PERSONA_SETS[setName]] : undefined;
+}
+
+/**
  * Quick mode: 5 core personas, lower tokens, no debate, ~2 min target
  */
 const QUICK_MODE: RunModeConfig = {
   mode: 'quick',
-  personaIds: [...CORE_PERSONA_IDS],
+  personaIds: PERSONA_SETS['quick'],
+  personaSetName: 'quick',
   maxTokensPerAgent: 2048,
   temperature: 0.7,
   enableDebate: false,
@@ -33,7 +52,8 @@ const QUICK_MODE: RunModeConfig = {
  */
 const DEEP_MODE: RunModeConfig = {
   mode: 'deep',
-  personaIds: [...CORE_PERSONA_IDS],
+  personaIds: PERSONA_SETS['deep'],
+  personaSetName: 'deep',
   maxTokensPerAgent: 4096,
   temperature: 0.7,
   enableDebate: true,

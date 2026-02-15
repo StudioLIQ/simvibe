@@ -8,6 +8,8 @@ import type {
   AggregatedMetrics,
   RunMode,
   DiffusionTimeline,
+  PersonaSetName,
+  PersonaSnapshots,
 } from '@simvibe/shared';
 import { applyCalibration } from '@simvibe/shared';
 import { aggregateOutputs, type AggregationResult } from './aggregator';
@@ -69,7 +71,9 @@ export function generateReport(
   runMode?: RunMode,
   earlyStopReason?: string,
   executedPersonaIds?: string[],
-  diffusion?: DiffusionTimeline
+  diffusion?: DiffusionTimeline,
+  personaSet?: PersonaSetName,
+  personaSnapshots?: PersonaSnapshots
 ): Report {
   const aggregation = aggregateOutputs(outputs);
 
@@ -121,6 +125,8 @@ export function generateReport(
     runMode,
     earlyStopReason,
     executedPersonaIds,
+    personaSet,
+    personaSnapshots,
     diffusion,
   };
 }

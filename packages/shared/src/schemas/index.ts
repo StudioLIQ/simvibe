@@ -8,3 +8,4 @@ export * from './calibration-prior';
 export * from './run-diagnostics';
 export * from './chain-receipt';
 export * from './diffusion';
+export * from './persona-snapshot';

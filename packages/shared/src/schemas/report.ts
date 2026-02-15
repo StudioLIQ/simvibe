@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { PersonaIdSchema, ActionTypeSchema } from './agent-output';
 import { RunModeSchema } from './run-input';
 import { DiffusionTimelineSchema } from './diffusion';
+import { PersonaSetNameSchema, PersonaSnapshotsSchema } from './persona-snapshot';
 
 export const TractionBandSchema = z.enum([
   'very_low',
@@ -77,6 +78,8 @@ export const ReportSchema = z.object({
   runMode: RunModeSchema.optional(),
   earlyStopReason: z.string().optional(),
   executedPersonaIds: z.array(PersonaIdSchema).optional(),
+  personaSet: PersonaSetNameSchema.optional(),
+  personaSnapshots: PersonaSnapshotsSchema.optional(),
   diffusion: DiffusionTimelineSchema.optional(),
 });
 
