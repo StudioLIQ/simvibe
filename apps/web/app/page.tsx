@@ -109,7 +109,7 @@ export default function HomePage() {
           <Link href="/personas">Personas</Link>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', marginBottom: '0.35rem' }}>
-          <Image src="/logo.png" alt="simvi.be logo" width={42} height={42} priority />
+          <Image src="/logo-mark.svg" alt="simvi.be logo" width={42} height={42} priority />
           <h1 style={{ marginBottom: 0 }}>simvi.be</h1>
         </div>
         <p>Predict nad.fun launch reaction before you go live.</p>

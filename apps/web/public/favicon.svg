@@ -1,6 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-labelledby="title desc">
-  <title id="title">simvi.be velocity mark</title>
-  <desc id="desc">A dark rounded tile with an orbital S-wave and two signal nodes.</desc>
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 1024 1024" fill="none">
   <defs>
     <linearGradient id="tile" x1="140" y1="120" x2="884" y2="928" gradientUnits="userSpaceOnUse">
       <stop offset="0" stop-color="#081226"/>
@@ -11,17 +9,8 @@
       <stop offset="0.52" stop-color="#38BDF8"/>
       <stop offset="1" stop-color="#FB923C"/>
     </linearGradient>
-    <radialGradient id="halo" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(748 302) rotate(90) scale(196)">
-      <stop stop-color="#4CC9FF" stop-opacity="0.62"/>
-      <stop offset="1" stop-color="#4CC9FF" stop-opacity="0"/>
-    </radialGradient>
   </defs>
-
   <rect x="96" y="96" width="832" height="832" rx="240" fill="url(#tile)"/>
   <rect x="118" y="118" width="788" height="788" rx="218" stroke="#E2E8F0" stroke-opacity="0.16" stroke-width="8"/>
-  <circle cx="748" cy="302" r="196" fill="url(#halo)"/>
-
   <path d="M774 274C710 206 616 170 518 170C366 170 248 262 248 374C248 478 334 534 500 550C654 566 716 606 716 688C716 778 618 854 474 854C362 854 268 818 202 752" stroke="url(#orbit)" stroke-width="122" stroke-linecap="round" stroke-linejoin="round"/>
-  <circle cx="796" cy="270" r="30" fill="#E0F2FE"/>
-  <circle cx="206" cy="752" r="22" fill="#FDBA74"/>
 </svg>
