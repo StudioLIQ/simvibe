@@ -1886,7 +1886,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ## Milestone M14 — Monad Deep Integration (P0/P1)
 
-### [ ] MND-001 (P0) Define onchain Run Receipt spec
+### [x] MND-001 (P0) Define onchain Run Receipt spec
 **Goal:** Fix contract interface for immutable simulation receipt publishing.
 
 **Deliverables**
@@ -1902,6 +1902,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Spec review checklist + contract interface snapshot committed.
 
 **Dependencies:** None
+
+**Completion notes:**
+- `contracts/spec/ISimVibeReceipt.sol`: Frozen Solidity interface with Receipt struct, ReceiptPublished event (3 indexed), 3 custom errors
+- `contracts/spec/abi.json`: Frozen ABI (8 entries: 4 functions, 1 event, 3 errors)
+- `contracts/SPEC.md`: Full specification with hash encoding, score band mapping, duplicate policy, 6 integration points mapped
+- Score band: 0=very_low, 1=low, 2=moderate, 3=high, 4=very_high (matches TractionBand enum)
+- runId: keccak256(runIdString), inputHash/reportHash: SHA-256 of canonical JSON → bytes32
+- Test: ABI validates as JSON, all 8 entries present
 
 ### [ ] MND-002 (P0) Implement Receipt contract + tests
 **Goal:** Deployable Solidity contract for publishing receipts on Monad.
