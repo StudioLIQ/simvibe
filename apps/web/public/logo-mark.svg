@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">simvi.be mark</title>
+  <desc id="desc">Rounded square mark with gradient S-curve representing simulated market flow.</desc>
+  <defs>
+    <linearGradient id="bg" x1="168" y1="128" x2="856" y2="896" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1B2431"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="ribbon" x1="198" y1="184" x2="840" y2="724" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FF9E42"/>
+      <stop offset="0.48" stop-color="#F05A28"/>
+      <stop offset="1" stop-color="#0F7BFA"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(730 286) rotate(90) scale(186)">
+      <stop stop-color="#FFD39E" stop-opacity="0.75"/>
+      <stop offset="1" stop-color="#FFD39E" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect x="96" y="96" width="832" height="832" rx="248" fill="url(#bg)"/>
+  <rect x="118" y="118" width="788" height="788" rx="226" stroke="rgba(255,255,255,0.14)" stroke-width="10"/>
+  <circle cx="730" cy="286" r="186" fill="url(#glow)"/>
+
+  <path
+    d="M768 248C706 188 610 146 510 146C360 146 240 228 240 328C240 424 328 486 492 506C642 524 706 562 706 634C706 718 612 792 474 792C360 792 254 740 184 654"
+    stroke="url(#ribbon)"
+    stroke-width="128"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <circle cx="794" cy="262" r="34" fill="#FFE4BE"/>
+</svg>
