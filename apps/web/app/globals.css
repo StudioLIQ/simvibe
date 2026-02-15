@@ -1,36 +1,36 @@
 :root {
-  --bg: #f7efe5;
+  --bg: #07090f;
   --bg-gradient:
-    radial-gradient(1200px 640px at 5% -10%, rgba(243, 134, 66, 0.24), transparent 65%),
-    radial-gradient(900px 500px at 95% 5%, rgba(255, 193, 110, 0.25), transparent 70%);
-  --surface-card: rgba(255, 255, 255, 0.9);
-  --surface-subtle: #fff7ef;
-  --border: #e8d7c6;
-  --text-primary: #1f252d;
-  --text-secondary: #384656;
-  --text-muted: #5f6e7e;
-  --text-dim: #8c9bab;
-  --accent-primary: #f05a28;
-  --accent-primary-strong: #d9471a;
-  --accent-primary-soft: #ffeede;
-  --accent-secondary: #0f7bfa;
-  --status-success: #16a34a;
-  --status-danger: #dc2626;
-  --status-warning: #d97706;
-  --success-bg: #ecfdf3;
-  --success-soft: #166534;
-  --success-border: #86efac;
-  --danger-bg: #fff1f2;
-  --danger-soft: #be123c;
-  --warn-bg: #fff7ed;
-  --warn-border: #fdba74;
-  --warn-text: #b45309;
-  --indigo-bg: #edf4ff;
-  --indigo-border: #bed8ff;
-  --indigo-text: #1d4ed8;
-  --indigo-badge-bg: #dbeafe;
-  --indigo-badge-text: #1e40af;
-  --shadow-card: 0 18px 36px rgba(22, 31, 43, 0.09);
+    radial-gradient(1200px 640px at 0% -8%, rgba(110, 86, 255, 0.28), transparent 62%),
+    radial-gradient(900px 600px at 100% 12%, rgba(74, 182, 255, 0.2), transparent 67%);
+  --surface-card: rgba(15, 19, 30, 0.82);
+  --surface-subtle: rgba(22, 27, 44, 0.9);
+  --border: rgba(136, 118, 255, 0.34);
+  --text-primary: #f5f7ff;
+  --text-secondary: #d3daf6;
+  --text-muted: #9ea7cc;
+  --text-dim: #7b84a9;
+  --accent-primary: #7d5cff;
+  --accent-primary-strong: #9b81ff;
+  --accent-primary-soft: rgba(125, 92, 255, 0.16);
+  --accent-secondary: #52d4ff;
+  --status-success: #26d48a;
+  --status-danger: #ff658b;
+  --status-warning: #ffb34d;
+  --success-bg: rgba(23, 99, 69, 0.26);
+  --success-soft: #6ff7be;
+  --success-border: rgba(38, 212, 138, 0.48);
+  --danger-bg: rgba(122, 36, 63, 0.35);
+  --danger-soft: #ff9db7;
+  --warn-bg: rgba(120, 80, 31, 0.3);
+  --warn-border: rgba(255, 179, 77, 0.42);
+  --warn-text: #ffd590;
+  --indigo-bg: rgba(46, 57, 103, 0.4);
+  --indigo-border: rgba(131, 165, 255, 0.45);
+  --indigo-text: #b6cfff;
+  --indigo-badge-bg: rgba(69, 83, 142, 0.42);
+  --indigo-badge-text: #c8d9ff;
+  --shadow-card: 0 24px 50px rgba(2, 5, 18, 0.52);
   --font-body: 'Plus Jakarta Sans', 'Segoe UI', sans-serif;
   --font-heading: 'Space Grotesk', 'Segoe UI', sans-serif;
 }
@@ -56,9 +56,11 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.5) 0.8px, transparent 0.8px);
-  background-size: 18px 18px;
-  opacity: 0.23;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+  background-size: 22px 22px;
+  opacity: 1;
   z-index: -1;
 }
 
@@ -106,8 +108,8 @@ a:hover {
   position: relative;
   border: 1px solid var(--border);
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.8), rgba(255, 255, 255, 0.54)),
-    linear-gradient(120deg, rgba(245, 98, 53, 0.08), rgba(15, 123, 250, 0.08));
+    linear-gradient(145deg, rgba(16, 20, 34, 0.9), rgba(13, 17, 30, 0.76)),
+    linear-gradient(120deg, rgba(124, 92, 255, 0.14), rgba(82, 212, 255, 0.08));
   border-radius: 1.1rem;
   padding: 1rem 1rem 1.1rem;
   box-shadow: var(--shadow-card);
@@ -127,13 +129,13 @@ a:hover {
   padding: 0.3rem 0.65rem;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.65);
+  background: rgba(17, 22, 38, 0.88);
 }
 
 .top-nav a:hover {
-  color: var(--accent-primary-strong);
-  border-color: rgba(240, 90, 40, 0.45);
-  background: rgba(255, 238, 222, 0.88);
+  color: #ede8ff;
+  border-color: rgba(155, 129, 255, 0.68);
+  background: rgba(36, 27, 78, 0.9);
 }
 
 .form-group {
@@ -156,7 +158,7 @@ a:hover {
   font-size: 0.95rem;
   border: 1px solid var(--border);
   border-radius: 0.82rem;
-  background: rgba(255, 255, 255, 0.94);
+  background: rgba(12, 16, 28, 0.88);
   color: var(--text-primary);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -166,12 +168,12 @@ a:hover {
 .form-group select:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(240, 90, 40, 0.16);
+  box-shadow: 0 0 0 3px rgba(125, 92, 255, 0.2);
 }
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
-  color: #95a1af;
+  color: #6f7aa4;
 }
 
 .form-group textarea {
@@ -200,7 +202,7 @@ a:hover {
   font-weight: 700;
   border: 1px solid var(--border);
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(17, 23, 38, 0.86);
   color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -208,19 +210,19 @@ a:hover {
 
 .btn-primary {
   border-color: transparent;
-  background: linear-gradient(135deg, var(--accent-primary), #ff8b2c);
+  background: linear-gradient(135deg, #6d4aff, #46b8ff);
   color: #ffffff;
-  box-shadow: 0 12px 22px rgba(240, 90, 40, 0.28);
+  box-shadow: 0 14px 24px rgba(102, 88, 255, 0.38);
 }
 
 .btn-primary:hover {
-  background: var(--accent-primary-strong);
+  background: linear-gradient(135deg, #7e61ff, #5bc5ff);
   transform: translateY(-1px) scale(1.01);
 }
 
 .btn:hover {
-  border-color: rgba(240, 90, 40, 0.45);
-  color: var(--accent-primary-strong);
+  border-color: rgba(155, 129, 255, 0.64);
+  color: #efeaff;
   transform: translateY(-1px);
 }
 
@@ -232,12 +234,12 @@ a:hover {
 }
 
 .error-message {
-  background: #fff1f2;
-  border: 1px solid #fecdd3;
+  background: rgba(122, 36, 63, 0.35);
+  border: 1px solid rgba(255, 101, 139, 0.45);
   border-radius: 0.65rem;
   padding: 0.85rem;
   margin-bottom: 1rem;
-  color: #be123c;
+  color: #ffc3d2;
 }
 
 .card {
@@ -252,7 +254,7 @@ a:hover {
 
 .card-highlight {
   background:
-    linear-gradient(130deg, rgba(255, 238, 222, 0.9), rgba(255, 255, 255, 0.9)),
+    linear-gradient(130deg, rgba(35, 28, 78, 0.86), rgba(13, 18, 35, 0.94)),
     var(--surface-card);
 }
 
@@ -263,7 +265,7 @@ a:hover {
 }
 
 .stat-item {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), var(--surface-subtle));
+  background: linear-gradient(145deg, rgba(24, 29, 47, 0.95), rgba(14, 19, 33, 0.95));
   border: 1px solid var(--border);
   border-radius: 0.8rem;
   padding: 0.8rem;
@@ -280,19 +282,19 @@ a:hover {
   border: 1px solid var(--border);
   border-radius: 0.84rem;
   padding: 1rem;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), var(--surface-subtle));
+  background: linear-gradient(145deg, rgba(20, 25, 43, 0.95), rgba(14, 19, 33, 0.95));
   text-decoration: none;
   transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .quick-link-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(240, 90, 40, 0.4);
-  box-shadow: 0 12px 20px rgba(22, 31, 43, 0.08);
+  border-color: rgba(155, 129, 255, 0.6);
+  box-shadow: 0 16px 24px rgba(8, 12, 24, 0.46);
 }
 
 .quick-link-primary {
-  background: linear-gradient(145deg, rgba(255, 237, 222, 0.96), rgba(255, 250, 244, 0.95));
+  background: linear-gradient(145deg, rgba(49, 38, 102, 0.95), rgba(23, 34, 66, 0.95));
 }
 
 .hint {
@@ -315,7 +317,7 @@ a:hover {
   text-align: left;
   border: 1px solid var(--border);
   border-radius: 0.74rem;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), var(--surface-subtle));
+  background: linear-gradient(145deg, rgba(22, 27, 44, 0.95), rgba(14, 19, 33, 0.95));
   padding: 0.62rem 0.7rem;
   color: var(--text-secondary);
   cursor: pointer;
@@ -336,14 +338,14 @@ a:hover {
 }
 
 .persona-preset-btn:hover {
-  border-color: rgba(240, 90, 40, 0.45);
+  border-color: rgba(155, 129, 255, 0.66);
   transform: translateY(-1px);
 }
 
 .persona-preset-btn--active {
-  border-color: rgba(240, 90, 40, 0.48);
-  background: linear-gradient(145deg, rgba(255, 237, 222, 0.94), rgba(255, 251, 247, 0.95));
-  box-shadow: 0 10px 16px rgba(240, 90, 40, 0.12);
+  border-color: rgba(125, 92, 255, 0.75);
+  background: linear-gradient(145deg, rgba(44, 36, 87, 0.96), rgba(20, 30, 58, 0.95));
+  box-shadow: 0 10px 16px rgba(24, 16, 66, 0.5);
 }
 
 .persona-filter-grid {
@@ -356,7 +358,7 @@ a:hover {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
-  align-items: end;
+  align-items: flex-end;
 }
 
 .persona-active-filters {
@@ -373,7 +375,7 @@ a:hover {
 }
 
 .persona-stat-card {
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.94), var(--surface-subtle));
+  background: linear-gradient(145deg, rgba(24, 29, 47, 0.95), rgba(14, 19, 33, 0.95));
   border: 1px solid var(--border);
   border-radius: 0.8rem;
   padding: 0.75rem;
@@ -405,7 +407,7 @@ a:hover {
   border: 1px solid var(--border);
   border-radius: 0.88rem;
   padding: 0.9rem;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.96), rgba(255, 248, 241, 0.9));
+  background: linear-gradient(140deg, rgba(23, 28, 46, 0.96), rgba(12, 17, 31, 0.95));
 }
 
 .persona-card-head {
