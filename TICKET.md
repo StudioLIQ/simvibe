@@ -2407,7 +2407,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - 409 error with allowed transitions when invalid transition attempted
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-023 (P0) Bind Monad receipt to report version hash
+### [x] MND-023 (P0) Bind Monad receipt to report version hash
 **Goal:** Make published report versions verifiable onchain.
 
 **Deliverables**
@@ -2419,6 +2419,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - One published report version maps to one onchain receipt state.
 
 **Dependencies:** MND-022
+
+**Completion notes:**
+- `hashReportVersion(report, lifecycle)` in packages/engine/src/chain/hash.ts: SHA-256 of (sorted report + version + status + frozenAt)
+- Receipt publish API (`POST /api/run/[id]/receipt/publish`): computes + returns `reportVersionHash`, `reportVersion`, `reportStatus`
+- Receipt status API (`GET /api/run/[id]/receipt/publish`): includes version hash in response
+- Version-aware hash ensures each frozen/published version produces a unique, verifiable hash
+- Onchain receipt binds to specific report content + version state
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-024 (P0) Gate nad.fun launch to frozen/published report only
 **Goal:** Prevent launching from mutable draft reports.

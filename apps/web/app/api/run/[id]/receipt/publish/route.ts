@@ -5,6 +5,7 @@ import {
   publishReceiptOnMonad,
   getMonadPublisherConfig,
   isMonadPublisherConfigured,
+  hashReportVersion,
 } from '@simvibe/engine';
 import type { TractionBand } from '@simvibe/shared';
 
@@ -82,6 +83,12 @@ export async function POST(
     // Extract traction band from report
     const tractionBand: TractionBand = run.report.tractionBand ?? 'moderate';
 
+    // Compute version-aware hash if lifecycle is available
+    const lifecycle = await storage.getReportLifecycle(id);
+    const reportVersionHash = lifecycle
+      ? hashReportVersion(run.report, lifecycle)
+      : undefined;
+
     // Publish to Monad
     const result = await publishReceiptOnMonad(
       id,
@@ -107,6 +114,9 @@ export async function POST(
       contractAddress: config.contractAddress,
       alreadyPublished: result.alreadyPublished ?? false,
       configured: true,
+      reportVersionHash: reportVersionHash ?? null,
+      reportVersion: lifecycle?.version ?? null,
+      reportStatus: lifecycle?.status ?? null,
       error: result.error,
     });
   } catch (error) {
@@ -134,11 +144,17 @@ export async function GET(
 
     const storage = createStorage(storageConfigFromEnv());
     const run = await storage.getRun(id);
+    const lifecycle = await storage.getReportLifecycle(id);
     await storage.close();
 
     if (!run) {
       return NextResponse.json({ error: 'Run not found' }, { status: 404 });
     }
+
+    // Compute version-aware hash if report + lifecycle exist
+    const reportVersionHash = (run.report && lifecycle)
+      ? hashReportVersion(run.report, lifecycle)
+      : null;
 
     return NextResponse.json({
       configured,
@@ -148,6 +164,9 @@ export async function GET(
       receiptContract: run.receiptContract ?? null,
       receiptChainId: run.receiptChainId ?? null,
       receiptPublishedAt: run.receiptPublishedAt ?? null,
+      reportVersionHash,
+      reportVersion: lifecycle?.version ?? null,
+      reportStatus: lifecycle?.status ?? null,
     });
   } catch (error) {
     console.error('Error checking receipt publish status:', error);

@@ -1,5 +1,5 @@
 import { createHash } from 'crypto';
-import type { RunInput, Report } from '@simvibe/shared';
+import type { RunInput, Report, ReportLifecycle } from '@simvibe/shared';
 
 /**
  * Create canonical JSON representation for hashing.
@@ -50,4 +50,19 @@ export function hashRunInput(input: RunInput): string {
  */
 export function hashReport(report: Report): string {
   return sha256Hash(report);
+}
+
+/**
+ * Compute version-aware hash of a report snapshot.
+ * Includes the lifecycle version to bind the hash to a specific report version.
+ * This ensures onchain receipts reference an exact, versioned snapshot.
+ */
+export function hashReportVersion(report: Report, lifecycle: ReportLifecycle): string {
+  const versionedPayload = {
+    report: deepSortKeys(report),
+    version: lifecycle.version,
+    status: lifecycle.status,
+    frozenAt: lifecycle.frozenAt,
+  };
+  return sha256Hash(versionedPayload);
 }
