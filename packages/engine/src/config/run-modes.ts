@@ -8,6 +8,8 @@ export interface RunModeConfig {
   temperature: number;
   enableDebate: boolean;
   timeBudgetMs: number;
+  maxAgentConcurrency: number;
+  perAgentTimeoutMs: number;
   description: string;
 }
 
@@ -21,6 +23,8 @@ const QUICK_MODE: RunModeConfig = {
   temperature: 0.7,
   enableDebate: false,
   timeBudgetMs: 120_000, // 2 minutes
+  maxAgentConcurrency: 5,
+  perAgentTimeoutMs: 60_000, // 1 minute per agent
   description: 'Quick scan with 5 core personas (~2 min)',
 };
 
@@ -34,6 +38,8 @@ const DEEP_MODE: RunModeConfig = {
   temperature: 0.7,
   enableDebate: true,
   timeBudgetMs: 600_000, // 10 minutes
+  maxAgentConcurrency: 10,
+  perAgentTimeoutMs: 120_000, // 2 minutes per agent
   description: 'Deep analysis with debate phase (~10 min)',
 };
 

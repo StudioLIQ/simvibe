@@ -105,6 +105,8 @@ export async function executeRun(
       enableDebate: orchestratorConfig.enableDebate ?? modeConfig.enableDebate,
       personaIds: resolvedPersonaIds,
       timeBudgetMs: modeConfig.timeBudgetMs,
+      maxAgentConcurrency: modeConfig.maxAgentConcurrency,
+      perAgentTimeoutMs: modeConfig.perAgentTimeoutMs,
     };
     const orchestrator = createOrchestrator(modeAwareConfig);
 

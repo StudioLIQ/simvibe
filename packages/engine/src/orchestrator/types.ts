@@ -17,6 +17,8 @@ export interface OrchestratorConfig {
   enableDebate?: boolean;
   personaIds?: string[];
   timeBudgetMs?: number;
+  maxAgentConcurrency?: number;
+  perAgentTimeoutMs?: number;
 }
 
 export interface SimulationContext {

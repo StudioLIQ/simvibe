@@ -1,5 +1,6 @@
 import type { RunInput, LandingExtract, SimEvent, PersonaId } from '@simvibe/shared';
 import { createSimEvent } from '@simvibe/shared';
+import { createFallbackAgentOutput } from '@simvibe/shared';
 import { getAllPersonaIds } from '../prompts/personas';
 import { getRunModeConfig } from '../config';
 import type {
@@ -11,6 +12,9 @@ import type {
 } from './types';
 import { createLLMClient, type LLMClient } from './llm-client';
 import { runAgent } from './agent-runner';
+
+const DEFAULT_MAX_CONCURRENCY = 5;
+const DEFAULT_PER_AGENT_TIMEOUT_MS = 120_000; // 2 minutes per agent
 
 export class Orchestrator {
   private config: OrchestratorConfig;
@@ -60,6 +64,8 @@ export class Orchestrator {
       }));
 
       const personaIds = (this.config.personaIds ?? getAllPersonaIds()) as PersonaId[];
+      const maxConcurrency = this.config.maxAgentConcurrency ?? DEFAULT_MAX_CONCURRENCY;
+      const perAgentTimeout = this.config.perAgentTimeoutMs ?? DEFAULT_PER_AGENT_TIMEOUT_MS;
 
       await emit(createSimEvent(runId, 'PHASE_START', {
         phase: 'scan',
@@ -99,56 +105,37 @@ export class Orchestrator {
 
       await emit(createSimEvent(runId, 'PHASE_START', {
         phase: 'action',
-        message: 'Starting action phase - running all agents',
+        message: `Starting action phase - ${personaIds.length} agents, concurrency ${maxConcurrency}`,
       }));
 
-      const agentPromises = personaIds.map(async (personaId) => {
-        await emit(createSimEvent(runId, 'AGENT_MESSAGE', {
-          phase: 'action',
-          agentId: personaId,
-          message: `Running ${personaId} agent...`,
-        }));
-
-        const result = await runAgent(personaId, context, this.llmClient);
-
-        await emit(createSimEvent(runId, 'AGENT_ACTION', {
-          phase: 'action',
-          agentId: personaId,
-          action: result.output.action.primaryAction,
-          probability: result.output.action.actions.find(
-            a => a.action === result.output.action.primaryAction
-          )?.probability,
-          message: `${personaId} completed evaluation`,
-          payload: {
-            primaryFriction: result.output.skim.primaryFriction,
-            oneLineFix: result.output.action.oneLineFix,
-            isFallback: result.output.isFallback,
-          },
-        }));
-
-        if (result.output.isFallback) {
-          await emit(createSimEvent(runId, 'VALIDATION_ERROR', {
-            agentId: personaId,
-            message: `${personaId} output required fallback: ${result.output.fallbackReason}`,
-          }));
-        }
-
-        return result;
-      });
-
-      const results = await Promise.all(agentPromises);
+      // Run agents in batches with concurrency control
+      const results = await this.runAgentsBatched(
+        personaIds,
+        context,
+        maxConcurrency,
+        perAgentTimeout,
+        runId,
+        emit
+      );
       agentResults.push(...results);
+
+      const fallbackCount = agentResults.filter(r => r.output.isFallback).length;
+      const timeoutCount = agentResults.filter(r =>
+        r.output.isFallback && r.output.fallbackReason?.includes('timed out')
+      ).length;
 
       await emit(createSimEvent(runId, 'PHASE_END', {
         phase: 'action',
         message: 'Action phase complete',
+        payload: { fallbackCount, timeoutCount },
       }));
 
       await emit(createSimEvent(runId, 'RUN_COMPLETED', {
         message: 'Simulation completed successfully',
         payload: {
           agentCount: agentResults.length,
-          fallbackCount: agentResults.filter(r => r.output.isFallback).length,
+          fallbackCount,
+          timeoutCount,
           durationMs: Date.now() - startTime,
         },
       }));
@@ -173,6 +160,108 @@ export class Orchestrator {
         agentResults,
         events,
         error: errorMessage,
+        durationMs: Date.now() - startTime,
+      };
+    }
+  }
+
+  /**
+   * Run agents in batches with concurrency control and per-agent timeouts.
+   * Single-agent failures produce fallback outputs rather than aborting the run.
+   */
+  private async runAgentsBatched(
+    personaIds: PersonaId[],
+    context: SimulationContext,
+    maxConcurrency: number,
+    perAgentTimeoutMs: number,
+    runId: string,
+    emit: (event: SimEvent) => Promise<void>
+  ): Promise<AgentResult[]> {
+    const results: AgentResult[] = [];
+    const totalBatches = Math.ceil(personaIds.length / maxConcurrency);
+
+    for (let batchIdx = 0; batchIdx < totalBatches; batchIdx++) {
+      const batchStart = batchIdx * maxConcurrency;
+      const batchPersonaIds = personaIds.slice(batchStart, batchStart + maxConcurrency);
+
+      if (totalBatches > 1) {
+        await emit(createSimEvent(runId, 'AGENT_MESSAGE', {
+          phase: 'action',
+          message: `Running batch ${batchIdx + 1}/${totalBatches} (${batchPersonaIds.length} agents)`,
+          payload: { batch: batchIdx + 1, totalBatches, personas: batchPersonaIds },
+        }));
+      }
+
+      const batchPromises = batchPersonaIds.map(async (personaId) => {
+        await emit(createSimEvent(runId, 'AGENT_MESSAGE', {
+          phase: 'action',
+          agentId: personaId,
+          message: `Running ${personaId} agent...`,
+        }));
+
+        const result = await this.runAgentWithTimeout(personaId, context, perAgentTimeoutMs);
+
+        await emit(createSimEvent(runId, 'AGENT_ACTION', {
+          phase: 'action',
+          agentId: personaId,
+          action: result.output.action.primaryAction,
+          probability: result.output.action.actions.find(
+            a => a.action === result.output.action.primaryAction
+          )?.probability,
+          message: `${personaId} completed evaluation`,
+          payload: {
+            primaryFriction: result.output.skim.primaryFriction,
+            oneLineFix: result.output.action.oneLineFix,
+            isFallback: result.output.isFallback,
+            durationMs: result.durationMs,
+          },
+        }));
+
+        if (result.output.isFallback) {
+          await emit(createSimEvent(runId, 'VALIDATION_ERROR', {
+            agentId: personaId,
+            message: `${personaId} output required fallback: ${result.output.fallbackReason}`,
+          }));
+        }
+
+        return result;
+      });
+
+      const batchResults = await Promise.all(batchPromises);
+      results.push(...batchResults);
+    }
+
+    return results;
+  }
+
+  /**
+   * Run a single agent with a timeout. On timeout, returns a fallback output.
+   */
+  private async runAgentWithTimeout(
+    personaId: PersonaId,
+    context: SimulationContext,
+    timeoutMs: number
+  ): Promise<AgentResult> {
+    const startTime = Date.now();
+
+    try {
+      const result = await Promise.race([
+        runAgent(personaId, context, this.llmClient),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`Agent ${personaId} timed out after ${timeoutMs}ms`)), timeoutMs)
+        ),
+      ]);
+      return result;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        personaId,
+        output: createFallbackAgentOutput(
+          personaId,
+          context.runId,
+          errorMessage
+        ),
+        retryCount: 0,
         durationMs: Date.now() - startTime,
       };
     }
