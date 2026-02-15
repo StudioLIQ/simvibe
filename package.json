@@ -35,6 +35,7 @@
     "ci:e2e:monad": "DEMO_MODE=true DATABASE_URL=memory:// npx tsx scripts/e2e-monad-flow.ts",
     "e2e:services": "npx tsx scripts/e2e-services-flow.ts",
     "ci:e2e:services": "npx tsx scripts/e2e-services-flow.ts",
+    "ci:e2e:all": "pnpm ci:smoke && pnpm ci:smoke:launch && pnpm ci:e2e:ph:nad && pnpm ci:e2e:nad:fun && pnpm ci:e2e:monad && pnpm ci:e2e:services",
     "analytics:migration": "npx tsx scripts/migration-analytics.ts",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"

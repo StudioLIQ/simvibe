@@ -62,12 +62,6 @@ function log(msg: string) {
   console.log(`[e2e-monad] ${msg}`);
 }
 
-function fail(step: string, msg: string): never {
-  console.error(`[e2e-monad] FAIL at ${step}: ${msg}`);
-  writeArtifact();
-  process.exit(1);
-}
-
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -83,7 +77,7 @@ async function step(name: string, fn: () => Promise<string | void>) {
     const dur = Date.now() - start;
     const msg = err instanceof Error ? err.message : String(err);
     results.push({ step: name, ok: false, durationMs: dur, detail: msg });
-    fail(name, msg);
+    throw new Error(`[e2e-monad] FAIL at ${name}: ${msg}`);
   }
 }
 
@@ -281,7 +275,7 @@ function writeArtifact() {
   if (out.nadFunUrl) console.log(`  nad.fun URL: ${out.nadFunUrl}`);
 }
 
-async function main() {
+async function main(): Promise<number> {
   const { baseUrl, child } = await ensureServer();
   log(`API: ${baseUrl}`);
 
@@ -462,7 +456,7 @@ async function main() {
 
     artifact.success = true;
     writeArtifact();
-    process.exit(0);
+    return 0;
   } finally {
     await stopServer(child);
   }
@@ -471,5 +465,7 @@ async function main() {
 main().catch(err => {
   console.error(`[e2e-monad] Fatal:`, err);
   writeArtifact();
-  process.exit(1);
+  return 1;
+}).then((code) => {
+  process.exit(code);
 });

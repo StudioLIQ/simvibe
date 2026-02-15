@@ -34,12 +34,6 @@ function log(msg: string) {
   console.log(`[smoke] ${msg}`);
 }
 
-function fail(step: string, msg: string): never {
-  console.error(`[smoke] FAIL at ${step}: ${msg}`);
-  printSummary();
-  process.exit(1);
-}
-
 async function step(name: string, fn: () => Promise<string | void>) {
   const start = Date.now();
   try {
@@ -51,7 +45,7 @@ async function step(name: string, fn: () => Promise<string | void>) {
     const dur = Date.now() - start;
     const msg = err instanceof Error ? err.message : String(err);
     results.push({ step: name, ok: false, durationMs: dur, detail: msg });
-    fail(name, msg);
+    throw new Error(`[smoke] FAIL at ${name}: ${msg}`);
   }
 }
 
@@ -159,7 +153,7 @@ async function ensureServer(): Promise<{ baseUrl: string; child?: ChildProcess }
   return { baseUrl: API_BASE_URL, child };
 }
 
-async function main() {
+async function main(): Promise<number> {
   const { baseUrl, child } = await ensureServer();
 
   log(`API Base URL: ${baseUrl}`);
@@ -254,7 +248,7 @@ async function main() {
     // Summary
     printSummary();
     const allPassed = results.every(r => r.ok);
-    process.exit(allPassed ? 0 : 1);
+    return allPassed ? 0 : 1;
   } finally {
     await stopServer(child);
   }
@@ -262,5 +256,8 @@ async function main() {
 
 main().catch(err => {
   console.error('[smoke] Fatal error:', err);
-  process.exit(1);
+  printSummary();
+  return 1;
+}).then((code) => {
+  process.exit(code);
 });

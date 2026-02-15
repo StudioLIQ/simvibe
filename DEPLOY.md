@@ -34,12 +34,7 @@ Node/pnpm:
 
 ```bash
 pnpm typecheck
-pnpm ci:smoke
-pnpm ci:smoke:launch
-pnpm ci:e2e:ph:nad
-pnpm ci:e2e:nad:fun
-pnpm ci:e2e:monad
-pnpm ci:e2e:services
+pnpm ci:e2e:all
 ```
 
 주의:
@@ -229,14 +224,18 @@ launch execute 전 필수:
 
 ### 8-1. 메모리 모드(빠른 회귀)
 ```bash
-pnpm ci:smoke
-pnpm ci:smoke:launch
-pnpm ci:e2e:ph:nad
-pnpm ci:e2e:nad:fun
-pnpm ci:e2e:monad
+pnpm ci:e2e:all
 ```
 
-### 8-2. 실제 서비스 연결 E2E
+이 명령은 아래를 순서대로 실행한다:
+- `ci:smoke`
+- `ci:smoke:launch`
+- `ci:e2e:ph:nad`
+- `ci:e2e:nad:fun`
+- `ci:e2e:monad`
+- `ci:e2e:services`
+
+### 8-2. 실제 서비스 연결 E2E 단독 실행
 ```bash
 pnpm ci:e2e:services
 ```
