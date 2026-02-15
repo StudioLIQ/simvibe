@@ -217,7 +217,7 @@ export default function HomePage() {
                 style={{ display: 'none' }}
               />
               <strong>Deep</strong>
-              <p className="hint" style={{ margin: '0.25rem 0 0' }}>5 personas + debate, ~10 min</p>
+              <p className="hint" style={{ margin: '0.25rem 0 0' }}>11 personas + debate, ~10 min</p>
             </label>
           </div>
         </div>

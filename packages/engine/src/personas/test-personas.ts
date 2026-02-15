@@ -192,6 +192,31 @@ section('8. Registry: Manual registration');
   assert(testRegistry.getAllIds().includes('custom_test_persona'), 'getAllIds includes custom persona');
 }
 
+section('8b. Persona sets: Quick vs Deep inequality');
+{
+  // Import persona sets config — use dynamic require since config may not be in scope
+  const { PERSONA_SETS } = require('../config/run-modes');
+  const quickIds: string[] = PERSONA_SETS['quick'];
+  const deepIds: string[] = PERSONA_SETS['deep'];
+
+  assert(quickIds.length > 0, `Quick set has ${quickIds.length} personas`);
+  assert(deepIds.length > quickIds.length, `Deep set (${deepIds.length}) is larger than Quick set (${quickIds.length})`);
+
+  // Deep must be a strict superset of Quick
+  const deepSet = new Set(deepIds);
+  const allQuickInDeep = quickIds.every(id => deepSet.has(id));
+  assert(allQuickInDeep, 'Deep set contains all Quick set personas (superset)');
+
+  // Deep must have at least 3 extra personas
+  const extraCount = deepIds.length - quickIds.length;
+  assert(extraCount >= 3, `Deep set has ${extraCount} extra personas (minimum 3)`);
+
+  // All deep persona IDs must exist in registry
+  const registry = getPersonaRegistry();
+  const missingIds = deepIds.filter((id: string) => !registry.has(id));
+  assert(missingIds.length === 0, `All deep persona IDs exist in registry (missing: ${missingIds.join(', ')})`);
+}
+
 // --- Async tests (wrapped for CJS compatibility) ---
 
 async function runAsyncTests() {

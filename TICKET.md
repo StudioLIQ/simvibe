@@ -1139,7 +1139,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-025 (P0) Make Quick/Deep persona sets actually different
+### [x] SIM-025 (P0) Make Quick/Deep persona sets actually different
 **Goal:** Fulfill mode semantics where Quick and Deep use distinct persona bundles.
 
 **Problem observed**
@@ -1157,6 +1157,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Report metadata (`personaSet`, `executedPersonaIds`) reflects the difference.
 
 **Dependencies:** SIM-022
+
+**Completion notes:**
+- Quick set: 5 core personas (cynical_engineer, passionate_pm, pragmatic_investor, ruthless_marketer, agency_owner)
+- Deep set: 11 personas (5 core + 6 extended: indie_fullstack_builder, scrappy_startup_ops, elite_growth_focused_founder, elite_community_builder_high_signal, ph_grinder_no_code_builder_maker_cosplayer, elite_frontend_architect_perf_a11y)
+- Extended personas add: budget-conscious indie, early-stage ops, GTM founder, community, maker, frontend architect angles
+- UI copy updated: Deep mode shows "11 personas + debate, ~10 min"
+- Regression test: section 8b asserts set inequality, superset relationship, minimum expansion, and registry existence
+- Test: `pnpm typecheck` passes for all packages
+- Test: `pnpm ci:personas` passes (605 valid, 59 tests pass)
 
 ---
 

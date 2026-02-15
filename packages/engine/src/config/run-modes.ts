@@ -15,12 +15,25 @@ export interface RunModeConfig {
 }
 
 /**
+ * Extended persona IDs for deep mode: diverse perspectives beyond the core 5.
+ * These provide end-user, indie founder, community, maker, and frontend architect angles.
+ */
+const DEEP_EXTRA_PERSONA_IDS: PersonaId[] = [
+  'indie_fullstack_builder' as PersonaId,         // Budget-conscious indie hacker
+  'scrappy_startup_ops' as PersonaId,              // Early-stage startup operator
+  'elite_growth_focused_founder' as PersonaId,     // GTM-first growth founder
+  'elite_community_builder_high_signal' as PersonaId, // Community/social perspective
+  'ph_grinder_no_code_builder_maker_cosplayer' as PersonaId, // No-code maker/trend follower
+  'elite_frontend_architect_perf_a11y' as PersonaId, // Technical quality authority
+];
+
+/**
  * Named persona sets: curated bundles of persona IDs for each run mode.
  * Adding a new set only requires adding an entry here + referencing it in a mode config.
  */
 export const PERSONA_SETS: Record<string, PersonaId[]> = {
   quick: [...CORE_PERSONA_IDS],
-  deep: [...CORE_PERSONA_IDS],
+  deep: [...CORE_PERSONA_IDS, ...DEEP_EXTRA_PERSONA_IDS],
 };
 
 /**
@@ -48,7 +61,7 @@ const QUICK_MODE: RunModeConfig = {
 };
 
 /**
- * Deep mode: 5 core personas with debate enabled, higher tokens, ~10 min target
+ * Deep mode: 11 personas (5 core + 6 extended) with debate, higher tokens, ~10 min target
  */
 const DEEP_MODE: RunModeConfig = {
   mode: 'deep',
@@ -60,7 +73,7 @@ const DEEP_MODE: RunModeConfig = {
   timeBudgetMs: 600_000, // 10 minutes
   maxAgentConcurrency: 10,
   perAgentTimeoutMs: 120_000, // 2 minutes per agent
-  description: 'Deep analysis with debate phase (~10 min)',
+  description: 'Deep analysis with 11 personas + debate (~10 min)',
 };
 
 const MODE_CONFIGS: Record<RunMode, RunModeConfig> = {
