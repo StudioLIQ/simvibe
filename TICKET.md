@@ -2340,7 +2340,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Optional optimistic concurrency via `expectedVersion` query param
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-020 (P1) Build report timeline/diff UI
+### [x] MND-020 (P1) Build report timeline/diff UI
 **Goal:** Make revision history visible and reviewable.
 
 **Deliverables**
@@ -2352,6 +2352,14 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - User can inspect who changed what between versions.
 
 **Dependencies:** MND-019
+
+**Completion notes:**
+- Report page: "Report Lifecycle" collapsible panel with status badge + version counter
+- Status badges: OPEN (green), REVIEW (yellow), FROZEN (blue), PUBLISHED (gray)
+- Revision timeline: vertical timeline with version dots, section path badges, author, timestamp, reason
+- Fetches `/api/run/[id]/report/revisions` on page load
+- Revision count shown in collapsed state
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-021 (P0) Add external agent registry and participation config
 **Goal:** Let third-party agents join simulation/report refinement loops.

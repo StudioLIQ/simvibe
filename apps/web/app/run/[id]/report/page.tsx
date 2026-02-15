@@ -12,6 +12,8 @@ import type {
   NadLaunchInput,
   LaunchReadiness,
   LaunchRecord,
+  ReportLifecycle,
+  ReportRevision,
 } from '@simvibe/shared';
 
 interface PredictionErrors {
@@ -175,11 +177,17 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
     bundled: false,
   });
 
+  // Report lifecycle state
+  const [reportLifecycle, setReportLifecycle] = useState<ReportLifecycle | null>(null);
+  const [reportRevisions, setReportRevisions] = useState<ReportRevision[]>([]);
+  const [showRevisions, setShowRevisions] = useState(false);
+
   useEffect(() => {
     fetchRun();
     fetchReceiptStatus();
     fetchMonadStatus();
     fetchLaunchData();
+    fetchReportRevisions();
   }, [id]);
 
   useEffect(() => {
@@ -424,6 +432,19 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
     }
   };
 
+  const fetchReportRevisions = async () => {
+    try {
+      const response = await fetch(`/api/run/${id}/report/revisions`);
+      if (response.ok) {
+        const data = await response.json();
+        setReportLifecycle(data.lifecycle);
+        setReportRevisions(data.revisions || []);
+      }
+    } catch (err) {
+      console.error('Error fetching report revisions:', err);
+    }
+  };
+
   const saveLaunchPayload = async () => {
     setIsSavingLaunch(true);
     setLaunchError(null);
@@ -608,6 +629,93 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           </span>
         )}
       </div>
+
+      {/* Report Lifecycle & Revisions */}
+      {reportLifecycle && (
+        <div className="card" style={{ marginBottom: '1rem' }}>
+          <div
+            style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+            onClick={() => setShowRevisions(!showRevisions)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <h3 style={{ fontSize: '1rem', margin: 0 }}>Report Lifecycle</h3>
+              <span style={{
+                padding: '0.125rem 0.5rem',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                background: reportLifecycle.status === 'open' ? 'var(--status-success)'
+                  : reportLifecycle.status === 'review' ? 'var(--status-warning)'
+                  : reportLifecycle.status === 'frozen' ? 'var(--accent-primary)'
+                  : 'var(--text-muted)',
+                color: '#fff',
+              }}>
+                {reportLifecycle.status.toUpperCase()}
+              </span>
+              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                v{reportLifecycle.version}
+              </span>
+              {reportRevisions.length > 0 && (
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                  ({reportRevisions.length} revision{reportRevisions.length !== 1 ? 's' : ''})
+                </span>
+              )}
+            </div>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
+              {showRevisions ? '\u25B2' : '\u25BC'}
+            </span>
+          </div>
+
+          {showRevisions && (
+            <div style={{ marginTop: '1rem' }}>
+              {reportRevisions.length === 0 ? (
+                <p style={{ color: 'var(--text-dim)', fontSize: '0.875rem' }}>No revisions yet.</p>
+              ) : (
+                <div style={{ borderLeft: '2px solid var(--border)', paddingLeft: '1rem' }}>
+                  {reportRevisions.map((rev) => (
+                    <div key={rev.id} style={{
+                      marginBottom: '1rem',
+                      position: 'relative',
+                    }}>
+                      <div style={{
+                        position: 'absolute',
+                        left: '-1.375rem',
+                        top: '0.25rem',
+                        width: '0.75rem',
+                        height: '0.75rem',
+                        borderRadius: '50%',
+                        background: 'var(--accent-primary)',
+                        border: '2px solid var(--bg)',
+                      }} />
+                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'baseline', flexWrap: 'wrap' }}>
+                        <span style={{ fontWeight: 600, fontSize: '0.875rem' }}>v{rev.version}</span>
+                        <span style={{
+                          background: 'var(--border)',
+                          padding: '0.125rem 0.375rem',
+                          borderRadius: '3px',
+                          fontSize: '0.7rem',
+                          color: 'var(--text-muted)',
+                        }}>
+                          {rev.sectionPath}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
+                          by {rev.author}
+                        </span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
+                          {new Date(rev.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0.25rem 0 0' }}>
+                        {rev.reason}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card">
