@@ -101,7 +101,7 @@ function parseFrontmatter(content: string, filename?: string): ParseResult {
  */
 function parseEngineMappingSection(content: string, filename?: string): ParseResult {
   try {
-    const sectionMatch = content.match(/##\s*10\)\s*Engine Mapping[^\n]*\n([\s\S]*?)(?=\n##\s|\n---|\Z|$)/);
+    const sectionMatch = content.match(/##\s*10\)\s*Engine Mapping[^\n]*\n([\s\S]*?)(?=\n##\s|\n---|$)/);
     if (!sectionMatch) {
       return { success: false, error: 'No "## 10) Engine Mapping" section found', filename };
     }

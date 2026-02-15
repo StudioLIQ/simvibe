@@ -981,7 +981,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-021E (P0) Persona-agentization regression tests + CI gate
+### [x] SIM-021E (P0) Persona-agentization regression tests + CI gate
 **Goal:** Prevent regressions where persona docs exist but cannot run as agents.
 
 **Deliverables**
@@ -1002,6 +1002,15 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Restore file and confirm suite passes
 
 **Dependencies:** SIM-021A, SIM-021B, SIM-021C, SIM-021D
+
+**Completion notes:**
+- Regression test script: `packages/engine/src/personas/test-personas.ts` with 50 assertions
+- Tests cover: frontmatter parsing, engine_mapping parsing, invalid file rejection, registry loading, non-core persona acceptance, dynamic PersonaId schema, AgentOutput validation, manual registration
+- CI gate: `pnpm ci:personas` runs `personas:validate` + `test:personas` sequentially
+- Fixed parser regex bug: `\Z` (invalid in JS) was truncating Engine Mapping sections at literal 'Z' characters
+- 605/605 persona files now valid (was 587/605)
+- Test: `pnpm ci:personas` passes (605 valid, 50 tests pass)
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

@@ -7,7 +7,8 @@
   "scripts": {
     "typecheck": "tsc --noEmit",
     "db:migrate": "tsx src/storage/run-migrations.ts",
-    "personas:validate": "tsx src/personas/validate.ts"
+    "personas:validate": "tsx src/personas/validate.ts",
+    "test:personas": "tsx src/personas/test-personas.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.0",

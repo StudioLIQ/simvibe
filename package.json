@@ -10,6 +10,8 @@
     "worker:start": "pnpm --filter @simvibe/worker start",
     "db:migrate": "pnpm --filter @simvibe/engine db:migrate",
     "personas:validate": "pnpm --filter @simvibe/engine personas:validate",
+    "test:personas": "pnpm --filter @simvibe/engine test:personas",
+    "ci:personas": "pnpm personas:validate && pnpm test:personas",
     "lint": "pnpm -r lint",
     "typecheck": "pnpm -r typecheck"
   },
