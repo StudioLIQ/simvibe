@@ -165,7 +165,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
   return (
     <main className="container">
       <header className="header">
-        <Link href="/" style={{ color: '#888', fontSize: '0.875rem' }}>
+        <Link href="/" style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
           &larr; Back to Home
         </Link>
         <h1 style={{ marginTop: '0.5rem' }}>Simulation Run</h1>
@@ -179,14 +179,14 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
           <div>
             <strong>Status:</strong>{' '}
             <span style={{
-              color: run.status === 'completed' ? '#22c55e' :
-                     run.status === 'failed' ? '#ef4444' :
-                     run.status === 'running' ? '#0ea5e9' : '#888'
+              color: run.status === 'completed' ? 'var(--status-success)' :
+                     run.status === 'failed' ? 'var(--status-danger)' :
+                     run.status === 'running' ? 'var(--accent-primary)' : 'var(--text-muted)'
             }}>
               {run.status.toUpperCase()}
             </span>
             {run.status === 'running' && phase !== 'loading' && (
-              <span style={{ marginLeft: '1rem', color: '#888' }}>
+              <span style={{ marginLeft: '1rem', color: 'var(--text-muted)' }}>
                 Phase: {phase}
               </span>
             )}
@@ -217,7 +217,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
           fontSize: '0.875rem',
         }}>
           {events.length === 0 ? (
-            <p style={{ color: '#666' }}>
+            <p style={{ color: 'var(--text-dim)' }}>
               {run.status === 'pending'
                 ? 'Click "Start Simulation" to begin'
                 : 'Waiting for events...'}
@@ -228,21 +228,21 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
                 key={i}
                 style={{
                   padding: '0.5rem',
-                  borderBottom: '1px solid #333',
-                  color: event.type === 'RUN_COMPLETED' ? '#22c55e' :
-                         event.type === 'RUN_FAILED' ? '#ef4444' :
-                         event.type === 'AGENT_ACTION' ? '#0ea5e9' :
-                         event.type === 'VALIDATION_ERROR' ? '#f59e0b' : '#ccc'
+                  borderBottom: '1px solid var(--border)',
+                  color: event.type === 'RUN_COMPLETED' ? 'var(--status-success)' :
+                         event.type === 'RUN_FAILED' ? 'var(--status-danger)' :
+                         event.type === 'AGENT_ACTION' ? 'var(--accent-primary)' :
+                         event.type === 'VALIDATION_ERROR' ? 'var(--status-warning)' : 'var(--text-secondary)'
                 }}
               >
-                <span style={{ color: '#666', marginRight: '0.5rem' }}>
+                <span style={{ color: 'var(--text-dim)', marginRight: '0.5rem' }}>
                   [{new Date(event.timestamp).toLocaleTimeString()}]
                 </span>
-                <span style={{ color: '#888', marginRight: '0.5rem' }}>
+                <span style={{ color: 'var(--text-muted)', marginRight: '0.5rem' }}>
                   {event.type}
                 </span>
                 {event.agentId && (
-                  <span style={{ color: '#a78bfa', marginRight: '0.5rem' }}>
+                  <span style={{ color: 'var(--accent-secondary)', marginRight: '0.5rem' }}>
                     [{event.agentId}]
                   </span>
                 )}
@@ -268,7 +268,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
             <button
               onClick={() => setShowDiagnostics(!showDiagnostics)}
               className="btn"
-              style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+              style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
             >
               {showDiagnostics ? 'Hide' : 'Show Details'}
             </button>
@@ -277,21 +277,21 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
           {showDiagnostics && (
             <div style={{ fontSize: '0.875rem' }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-                <div style={{ background: '#1a1a1a', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#888' }}>Total Duration</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#0ea5e9' }}>
+                <div style={{ background: 'var(--surface-card)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Total Duration</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
                     {run.diagnostics.totalDurationMs ? formatDuration(run.diagnostics.totalDurationMs) : 'N/A'}
                   </div>
                 </div>
-                <div style={{ background: '#1a1a1a', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#888' }}>Extraction Confidence</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 600, color: run.diagnostics.extractionConfidence && run.diagnostics.extractionConfidence >= 0.7 ? '#22c55e' : run.diagnostics.extractionConfidence && run.diagnostics.extractionConfidence >= 0.4 ? '#eab308' : '#ef4444' }}>
+                <div style={{ background: 'var(--surface-card)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Extraction Confidence</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 600, color: run.diagnostics.extractionConfidence && run.diagnostics.extractionConfidence >= 0.7 ? 'var(--status-success)' : run.diagnostics.extractionConfidence && run.diagnostics.extractionConfidence >= 0.4 ? 'var(--status-warning)' : 'var(--status-danger)' }}>
                     {run.diagnostics.extractionConfidence !== undefined ? `${(run.diagnostics.extractionConfidence * 100).toFixed(0)}%` : 'N/A'}
                   </div>
                 </div>
-                <div style={{ background: '#1a1a1a', padding: '0.75rem', borderRadius: '0.5rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#888' }}>LLM Calls / Fallbacks</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 600, color: run.diagnostics.fallbacksUsed > 0 ? '#f59e0b' : '#22c55e' }}>
+                <div style={{ background: 'var(--surface-card)', padding: '0.75rem', borderRadius: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>LLM Calls / Fallbacks</div>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 600, color: run.diagnostics.fallbacksUsed > 0 ? 'var(--status-warning)' : 'var(--status-success)' }}>
                     {run.diagnostics.llmCalls} / {run.diagnostics.fallbacksUsed}
                   </div>
                 </div>
@@ -299,19 +299,19 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
 
               {run.diagnostics.phaseTimings.length > 0 && (
                 <div style={{ marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>Phase Timings</h3>
+                  <h3 style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Phase Timings</h3>
                   <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                     <thead>
-                      <tr style={{ borderBottom: '1px solid #333' }}>
-                        <th style={{ textAlign: 'left', padding: '0.5rem', color: '#888', fontWeight: 500 }}>Phase</th>
-                        <th style={{ textAlign: 'right', padding: '0.5rem', color: '#888', fontWeight: 500 }}>Duration</th>
+                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                        <th style={{ textAlign: 'left', padding: '0.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>Phase</th>
+                        <th style={{ textAlign: 'right', padding: '0.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>Duration</th>
                       </tr>
                     </thead>
                     <tbody>
                       {run.diagnostics.phaseTimings.map((timing, i) => (
-                        <tr key={i} style={{ borderBottom: '1px solid #222' }}>
-                          <td style={{ padding: '0.5rem', color: '#ccc', textTransform: 'capitalize' }}>{timing.phase.replace('_', ' ')}</td>
-                          <td style={{ padding: '0.5rem', textAlign: 'right', color: '#0ea5e9' }}>
+                        <tr key={i} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td style={{ padding: '0.5rem', color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{timing.phase.replace('_', ' ')}</td>
+                          <td style={{ padding: '0.5rem', textAlign: 'right', color: 'var(--accent-primary)' }}>
                             {timing.durationMs !== undefined ? formatDuration(timing.durationMs) : 'In progress'}
                           </td>
                         </tr>
@@ -323,10 +323,10 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
 
               {run.diagnostics.extractionWarnings.length > 0 && (
                 <div style={{ marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '0.875rem', color: '#f59e0b', marginBottom: '0.5rem' }}>Extraction Warnings</h3>
+                  <h3 style={{ fontSize: '0.875rem', color: 'var(--status-warning)', marginBottom: '0.5rem' }}>Extraction Warnings</h3>
                   <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
                     {run.diagnostics.extractionWarnings.map((w, i) => (
-                      <li key={i} style={{ color: '#fcd34d', marginBottom: '0.25rem' }}>{w}</li>
+                      <li key={i} style={{ color: 'var(--warn-text)', marginBottom: '0.25rem' }}>{w}</li>
                     ))}
                   </ul>
                 </div>
@@ -334,11 +334,11 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
 
               {run.diagnostics.agentWarnings.length > 0 && (
                 <div style={{ marginBottom: '1rem' }}>
-                  <h3 style={{ fontSize: '0.875rem', color: '#f59e0b', marginBottom: '0.5rem' }}>Agent Warnings</h3>
+                  <h3 style={{ fontSize: '0.875rem', color: 'var(--status-warning)', marginBottom: '0.5rem' }}>Agent Warnings</h3>
                   <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
                     {run.diagnostics.agentWarnings.map((w, i) => (
-                      <li key={i} style={{ color: '#fcd34d', marginBottom: '0.25rem' }}>
-                        <span style={{ color: '#a78bfa' }}>[{w.agentId}]</span> {w.warning}
+                      <li key={i} style={{ color: 'var(--warn-text)', marginBottom: '0.25rem' }}>
+                        <span style={{ color: 'var(--accent-secondary)' }}>[{w.agentId}]</span> {w.warning}
                       </li>
                     ))}
                   </ul>
@@ -347,11 +347,11 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
 
               {run.diagnostics.errors.length > 0 && (
                 <div>
-                  <h3 style={{ fontSize: '0.875rem', color: '#ef4444', marginBottom: '0.5rem' }}>Errors</h3>
+                  <h3 style={{ fontSize: '0.875rem', color: 'var(--status-danger)', marginBottom: '0.5rem' }}>Errors</h3>
                   <ul style={{ margin: 0, paddingLeft: '1.5rem' }}>
                     {run.diagnostics.errors.map((e, i) => (
-                      <li key={i} style={{ color: '#fca5a5', marginBottom: '0.25rem' }}>
-                        {e.phase && <span style={{ color: '#888' }}>[{e.phase}]</span>} {e.message}
+                      <li key={i} style={{ color: 'var(--danger-soft)', marginBottom: '0.25rem' }}>
+                        {e.phase && <span style={{ color: 'var(--text-muted)' }}>[{e.phase}]</span>} {e.message}
                       </li>
                     ))}
                   </ul>

@@ -37,14 +37,14 @@ interface RunData {
 }
 
 function ScoreBar({ score, label }: { score: number; label: string }) {
-  const color = score >= 70 ? '#22c55e' : score >= 50 ? '#eab308' : '#ef4444';
+  const color = score >= 70 ? 'var(--status-success)' : score >= 50 ? 'var(--status-warning)' : 'var(--status-danger)';
   return (
     <div style={{ marginBottom: '0.75rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-        <span style={{ fontSize: '0.875rem', color: '#ccc' }}>{label}</span>
+        <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{label}</span>
         <span style={{ fontSize: '0.875rem', fontWeight: 600, color }}>{score}</span>
       </div>
-      <div style={{ background: '#333', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--border)', borderRadius: '4px', height: '8px', overflow: 'hidden' }}>
         <div style={{ background: color, width: `${score}%`, height: '100%', transition: 'width 0.3s' }} />
       </div>
     </div>
@@ -54,8 +54,8 @@ function ScoreBar({ score, label }: { score: number; label: string }) {
 function FrictionCard({ friction }: { friction: FrictionItem }) {
   return (
     <div style={{
-      background: '#1a1a1a',
-      border: '1px solid #333',
+      background: 'var(--surface-card)',
+      border: '1px solid var(--border)',
       borderRadius: '0.5rem',
       padding: '1rem',
       marginBottom: '0.75rem',
@@ -63,11 +63,11 @@ function FrictionCard({ friction }: { friction: FrictionItem }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <div>
           <span style={{
-            background: '#333',
+            background: 'var(--border)',
             padding: '0.125rem 0.5rem',
             borderRadius: '4px',
             fontSize: '0.75rem',
-            color: '#888',
+            color: 'var(--text-muted)',
             marginRight: '0.5rem',
           }}>
             #{friction.rank}
@@ -76,15 +76,15 @@ function FrictionCard({ friction }: { friction: FrictionItem }) {
         </div>
         <span style={{
           fontSize: '0.75rem',
-          color: friction.severity > 0.7 ? '#ef4444' : friction.severity > 0.4 ? '#eab308' : '#888',
+          color: friction.severity > 0.7 ? 'var(--status-danger)' : friction.severity > 0.4 ? 'var(--status-warning)' : 'var(--text-muted)',
         }}>
           {(friction.severity * 100).toFixed(0)}% severity
         </span>
       </div>
-      <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#888' }}>
+      <div style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: 'var(--text-muted)' }}>
         Category: {friction.category}
       </div>
-      <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#666' }}>
+      <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: 'var(--text-dim)' }}>
         Cited by: {friction.agentsCiting.join(', ')}
       </div>
     </div>
@@ -92,41 +92,41 @@ function FrictionCard({ friction }: { friction: FrictionItem }) {
 }
 
 function PersonaCard({ persona }: { persona: PersonaReport }) {
-  const actionColor = persona.primaryAction === 'PAY' ? '#22c55e' :
-                      persona.primaryAction === 'SIGNUP' ? '#0ea5e9' :
-                      persona.primaryAction === 'BOUNCE' ? '#ef4444' : '#888';
+  const actionColor = persona.primaryAction === 'PAY' ? 'var(--status-success)' :
+                      persona.primaryAction === 'SIGNUP' ? 'var(--accent-primary)' :
+                      persona.primaryAction === 'BOUNCE' ? 'var(--status-danger)' : 'var(--text-muted)';
   return (
     <div style={{
-      background: '#1a1a1a',
-      border: '1px solid #333',
+      background: 'var(--surface-card)',
+      border: '1px solid var(--border)',
       borderRadius: '0.5rem',
       padding: '1rem',
       marginBottom: '0.75rem',
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
-        <span style={{ fontWeight: 600, color: '#a78bfa' }}>{persona.personaId}</span>
+        <span style={{ fontWeight: 600, color: 'var(--accent-secondary)' }}>{persona.personaId}</span>
         {persona.isFallback && (
-          <span style={{ fontSize: '0.75rem', color: '#f59e0b', background: '#422006', padding: '0.125rem 0.5rem', borderRadius: '4px' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--status-warning)', background: 'var(--warn-bg)', padding: '0.125rem 0.5rem', borderRadius: '4px' }}>
             FALLBACK
           </span>
         )}
       </div>
       <div style={{ marginBottom: '0.5rem' }}>
-        <span style={{ color: '#888', fontSize: '0.875rem' }}>Primary Action: </span>
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Primary Action: </span>
         <span style={{ color: actionColor, fontWeight: 500 }}>{persona.primaryAction}</span>
       </div>
       <div style={{ marginBottom: '0.5rem', fontSize: '0.875rem' }}>
-        <span style={{ color: '#888' }}>Friction: </span>
-        <span style={{ color: '#ccc' }}>{persona.primaryFriction}</span>
+        <span style={{ color: 'var(--text-muted)' }}>Friction: </span>
+        <span style={{ color: 'var(--text-secondary)' }}>{persona.primaryFriction}</span>
       </div>
       <div style={{
-        background: '#0a0a0a',
+        background: 'var(--surface-subtle)',
         padding: '0.75rem',
         borderRadius: '4px',
         fontSize: '0.875rem',
-        borderLeft: '3px solid #0ea5e9',
+        borderLeft: '3px solid var(--accent-primary)',
       }}>
-        <strong style={{ color: '#0ea5e9' }}>Fix:</strong> {persona.oneLineFix}
+        <strong style={{ color: 'var(--accent-primary)' }}>Fix:</strong> {persona.oneLineFix}
       </div>
     </div>
   );
@@ -492,13 +492,13 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
     <main className="container">
       <header className="header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Link href={`/run/${id}`} style={{ color: '#888', fontSize: '0.875rem' }}>
+          <Link href={`/run/${id}`} style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
             &larr; Back to Run
           </Link>
           <button
             onClick={copyShareLink}
             className="btn"
-            style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+            style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
           >
             {copied ? 'Copied!' : 'Copy Share Link'}
           </button>
@@ -509,14 +509,14 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
       {report.warnings && report.warnings.length > 0 && (
         <div style={{
-          background: '#422006',
-          border: '1px solid #854d0e',
+          background: 'var(--warn-bg)',
+          border: '1px solid var(--warn-border)',
           borderRadius: '0.5rem',
           padding: '1rem',
           marginBottom: '1rem',
         }}>
-          <strong style={{ color: '#fbbf24' }}>Warnings:</strong>
-          <ul style={{ margin: '0.5rem 0 0 1.5rem', color: '#fcd34d' }}>
+          <strong style={{ color: 'var(--warn-text)' }}>Warnings:</strong>
+          <ul style={{ margin: '0.5rem 0 0 1.5rem', color: 'var(--warn-text)' }}>
             {report.warnings.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
@@ -531,25 +531,25 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         marginBottom: '1rem',
         flexWrap: 'wrap',
         fontSize: '0.8rem',
-        color: '#888',
+        color: 'var(--text-muted)',
       }}>
         {report.runMode && (
-          <span style={{ background: '#1a1a1a', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #333' }}>
-            Mode: <strong style={{ color: '#a78bfa' }}>{report.runMode}</strong>
+          <span style={{ background: 'var(--surface-card)', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+            Mode: <strong style={{ color: 'var(--accent-secondary)' }}>{report.runMode}</strong>
           </span>
         )}
         {report.personaSet && (
-          <span style={{ background: '#1a1a1a', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #333' }}>
-            Persona Set: <strong style={{ color: '#a78bfa' }}>{report.personaSet}</strong>
+          <span style={{ background: 'var(--surface-card)', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+            Persona Set: <strong style={{ color: 'var(--accent-secondary)' }}>{report.personaSet}</strong>
           </span>
         )}
         {report.executedPersonaIds && (
-          <span style={{ background: '#1a1a1a', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #333' }}>
-            Personas: <strong style={{ color: '#a78bfa' }}>{report.executedPersonaIds.length}</strong>
+          <span style={{ background: 'var(--surface-card)', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
+            Personas: <strong style={{ color: 'var(--accent-secondary)' }}>{report.executedPersonaIds.length}</strong>
           </span>
         )}
         {report.earlyStopReason && (
-          <span style={{ background: '#422006', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid #854d0e', color: '#fcd34d' }}>
+          <span style={{ background: 'var(--warn-bg)', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--warn-border)', color: 'var(--warn-text)' }}>
             Early Stop
           </span>
         )}
@@ -557,29 +557,29 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card">
-          <h2 style={{ fontSize: '3rem', fontWeight: 700, color: report.overallScore >= 70 ? '#22c55e' : report.overallScore >= 50 ? '#eab308' : '#ef4444' }}>
+          <h2 style={{ fontSize: '3rem', fontWeight: 700, color: report.overallScore >= 70 ? 'var(--status-success)' : report.overallScore >= 50 ? 'var(--status-warning)' : 'var(--status-danger)' }}>
             {report.overallScore}
           </h2>
-          <p style={{ color: '#888', marginBottom: '1rem' }}>Overall Score</p>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Overall Score</p>
           <div style={{
             display: 'inline-block',
             padding: '0.25rem 0.75rem',
-            background: report.tractionBand === 'very_high' || report.tractionBand === 'high' ? '#14532d' :
-                        report.tractionBand === 'moderate' ? '#422006' : '#450a0a',
+            background: report.tractionBand === 'very_high' || report.tractionBand === 'high' ? 'var(--success-bg)' :
+                        report.tractionBand === 'moderate' ? 'var(--warn-bg)' : 'var(--danger-bg)',
             borderRadius: '4px',
             fontSize: '0.875rem',
-            color: report.tractionBand === 'very_high' || report.tractionBand === 'high' ? '#86efac' :
-                   report.tractionBand === 'moderate' ? '#fcd34d' : '#fca5a5',
+            color: report.tractionBand === 'very_high' || report.tractionBand === 'high' ? 'var(--success-soft)' :
+                   report.tractionBand === 'moderate' ? 'var(--warn-text)' : 'var(--danger-soft)',
           }}>
             {report.tractionBand.replace('_', ' ').toUpperCase()} TRACTION
           </div>
-          <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: '#888' }}>
+          <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             ({report.confidence} confidence)
           </span>
         </div>
 
         <div className="card">
-          <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: '#888' }}>Score Breakdown</h3>
+          <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-muted)' }}>Score Breakdown</h3>
           <ScoreBar score={report.scores.clarity} label="Clarity" />
           <ScoreBar score={report.scores.credibility} label="Credibility" />
           <ScoreBar score={report.scores.differentiation} label="Differentiation" />
@@ -592,56 +592,56 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         <h3 style={{ marginBottom: '0.5rem', fontSize: '1rem' }}>Predicted Metrics</h3>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', textAlign: 'center' }}>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#0ea5e9' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
               {report.metrics.expectedUpvotes.toFixed(1)}
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#888' }}>Upvotes</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Upvotes</div>
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#22c55e' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--status-success)' }}>
               {(report.metrics.expectedSignups * 100).toFixed(0)}%
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#888' }}>Signups</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Signups</div>
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#a78bfa' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-secondary)' }}>
               {(report.metrics.expectedPays * 100).toFixed(0)}%
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#888' }}>Pays</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pays</div>
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#ef4444' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--status-danger)' }}>
               {(report.metrics.bounceRate * 100).toFixed(0)}%
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#888' }}>Bounce</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Bounce</div>
           </div>
           <div>
-            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: '#eab308' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--status-warning)' }}>
               {(report.metrics.shareRate * 100).toFixed(0)}%
             </div>
-            <div style={{ fontSize: '0.75rem', color: '#888' }}>Share</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Share</div>
           </div>
         </div>
 
         {report.calibrationApplied && report.rawMetrics && (
-          <div style={{ marginTop: '1rem', padding: '0.75rem', background: '#1a1a2e', borderRadius: '0.5rem', border: '1px solid #2d2d44' }}>
+          <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--indigo-bg)', borderRadius: '0.5rem', border: '1px solid var(--indigo-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '0.75rem', background: '#4c1d95', padding: '0.125rem 0.5rem', borderRadius: '4px', color: '#c4b5fd' }}>
+              <span style={{ fontSize: '0.75rem', background: 'var(--indigo-badge-bg)', padding: '0.125rem 0.5rem', borderRadius: '4px', color: 'var(--indigo-badge-text)' }}>
                 CALIBRATED
               </span>
-              <span style={{ fontSize: '0.75rem', color: '#888' }}>
+              <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                 Adjusted based on previous actual outcomes
               </span>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', fontSize: '0.75rem' }}>
-              <div style={{ color: '#888' }}>
-                Raw Signups: <span style={{ color: '#666' }}>{(report.rawMetrics.expectedSignups * 100).toFixed(1)}%</span>
+              <div style={{ color: 'var(--text-muted)' }}>
+                Raw Signups: <span style={{ color: 'var(--text-dim)' }}>{(report.rawMetrics.expectedSignups * 100).toFixed(1)}%</span>
               </div>
-              <div style={{ color: '#888' }}>
-                Raw Pays: <span style={{ color: '#666' }}>{(report.rawMetrics.expectedPays * 100).toFixed(1)}%</span>
+              <div style={{ color: 'var(--text-muted)' }}>
+                Raw Pays: <span style={{ color: 'var(--text-dim)' }}>{(report.rawMetrics.expectedPays * 100).toFixed(1)}%</span>
               </div>
-              <div style={{ color: '#888' }}>
-                Raw Bounce: <span style={{ color: '#666' }}>{(report.rawMetrics.bounceRate * 100).toFixed(1)}%</span>
+              <div style={{ color: 'var(--text-muted)' }}>
+                Raw Bounce: <span style={{ color: 'var(--text-dim)' }}>{(report.rawMetrics.bounceRate * 100).toFixed(1)}%</span>
               </div>
             </div>
           </div>
@@ -655,7 +655,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             <button
               onClick={() => setShowActuals(!showActuals)}
               className="btn"
-              style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+              style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
             >
               {showActuals ? 'Cancel' : 'Enter Actual Results'}
             </button>
@@ -665,77 +665,77 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         {run?.actuals && predictionErrors && (
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', textAlign: 'center', marginBottom: '1rem' }}>
-              <div style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '0.5rem' }}>
-                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>Signup Rate</div>
+              <div style={{ background: 'var(--surface-card)', padding: '1rem', borderRadius: '0.5rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Signup Rate</div>
                 <div style={{ display: 'flex', justifyContent: 'space-around' }}>
                   <div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#666' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-dim)' }}>
                       {(report.metrics.expectedSignups * 100).toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: '0.625rem', color: '#666' }}>Predicted</div>
+                    <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Predicted</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#22c55e' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--status-success)' }}>
                       {(run.actuals.signupRate * 100).toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: '0.625rem', color: '#666' }}>Actual</div>
+                    <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Actual</div>
                   </div>
                 </div>
                 <div style={{
                   marginTop: '0.5rem',
                   fontSize: '0.75rem',
-                  color: predictionErrors.signupError > 0 ? '#ef4444' : '#22c55e',
+                  color: predictionErrors.signupError > 0 ? 'var(--status-danger)' : 'var(--status-success)',
                 }}>
                   Error: {predictionErrors.signupError > 0 ? '+' : ''}{(predictionErrors.signupError * 100).toFixed(1)}%
                 </div>
               </div>
 
-              <div style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '0.5rem' }}>
-                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>Pay Rate</div>
+              <div style={{ background: 'var(--surface-card)', padding: '1rem', borderRadius: '0.5rem' }}>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Pay Rate</div>
                 <div style={{ display: 'flex', justifyContent: 'space-around' }}>
                   <div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#666' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-dim)' }}>
                       {(report.metrics.expectedPays * 100).toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: '0.625rem', color: '#666' }}>Predicted</div>
+                    <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Predicted</div>
                   </div>
                   <div>
-                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#a78bfa' }}>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--accent-secondary)' }}>
                       {(run.actuals.payRate * 100).toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: '0.625rem', color: '#666' }}>Actual</div>
+                    <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Actual</div>
                   </div>
                 </div>
                 <div style={{
                   marginTop: '0.5rem',
                   fontSize: '0.75rem',
-                  color: predictionErrors.payError > 0 ? '#ef4444' : '#22c55e',
+                  color: predictionErrors.payError > 0 ? 'var(--status-danger)' : 'var(--status-success)',
                 }}>
                   Error: {predictionErrors.payError > 0 ? '+' : ''}{(predictionErrors.payError * 100).toFixed(1)}%
                 </div>
               </div>
 
               {run.actuals.bounceRate !== undefined && predictionErrors.bounceError !== undefined && (
-                <div style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '0.5rem' }}>
-                  <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.5rem' }}>Bounce Rate</div>
+                <div style={{ background: 'var(--surface-card)', padding: '1rem', borderRadius: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>Bounce Rate</div>
                   <div style={{ display: 'flex', justifyContent: 'space-around' }}>
                     <div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#666' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-dim)' }}>
                         {(report.metrics.bounceRate * 100).toFixed(1)}%
                       </div>
-                      <div style={{ fontSize: '0.625rem', color: '#666' }}>Predicted</div>
+                      <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Predicted</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: '1.25rem', fontWeight: 600, color: '#ef4444' }}>
+                      <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--status-danger)' }}>
                         {(run.actuals.bounceRate * 100).toFixed(1)}%
                       </div>
-                      <div style={{ fontSize: '0.625rem', color: '#666' }}>Actual</div>
+                      <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Actual</div>
                     </div>
                   </div>
                   <div style={{
                     marginTop: '0.5rem',
                     fontSize: '0.75rem',
-                    color: predictionErrors.bounceError > 0 ? '#22c55e' : '#ef4444',
+                    color: predictionErrors.bounceError > 0 ? 'var(--status-success)' : 'var(--status-danger)',
                   }}>
                     Error: {predictionErrors.bounceError > 0 ? '+' : ''}{(predictionErrors.bounceError * 100).toFixed(1)}%
                   </div>
@@ -744,12 +744,12 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             </div>
 
             {run.actuals.notes && (
-              <div style={{ fontSize: '0.875rem', color: '#888', fontStyle: 'italic' }}>
+              <div style={{ fontSize: '0.875rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
                 Notes: {run.actuals.notes}
               </div>
             )}
 
-            <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem' }}>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.5rem' }}>
               Submitted: {new Date(run.actuals.submittedAt).toLocaleString()}
             </div>
           </div>
@@ -759,7 +759,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           <div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                   Signup Rate (%)
                 </label>
                 <input
@@ -773,16 +773,16 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     width: '100%',
                     padding: '0.75rem',
                     fontSize: '1rem',
-                    border: '1px solid #333',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.5rem',
-                    background: '#0a0a0a',
-                    color: '#ededed',
+                    background: 'var(--surface-subtle)',
+                    color: 'var(--text-primary)',
                   }}
                   placeholder="e.g., 5.2"
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
+                <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                   Pay Rate (%)
                 </label>
                 <input
@@ -796,17 +796,17 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     width: '100%',
                     padding: '0.75rem',
                     fontSize: '1rem',
-                    border: '1px solid #333',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.5rem',
-                    background: '#0a0a0a',
-                    color: '#ededed',
+                    background: 'var(--surface-subtle)',
+                    color: 'var(--text-primary)',
                   }}
                   placeholder="e.g., 1.5"
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
-                  Bounce Rate (%) <span style={{ color: '#666' }}>optional</span>
+                <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                  Bounce Rate (%) <span style={{ color: 'var(--text-dim)' }}>optional</span>
                 </label>
                 <input
                   type="number"
@@ -819,10 +819,10 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     width: '100%',
                     padding: '0.75rem',
                     fontSize: '1rem',
-                    border: '1px solid #333',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.5rem',
-                    background: '#0a0a0a',
-                    color: '#ededed',
+                    background: 'var(--surface-subtle)',
+                    color: 'var(--text-primary)',
                   }}
                   placeholder="e.g., 45"
                 />
@@ -830,8 +830,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
-                Notes <span style={{ color: '#666' }}>optional</span>
+              <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                Notes <span style={{ color: 'var(--text-dim)' }}>optional</span>
               </label>
               <textarea
                 value={actualsInput.notes}
@@ -842,10 +842,10 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                   width: '100%',
                   padding: '0.75rem',
                   fontSize: '0.875rem',
-                  border: '1px solid #333',
+                  border: '1px solid var(--border)',
                   borderRadius: '0.5rem',
-                  background: '#0a0a0a',
-                  color: '#ededed',
+                  background: 'var(--surface-subtle)',
+                  color: 'var(--text-primary)',
                   resize: 'vertical',
                 }}
                 placeholder="Any context about the actual results..."
@@ -861,14 +861,14 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               {isSavingActuals ? 'Saving...' : 'Save Actual Outcomes'}
             </button>
 
-            <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.5rem', textAlign: 'center' }}>
               Enter your real conversion data to calibrate future predictions
             </p>
           </div>
         )}
 
         {!run?.actuals && !showActuals && (
-          <p style={{ fontSize: '0.875rem', color: '#666' }}>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-dim)' }}>
             Help improve predictions by entering your actual launch results
           </p>
         )}
@@ -882,7 +882,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               onClick={createReceipt}
               disabled={isCreatingReceipt}
               className="btn"
-              style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+              style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
             >
               {isCreatingReceipt ? 'Creating...' : 'Generate Receipt'}
             </button>
@@ -891,13 +891,13 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
         {receiptError && (
           <div style={{
-            background: '#450a0a',
-            border: '1px solid #dc2626',
+            background: 'var(--danger-bg)',
+            border: '1px solid var(--status-danger)',
             borderRadius: '0.5rem',
             padding: '0.75rem',
             marginBottom: '1rem',
             fontSize: '0.875rem',
-            color: '#fca5a5',
+            color: 'var(--danger-soft)',
           }}>
             {receiptError}
           </div>
@@ -905,13 +905,13 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
         {run?.receipt ? (
           <div>
-            <div style={{ background: '#1a1a1a', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
+            <div style={{ background: 'var(--surface-card)', padding: '1rem', borderRadius: '0.5rem', marginBottom: '1rem' }}>
               <div style={{ marginBottom: '0.75rem' }}>
-                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.25rem' }}>Run Hash (SHA-256)</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Run Hash (SHA-256)</div>
                 <code style={{
                   fontSize: '0.75rem',
-                  color: '#a78bfa',
-                  background: '#0a0a0a',
+                  color: 'var(--accent-secondary)',
+                  background: 'var(--surface-subtle)',
                   padding: '0.5rem',
                   borderRadius: '4px',
                   display: 'block',
@@ -921,11 +921,11 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 </code>
               </div>
               <div style={{ marginBottom: '0.75rem' }}>
-                <div style={{ fontSize: '0.75rem', color: '#888', marginBottom: '0.25rem' }}>Report Hash (SHA-256)</div>
+                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Report Hash (SHA-256)</div>
                 <code style={{
                   fontSize: '0.75rem',
-                  color: '#22c55e',
-                  background: '#0a0a0a',
+                  color: 'var(--status-success)',
+                  background: 'var(--surface-subtle)',
                   padding: '0.5rem',
                   borderRadius: '4px',
                   display: 'block',
@@ -934,58 +934,58 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                   {run.receipt.reportHash}
                 </code>
               </div>
-              <div style={{ fontSize: '0.75rem', color: '#666' }}>
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-dim)' }}>
                 Created: {new Date(run.receipt.timestamp).toLocaleString()}
               </div>
             </div>
 
             {run.receipt.txHash ? (
               <div style={{
-                background: '#14532d',
-                border: '1px solid #22c55e',
+                background: 'var(--success-bg)',
+                border: '1px solid var(--status-success)',
                 borderRadius: '0.5rem',
                 padding: '0.75rem',
                 fontSize: '0.875rem',
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                  <span style={{ color: '#86efac', fontWeight: 500 }}>On-chain Receipt</span>
+                  <span style={{ color: 'var(--success-soft)', fontWeight: 500 }}>On-chain Receipt</span>
                   {run.receipt.chainId && (
-                    <span style={{ fontSize: '0.75rem', color: '#86efac', background: '#0f3a1e', padding: '0.125rem 0.5rem', borderRadius: '4px' }}>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--success-soft)', background: 'var(--success-border)', padding: '0.125rem 0.5rem', borderRadius: '4px' }}>
                       Chain ID: {run.receipt.chainId}
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: '0.75rem', color: '#86efac', marginBottom: '0.25rem' }}>
-                  <span style={{ color: '#6ee7b7' }}>TX Hash:</span>
+                <div style={{ fontSize: '0.75rem', color: 'var(--success-soft)', marginBottom: '0.25rem' }}>
+                  <span style={{ color: 'var(--success-soft)' }}>TX Hash:</span>
                 </div>
                 <code style={{
                   fontSize: '0.7rem',
-                  color: '#86efac',
+                  color: 'var(--success-soft)',
                   wordBreak: 'break-all',
                 }}>
                   {run.receipt.txHash}
                 </code>
                 {run.receipt.blockNumber && (
-                  <div style={{ fontSize: '0.75rem', color: '#86efac', marginTop: '0.5rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--success-soft)', marginTop: '0.5rem' }}>
                     Block: {run.receipt.blockNumber}
                   </div>
                 )}
               </div>
             ) : (
               <div style={{
-                background: '#1a1a2e',
-                border: '1px solid #2d2d44',
+                background: 'var(--indigo-bg)',
+                border: '1px solid var(--indigo-border)',
                 borderRadius: '0.5rem',
                 padding: '0.75rem',
                 fontSize: '0.875rem',
-                color: '#a5a5ff',
+                color: 'var(--indigo-text)',
               }}>
                 Offline receipt (chain write disabled)
               </div>
             )}
           </div>
         ) : (
-          <p style={{ fontSize: '0.875rem', color: '#666' }}>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-dim)' }}>
             Generate a tamper-evident receipt with SHA-256 hashes of your simulation
             {chainEnabled && ' (will be written to blockchain)'}
           </p>
@@ -1002,9 +1002,9 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 fontSize: '0.75rem',
                 padding: '0.125rem 0.5rem',
                 borderRadius: '4px',
-                background: launchReadiness.status === 'ready' ? '#14532d' : '#450a0a',
-                color: launchReadiness.status === 'ready' ? '#86efac' : '#fca5a5',
-                border: `1px solid ${launchReadiness.status === 'ready' ? '#22c55e' : '#dc2626'}`,
+                background: launchReadiness.status === 'ready' ? 'var(--success-bg)' : 'var(--danger-bg)',
+                color: launchReadiness.status === 'ready' ? 'var(--success-soft)' : 'var(--danger-soft)',
+                border: `1px solid ${launchReadiness.status === 'ready' ? 'var(--status-success)' : 'var(--status-danger)'}`,
               }}>
                 {launchReadiness.status === 'ready' ? 'READY' : 'NOT READY'}
               </span>
@@ -1014,9 +1014,9 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 fontSize: '0.75rem',
                 padding: '0.125rem 0.5rem',
                 borderRadius: '4px',
-                background: '#1a1a2e',
-                color: '#a5a5ff',
-                border: '1px solid #2d2d44',
+                background: 'var(--indigo-bg)',
+                color: 'var(--indigo-text)',
+                border: '1px solid var(--indigo-border)',
               }}>
                 {launchRecord.status.toUpperCase()}
               </span>
@@ -1025,7 +1025,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           <button
             onClick={() => setShowLaunchPanel(!showLaunchPanel)}
             className="btn"
-            style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+            style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
           >
             {showLaunchPanel ? 'Hide' : 'Prepare Launch'}
           </button>
@@ -1035,13 +1035,13 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           <div>
             {launchError && (
               <div style={{
-                background: '#450a0a',
-                border: '1px solid #dc2626',
+                background: 'var(--danger-bg)',
+                border: '1px solid var(--status-danger)',
                 borderRadius: '0.5rem',
                 padding: '0.75rem',
                 marginBottom: '1rem',
                 fontSize: '0.875rem',
-                color: '#fca5a5',
+                color: 'var(--danger-soft)',
               }}>
                 {launchError}
               </div>
@@ -1050,13 +1050,13 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             {/* Readiness Blockers */}
             {launchReadiness && launchReadiness.blockers.length > 0 && (
               <div style={{
-                background: launchReadiness.status === 'not_ready' ? '#1a0a0a' : '#1a1a0a',
-                border: `1px solid ${launchReadiness.status === 'not_ready' ? '#333' : '#333'}`,
+                background: launchReadiness.status === 'not_ready' ? 'var(--danger-bg)' : 'var(--warn-bg)',
+                border: `1px solid ${launchReadiness.status === 'not_ready' ? 'var(--border)' : 'var(--border)'}`,
                 borderRadius: '0.5rem',
                 padding: '1rem',
                 marginBottom: '1rem',
               }}>
-                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', color: '#ccc' }}>
+                <div style={{ fontSize: '0.875rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
                   Readiness Checks ({launchReadiness.blockers.length} issue{launchReadiness.blockers.length !== 1 ? 's' : ''})
                 </div>
                 {launchReadiness.blockers.map((b, i) => (
@@ -1068,20 +1068,20 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     fontSize: '0.8rem',
                   }}>
                     <span style={{
-                      color: b.severity === 'critical' ? '#ef4444' : '#eab308',
+                      color: b.severity === 'critical' ? 'var(--status-danger)' : 'var(--status-warning)',
                       fontWeight: 600,
                       minWidth: '70px',
                     }}>
                       {b.severity === 'critical' ? 'CRITICAL' : 'WARNING'}
                     </span>
-                    <span style={{ color: '#aaa' }}>{b.message}</span>
+                    <span style={{ color: 'var(--text-dim)' }}>{b.message}</span>
                   </div>
                 ))}
                 {launchReadiness.recommendedActions.length > 0 && (
-                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid #333' }}>
-                    <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>Recommended:</div>
+                  <div style={{ marginTop: '0.75rem', paddingTop: '0.75rem', borderTop: '1px solid var(--border)' }}>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Recommended:</div>
                     {launchReadiness.recommendedActions.map((action, i) => (
-                      <div key={i} style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>
+                      <div key={i} style={{ fontSize: '0.8rem', color: 'var(--text-dim)', marginBottom: '0.25rem' }}>
                         - {action}
                       </div>
                     ))}
@@ -1092,7 +1092,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
             {/* Confidence */}
             {launchReadiness && (
-              <div style={{ fontSize: '0.8rem', color: '#888', marginBottom: '1rem' }}>
+              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
                 Readiness confidence: {(launchReadiness.confidence * 100).toFixed(0)}%
               </div>
             )}
@@ -1100,7 +1100,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             {/* Editable Launch Payload */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                   Token Name *
                 </label>
                 <input
@@ -1112,15 +1112,15 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     width: '100%',
                     padding: '0.5rem',
                     fontSize: '0.875rem',
-                    border: '1px solid #333',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.375rem',
-                    background: '#0a0a0a',
-                    color: '#ededed',
+                    background: 'var(--surface-subtle)',
+                    color: 'var(--text-primary)',
                   }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                   Symbol *
                 </label>
                 <input
@@ -1132,17 +1132,17 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     width: '100%',
                     padding: '0.5rem',
                     fontSize: '0.875rem',
-                    border: '1px solid #333',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.375rem',
-                    background: '#0a0a0a',
-                    color: '#ededed',
+                    background: 'var(--surface-subtle)',
+                    color: 'var(--text-primary)',
                   }}
                 />
               </div>
             </div>
 
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                 Description *
               </label>
               <textarea
@@ -1154,21 +1154,21 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                   width: '100%',
                   padding: '0.5rem',
                   fontSize: '0.875rem',
-                  border: '1px solid #333',
+                  border: '1px solid var(--border)',
                   borderRadius: '0.375rem',
-                  background: '#0a0a0a',
-                  color: '#ededed',
+                  background: 'var(--surface-subtle)',
+                  color: 'var(--text-primary)',
                   resize: 'vertical',
                 }}
               />
-              <div style={{ fontSize: '0.7rem', color: '#666', textAlign: 'right' }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--text-dim)', textAlign: 'right' }}>
                 {editingLaunch.description.length}/1000
               </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                   Website
                 </label>
                 <input
@@ -1180,15 +1180,15 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     width: '100%',
                     padding: '0.5rem',
                     fontSize: '0.875rem',
-                    border: '1px solid #333',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.375rem',
-                    background: '#0a0a0a',
-                    color: '#ededed',
+                    background: 'var(--surface-subtle)',
+                    color: 'var(--text-primary)',
                   }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                   X (Twitter)
                 </label>
                 <input
@@ -1200,15 +1200,15 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     width: '100%',
                     padding: '0.5rem',
                     fontSize: '0.875rem',
-                    border: '1px solid #333',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.375rem',
-                    background: '#0a0a0a',
-                    color: '#ededed',
+                    background: 'var(--surface-subtle)',
+                    color: 'var(--text-primary)',
                   }}
                 />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#888', marginBottom: '0.25rem' }}>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                   Telegram
                 </label>
                 <input
@@ -1220,17 +1220,17 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     width: '100%',
                     padding: '0.5rem',
                     fontSize: '0.875rem',
-                    border: '1px solid #333',
+                    border: '1px solid var(--border)',
                     borderRadius: '0.375rem',
-                    background: '#0a0a0a',
-                    color: '#ededed',
+                    background: 'var(--surface-subtle)',
+                    color: 'var(--text-primary)',
                   }}
                 />
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '1rem' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#ccc', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={editingLaunch.antiSnipe}
@@ -1238,7 +1238,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 />
                 Anti-Snipe Protection
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: '#ccc', cursor: 'pointer' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.875rem', color: 'var(--text-secondary)', cursor: 'pointer' }}>
                 <input
                   type="checkbox"
                   checked={editingLaunch.bundled}
@@ -1270,7 +1270,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             </div>
 
             {launchReadiness?.status === 'not_ready' && (
-              <p style={{ fontSize: '0.75rem', color: '#ef4444', marginTop: '0.5rem', textAlign: 'center' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--status-danger)', marginTop: '0.5rem', textAlign: 'center' }}>
                 Launch is blocked by critical readiness checks. Fix blockers above to proceed.
               </p>
             )}
@@ -1279,37 +1279,37 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               <div style={{
                 marginTop: '1rem',
                 padding: '0.75rem',
-                background: '#1a1a2e',
+                background: 'var(--indigo-bg)',
                 borderRadius: '0.5rem',
-                border: '1px solid #2d2d44',
+                border: '1px solid var(--indigo-border)',
                 fontSize: '0.8rem',
               }}>
-                <div style={{ color: '#888' }}>
+                <div style={{ color: 'var(--text-muted)' }}>
                   Launch Record: <span style={{
-                    color: launchRecord.status === 'success' ? '#86efac' :
-                           launchRecord.status === 'failed' ? '#fca5a5' :
-                           launchRecord.status === 'submitted' ? '#fcd34d' : '#a5a5ff',
+                    color: launchRecord.status === 'success' ? 'var(--success-soft)' :
+                           launchRecord.status === 'failed' ? 'var(--danger-soft)' :
+                           launchRecord.status === 'submitted' ? 'var(--warn-text)' : 'var(--indigo-text)',
                   }}>{launchRecord.status.toUpperCase()}</span>
                 </div>
-                <div style={{ color: '#666', marginTop: '0.25rem' }}>
+                <div style={{ color: 'var(--text-dim)', marginTop: '0.25rem' }}>
                   Idempotency Key: {launchRecord.idempotencyKey}
                 </div>
                 {launchRecord.txHash && (
-                  <div style={{ color: '#666', marginTop: '0.25rem' }}>
-                    TX Hash: <code style={{ color: '#a78bfa', fontSize: '0.75rem' }}>{launchRecord.txHash}</code>
+                  <div style={{ color: 'var(--text-dim)', marginTop: '0.25rem' }}>
+                    TX Hash: <code style={{ color: 'var(--accent-secondary)', fontSize: '0.75rem' }}>{launchRecord.txHash}</code>
                   </div>
                 )}
                 {launchRecord.tokenAddress && (
-                  <div style={{ color: '#666', marginTop: '0.25rem' }}>
-                    Token: <code style={{ color: '#22c55e', fontSize: '0.75rem' }}>{launchRecord.tokenAddress}</code>
+                  <div style={{ color: 'var(--text-dim)', marginTop: '0.25rem' }}>
+                    Token: <code style={{ color: 'var(--status-success)', fontSize: '0.75rem' }}>{launchRecord.tokenAddress}</code>
                   </div>
                 )}
                 {launchRecord.error && (
-                  <div style={{ color: '#fca5a5', marginTop: '0.25rem' }}>
+                  <div style={{ color: 'var(--danger-soft)', marginTop: '0.25rem' }}>
                     Error: {launchRecord.error}
                   </div>
                 )}
-                <div style={{ color: '#666', marginTop: '0.25rem' }}>
+                <div style={{ color: 'var(--text-dim)', marginTop: '0.25rem' }}>
                   Created: {new Date(launchRecord.createdAt).toLocaleString()}
                 </div>
               </div>
@@ -1324,8 +1324,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                   className="btn"
                   style={{
                     width: '100%',
-                    background: '#4c1d95',
-                    color: '#c4b5fd',
+                    background: 'var(--indigo-badge-bg)',
+                    color: 'var(--indigo-badge-text)',
                     padding: '0.75rem',
                     fontSize: '0.875rem',
                     opacity: launchReadiness?.status === 'not_ready' ? 0.5 : 1,
@@ -1341,11 +1341,11 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               <div style={{
                 marginTop: '1rem',
                 padding: '1rem',
-                background: '#0a1a0a',
+                background: 'var(--success-bg)',
                 borderRadius: '0.5rem',
-                border: '1px solid #1a3a1a',
+                border: '1px solid var(--success-border)',
               }}>
-                <div style={{ fontSize: '0.8rem', color: '#86efac', marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--success-soft)', marginBottom: '0.5rem' }}>
                   Execution Mode: <strong>{executionPlan.mode === 'deep_link' ? 'Deep Link' : 'Contract Call'}</strong>
                 </div>
                 {executionPlan.mode === 'deep_link' && executionPlan.deepLinkUrl && (
@@ -1354,17 +1354,17 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                       href={executionPlan.deepLinkUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      style={{ color: '#0ea5e9', fontSize: '0.8rem', textDecoration: 'underline' }}
+                      style={{ color: 'var(--accent-primary)', fontSize: '0.8rem', textDecoration: 'underline' }}
                     >
                       Open nad.fun Create Page
                     </a>
-                    <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '0.25rem' }}>
+                    <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginTop: '0.25rem' }}>
                       Complete the launch on nad.fun, then paste your tx hash below.
                     </p>
                   </div>
                 )}
                 {executionPlan.mode === 'contract_call' && (
-                  <p style={{ fontSize: '0.7rem', color: '#666' }}>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-dim)' }}>
                     Sign the transaction with your connected wallet. Once confirmed, paste the tx hash below.
                   </p>
                 )}
@@ -1372,7 +1372,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 {/* TX Hash Input */}
                 {launchRecord?.status !== 'success' && (
                   <div style={{ marginTop: '0.75rem' }}>
-                    <label style={{ display: 'block', fontSize: '0.75rem', color: '#888', marginBottom: '0.25rem' }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
                       Transaction Hash
                     </label>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -1384,10 +1384,10 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                           flex: 1,
                           padding: '0.5rem',
                           fontSize: '0.8rem',
-                          border: '1px solid #333',
+                          border: '1px solid var(--border)',
                           borderRadius: '0.375rem',
-                          background: '#0a0a0a',
-                          color: '#ededed',
+                          background: 'var(--surface-subtle)',
+                          color: 'var(--text-primary)',
                         }}
                       />
                       <button
@@ -1398,7 +1398,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                           }
                         }}
                         className="btn"
-                        style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.8rem' }}
+                        style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.5rem 1rem', fontSize: '0.8rem' }}
                       >
                         Confirm TX
                       </button>
@@ -1411,7 +1411,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         )}
 
         {!showLaunchPanel && (
-          <p style={{ fontSize: '0.875rem', color: '#666' }}>
+          <p style={{ fontSize: '0.875rem', color: 'var(--text-dim)' }}>
             Prepare and confirm your nad.fun token launch payload from simulation results
           </p>
         )}
@@ -1425,42 +1425,42 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0, 0, 0, 0.8)',
+          background: 'rgba(17, 24, 39, 0.45)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           zIndex: 1000,
         }}>
           <div style={{
-            background: '#111',
-            border: '1px solid #333',
+            background: 'var(--surface-card)',
+            border: '1px solid var(--border)',
             borderRadius: '0.75rem',
             padding: '2rem',
             maxWidth: '500px',
             width: '90%',
           }}>
-            <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#fbbf24' }}>
+            <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: 'var(--warn-text)' }}>
               Confirm Launch Payload
             </h3>
             <div style={{
-              background: '#1a0a0a',
-              border: '1px solid #854d0e',
+              background: 'var(--danger-bg)',
+              border: '1px solid var(--warn-border)',
               borderRadius: '0.5rem',
               padding: '1rem',
               marginBottom: '1rem',
               fontSize: '0.875rem',
-              color: '#fcd34d',
+              color: 'var(--warn-text)',
             }}>
               This will save your launch payload. The actual token launch (on-chain transaction) will be handled in a separate step.
             </div>
             <div style={{ marginBottom: '1rem', fontSize: '0.875rem' }}>
-              <div style={{ color: '#888', marginBottom: '0.5rem' }}>
+              <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                 <strong>Name:</strong> {editingLaunch.name}
               </div>
-              <div style={{ color: '#888', marginBottom: '0.5rem' }}>
+              <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                 <strong>Symbol:</strong> {editingLaunch.symbol}
               </div>
-              <div style={{ color: '#888', marginBottom: '0.5rem' }}>
+              <div style={{ color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                 <strong>Description:</strong> {editingLaunch.description.slice(0, 100)}{editingLaunch.description.length > 100 ? '...' : ''}
               </div>
             </div>
@@ -1468,7 +1468,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               <button
                 onClick={() => setShowConfirmModal(false)}
                 className="btn"
-                style={{ flex: 1, background: '#333', color: '#ccc' }}
+                style={{ flex: 1, background: 'var(--border)', color: 'var(--text-secondary)' }}
               >
                 Cancel
               </button>
@@ -1497,15 +1497,15 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Recommended Fixes</h3>
           {report.oneLineFixes.slice(0, 5).map((fix) => (
             <div key={fix.priority} style={{
-              background: '#1a1a1a',
-              border: '1px solid #333',
+              background: 'var(--surface-card)',
+              border: '1px solid var(--border)',
               borderRadius: '0.5rem',
               padding: '1rem',
               marginBottom: '0.75rem',
             }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <span style={{
-                  background: '#0ea5e9',
+                  background: 'var(--accent-primary)',
                   color: 'white',
                   padding: '0.125rem 0.5rem',
                   borderRadius: '4px',
@@ -1516,7 +1516,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 </span>
                 <div>
                   <div style={{ fontSize: '0.875rem' }}>{fix.fix}</div>
-                  <div style={{ fontSize: '0.75rem', color: '#888', marginTop: '0.25rem' }}>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
                     Source: {fix.source}
                   </div>
                 </div>
@@ -1532,7 +1532,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           <button
             onClick={() => setShowWhatIf(!showWhatIf)}
             className="btn"
-            style={{ background: '#333', color: '#ccc', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
+            style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.5rem 1rem', fontSize: '0.875rem' }}
           >
             {showWhatIf ? 'Hide' : 'Try Different Tagline'}
           </button>
@@ -1541,7 +1541,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         {showWhatIf && (
           <div style={{ marginTop: '1rem' }}>
             <div style={{ marginBottom: '1rem' }}>
-              <label style={{ display: 'block', fontSize: '0.875rem', color: '#888', marginBottom: '0.5rem' }}>
+              <label style={{ display: 'block', fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                 New Tagline
               </label>
               <input
@@ -1552,15 +1552,15 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                   width: '100%',
                   padding: '0.75rem',
                   fontSize: '1rem',
-                  border: '1px solid #333',
+                  border: '1px solid var(--border)',
                   borderRadius: '0.5rem',
-                  background: '#0a0a0a',
-                  color: '#ededed',
+                  background: 'var(--surface-subtle)',
+                  color: 'var(--text-primary)',
                 }}
                 placeholder="Enter a different tagline..."
               />
               {whatIfTagline.trim() !== run?.input.tagline && (
-                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: '#888' }}>
+                <div style={{ marginTop: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                   <strong>Original:</strong> {run?.input.tagline}
                 </div>
               )}
@@ -1575,7 +1575,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               {isCreatingVariant ? 'Creating Variant...' : 'Run With New Tagline'}
             </button>
 
-            <p style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-dim)', marginTop: '0.5rem', textAlign: 'center' }}>
               This will create a new simulation run with your modified tagline
             </p>
           </div>
@@ -1583,10 +1583,10 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       </div>
 
       {run?.variantOf && (
-        <div className="card" style={{ marginBottom: '1.5rem', background: '#1a1a2e' }}>
+        <div className="card" style={{ marginBottom: '1.5rem', background: 'var(--indigo-bg)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <span style={{ color: '#a78bfa' }}>This is a variant of:</span>
-            <Link href={`/run/${run.variantOf}/report`} style={{ color: '#0ea5e9' }}>
+            <span style={{ color: 'var(--accent-secondary)' }}>This is a variant of:</span>
+            <Link href={`/run/${run.variantOf}/report`} style={{ color: 'var(--accent-primary)' }}>
               View Original Report
             </Link>
           </div>

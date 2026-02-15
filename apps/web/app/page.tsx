@@ -222,10 +222,10 @@ export default function HomePage() {
               style={{
                 flex: 1,
                 padding: '1rem',
-                border: `2px solid ${platformMode === 'generic' ? '#6366f1' : '#333'}`,
+                border: `2px solid ${platformMode === 'generic' ? 'var(--accent-primary)' : 'var(--border)'}`,
                 borderRadius: '8px',
                 cursor: 'pointer',
-                background: platformMode === 'generic' ? 'rgba(99,102,241,0.1)' : 'transparent',
+                background: platformMode === 'generic' ? 'var(--accent-primary-soft)' : 'transparent',
               }}
             >
               <input
@@ -243,10 +243,10 @@ export default function HomePage() {
               style={{
                 flex: 1,
                 padding: '1rem',
-                border: `2px solid ${platformMode === 'product_hunt' ? '#da552f' : '#333'}`,
+                border: `2px solid ${platformMode === 'product_hunt' ? 'var(--accent-primary)' : 'var(--border)'}`,
                 borderRadius: '8px',
                 cursor: 'pointer',
-                background: platformMode === 'product_hunt' ? 'rgba(218,85,47,0.1)' : 'transparent',
+                background: platformMode === 'product_hunt' ? 'var(--accent-primary-soft)' : 'transparent',
               }}
             >
               <input
@@ -263,14 +263,14 @@ export default function HomePage() {
           </div>
 
           {platformMode === 'product_hunt' && (
-            <div style={{ borderTop: '1px solid #333', paddingTop: '1rem' }}>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
               <p className="hint" style={{ marginBottom: '1rem' }}>
                 Enter your Product Hunt listing details. In PH mode you can run without a landing URL.
               </p>
 
               <div className="form-group">
                 <label htmlFor="phProductName">
-                  Product Name <span style={{ color: '#888', fontSize: '0.85em' }}>(max 60 chars)</span>
+                  Product Name <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 60 chars)</span>
                 </label>
                 <input
                   id="phProductName"
@@ -285,7 +285,7 @@ export default function HomePage() {
 
               <div className="form-group">
                 <label htmlFor="phTagline">
-                  PH Tagline <span style={{ color: '#888', fontSize: '0.85em' }}>(max 60 chars)</span>
+                  PH Tagline <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 60 chars)</span>
                 </label>
                 <input
                   id="phTagline"
@@ -300,7 +300,7 @@ export default function HomePage() {
 
               <div className="form-group">
                 <label htmlFor="phDescription">
-                  PH Description <span style={{ color: '#888', fontSize: '0.85em' }}>(max 260 chars)</span>
+                  PH Description <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 260 chars)</span>
                 </label>
                 <textarea
                   id="phDescription"
@@ -315,7 +315,7 @@ export default function HomePage() {
 
               <div className="form-group">
                 <label htmlFor="phTopics">
-                  Topics <span style={{ color: '#888', fontSize: '0.85em' }}>(max 3, comma-separated)</span>
+                  Topics <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 3, comma-separated)</span>
                 </label>
                 <input
                   id="phTopics"
@@ -328,7 +328,7 @@ export default function HomePage() {
 
               <div className="form-group">
                 <label htmlFor="makerFirstComment">
-                  Maker First Comment <span style={{ color: '#888', fontSize: '0.85em' }}>(max 1000 chars)</span>
+                  Maker First Comment <span style={{ color: 'var(--text-muted)', fontSize: '0.85em' }}>(max 1000 chars)</span>
                 </label>
                 <textarea
                   id="makerFirstComment"
@@ -374,10 +374,10 @@ export default function HomePage() {
               style={{
                 flex: 1,
                 padding: '1rem',
-                border: `2px solid ${runMode === 'quick' ? '#6366f1' : '#333'}`,
+                border: `2px solid ${runMode === 'quick' ? 'var(--accent-primary)' : 'var(--border)'}`,
                 borderRadius: '8px',
                 cursor: 'pointer',
-                background: runMode === 'quick' ? 'rgba(99,102,241,0.1)' : 'transparent',
+                background: runMode === 'quick' ? 'var(--accent-primary-soft)' : 'transparent',
               }}
             >
               <input
@@ -395,10 +395,10 @@ export default function HomePage() {
               style={{
                 flex: 1,
                 padding: '1rem',
-                border: `2px solid ${runMode === 'deep' ? '#6366f1' : '#333'}`,
+                border: `2px solid ${runMode === 'deep' ? 'var(--accent-primary)' : 'var(--border)'}`,
                 borderRadius: '8px',
                 cursor: 'pointer',
-                background: runMode === 'deep' ? 'rgba(99,102,241,0.1)' : 'transparent',
+                background: runMode === 'deep' ? 'var(--accent-primary-soft)' : 'transparent',
               }}
             >
               <input
