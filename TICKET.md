@@ -2569,7 +2569,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Homepage card updated to "nad.fun 토큰 런치 리액션을 예측합니다"
 - Test: `pnpm typecheck` passes for all packages
 
-### [ ] MND-030 (P0) Add API compatibility layer for legacy PH payloads
+### [x] MND-030 (P0) Add API compatibility layer for legacy PH payloads
 **Goal:** Prevent breakage while pivoting to nad.fun primary mode.
 
 **Deliverables**
@@ -2581,6 +2581,13 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Existing integrations do not hard-fail during transition window.
 
 **Dependencies:** MND-029
+
+**Completion notes:**
+- `normalizeLegacyPayload()` in `POST /api/run` route: auto-detects legacy PH payloads (phSubmission present without platformMode) and sets `platformMode: 'product_hunt'`
+- Validation errors include `migrationHint` and `apiVersion: 'v1'` with migration guidance
+- Note field in error response: "Default platformMode is now nad_fun. Send platformMode=product_hunt explicitly for PH submissions."
+- Existing PH integrations continue to work transparently (auto-detection)
+- Test: `pnpm typecheck` passes for all packages
 
 ### [ ] MND-031 (P1) Build nad.fun seed fixtures + seed script mode
 **Goal:** Seed realistic nad.fun launch scenarios for demo and QA.

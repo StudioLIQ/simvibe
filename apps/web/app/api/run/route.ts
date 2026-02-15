@@ -2,14 +2,39 @@ import { NextRequest, NextResponse } from 'next/server';
 import { validateRunInput } from '@simvibe/shared';
 import { createStorage, storageConfigFromEnv, ensurePersonaRegistry, validatePersonaIds } from '@simvibe/engine';
 
+/**
+ * Normalize legacy PH payloads for backward compatibility.
+ * - If `phSubmission` is present but `platformMode` is missing/default, auto-set to 'product_hunt'.
+ * - If PH-era fields like `phSubmission.phTagline` exist without `platformMode`, infer PH mode.
+ */
+function normalizeLegacyPayload(body: Record<string, unknown>): Record<string, unknown> {
+  const normalized = { ...body };
+
+  // Auto-detect legacy PH payload: phSubmission present but platformMode missing
+  if (normalized.phSubmission && !normalized.platformMode) {
+    normalized.platformMode = 'product_hunt';
+    normalized._migrationHint = 'platformMode auto-set to product_hunt (legacy compat). Please send platformMode explicitly.';
+  }
+
+  return normalized;
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const rawBody = await request.json();
+    const body = normalizeLegacyPayload(rawBody);
 
     const validation = validateRunInput(body);
     if (!validation.success) {
+      // Add migration guidance to validation errors
+      const migrationHint = typeof body._migrationHint === 'string' ? body._migrationHint : undefined;
       return NextResponse.json(
-        { error: `Invalid input: ${validation.error}` },
+        {
+          error: `Invalid input: ${validation.error}`,
+          ...(migrationHint ? { migrationHint } : {}),
+          apiVersion: 'v1',
+          note: 'Default platformMode is now nad_fun. Send platformMode=product_hunt explicitly for PH submissions.',
+        },
         { status: 400 }
       );
     }
