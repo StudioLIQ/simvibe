@@ -10,6 +10,8 @@ import type {
   PlatformMode,
   PHSubmission,
   PHForecast,
+  LaunchPack,
+  RunInput,
   DiffusionTimeline,
   ConversationDynamics,
   PersonaSetName,
@@ -18,6 +20,7 @@ import type {
 import { applyCalibration } from '@simvibe/shared';
 import { aggregateOutputs, type AggregationResult } from './aggregator';
 import { computePHForecast } from './ph-forecast';
+import { generateLaunchPack } from './launch-pack-generator';
 
 function createPersonaReport(output: AgentOutput): PersonaReport {
   const actionProbabilities: Partial<Record<ActionType, number>> = {};
@@ -81,7 +84,8 @@ export function generateReport(
   personaSnapshots?: PersonaSnapshots,
   platformMode?: PlatformMode,
   phSubmission?: PHSubmission,
-  conversationDynamics?: ConversationDynamics
+  conversationDynamics?: ConversationDynamics,
+  runInput?: RunInput
 ): Report {
   const aggregation = aggregateOutputs(outputs);
 
@@ -121,6 +125,12 @@ export function generateReport(
     phForecast = computePHForecast(outputs, calibratedMetrics, phSubmission);
   }
 
+  // Launch pack (PH mode with run input available)
+  let launchPack: LaunchPack | undefined;
+  if (platformMode === 'product_hunt' && runInput) {
+    launchPack = generateLaunchPack(runInput, outputs, aggregation.frictionList, phSubmission);
+  }
+
   return {
     runId,
     generatedAt: new Date().toISOString(),
@@ -145,6 +155,7 @@ export function generateReport(
     platformMode,
     phForecast,
     conversationDynamics,
+    launchPack,
   };
 }
 
@@ -275,6 +286,45 @@ export function formatReportMarkdown(report: Report): string {
       lines.push(`\n### Disagreement Resolution`);
       for (const dr of cd.disagreementResolution) {
         lines.push(`- **${dr.topic}**: ${dr.initialDisagreement.join(' vs ')} -> resolved ${dr.resolvedToward}`);
+      }
+    }
+  }
+
+  if (report.launchPack) {
+    const lp = report.launchPack;
+    lines.push(`\n## Launch Pack (PH Submission Artifacts)`);
+
+    if (lp.taglineCandidates.length > 0) {
+      lines.push(`\n### Revised Tagline Candidates`);
+      for (const tc of lp.taglineCandidates) {
+        lines.push(`\n**"${tc.tagline}"**`);
+        lines.push(`Rationale: ${tc.rationale}`);
+        if (tc.addressesFriction) lines.push(`Addresses: ${tc.addressesFriction}`);
+      }
+    }
+
+    if (lp.descriptionCandidates.length > 0) {
+      lines.push(`\n### Revised Description Candidates`);
+      for (const dc of lp.descriptionCandidates) {
+        lines.push(`\n**[${dc.focusArea}]** ${dc.description}`);
+        lines.push(`Rationale: ${dc.rationale}`);
+      }
+    }
+
+    if (lp.makerCommentRewrites.length > 0) {
+      lines.push(`\n### Maker First Comment Rewrites`);
+      for (const mc of lp.makerCommentRewrites) {
+        lines.push(`\n**Strategy: ${mc.strategy}** (strengthens: ${mc.strengthens})`);
+        lines.push(`\`\`\`\n${mc.comment}\n\`\`\``);
+      }
+    }
+
+    if (lp.objectionHandling.length > 0) {
+      lines.push(`\n### Objection Handling Snippets`);
+      for (const oh of lp.objectionHandling) {
+        lines.push(`\n**Objection:** "${oh.objection}"`);
+        lines.push(`**Response:** ${oh.response}`);
+        lines.push(`*Source: ${oh.source}*`);
       }
     }
   }

@@ -1377,7 +1377,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 
 ---
 
-### [ ] SIM-032 (P1) Add Product Hunt launch report pack output
+### [x] SIM-032 (P1) Add Product Hunt launch report pack output
 **Goal:** Produce submission-ready artifacts, not only analytics.
 
 **Deliverables**
@@ -1396,6 +1396,19 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Complete one run and verify export includes all sections with non-empty content.
 
 **Dependencies:** SIM-029, SIM-031
+
+**Completion notes:**
+- LaunchPack schema in packages/shared/src/schemas/launch-pack.ts:
+  - TaglineCandidate, DescriptionCandidate, MakerCommentRewrite, ObjectionSnippet
+- Launch pack generator in packages/engine/src/aggregator/launch-pack-generator.ts:
+  - 3 tagline candidates (ICP-focused, proof-oriented, outcome-focused) with addressesFriction tracing
+  - 3 description candidates (problem-first, credibility, differentiation)
+  - 3 maker comment rewrites (friction-aware, story-driven, roadmap-forward)
+  - Objection handling snippets from top frictions + trust killers
+- Report includes launchPack field for PH-mode runs
+- GET /api/run/[id]/launch-pack endpoint: returns JSON or markdown (?format=markdown)
+- Markdown formatter renders Launch Pack section with all 4 artifact types
+- Test: `pnpm typecheck` passes for all packages
 
 ---
 

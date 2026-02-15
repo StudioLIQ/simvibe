@@ -231,7 +231,8 @@ export async function executeRun(
         personaSnapshots,
         run.input.platformMode,
         run.input.phSubmission,
-        conversationDynamics
+        conversationDynamics,
+        run.input
       );
 
       currentPhase.endedAt = new Date().toISOString();

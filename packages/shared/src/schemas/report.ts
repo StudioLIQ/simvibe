@@ -4,6 +4,7 @@ import { RunModeSchema, PlatformModeSchema } from './run-input';
 import { DiffusionTimelineSchema } from './diffusion';
 import { PersonaSetNameSchema, PersonaSnapshotsSchema } from './persona-snapshot';
 import { ConversationDynamicsSchema } from './conversation';
+import { LaunchPackSchema } from './launch-pack';
 
 export const TractionBandSchema = z.enum([
   'very_low',
@@ -106,6 +107,7 @@ export const ReportSchema = z.object({
   platformMode: PlatformModeSchema.optional(),
   phForecast: PHForecastSchema.optional(),
   conversationDynamics: ConversationDynamicsSchema.optional(),
+  launchPack: LaunchPackSchema.optional(),
 });
 
 export type MomentumRisk = z.infer<typeof MomentumRiskSchema>;
