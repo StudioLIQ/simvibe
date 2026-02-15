@@ -7,10 +7,10 @@
  *
  * Usage:
  *   pnpm ci:smoke:launch   (starts server internally)
- *   BASE_URL=http://localhost:5000 pnpm smoke:launch  (against running server)
+ *   API_BASE_URL=http://localhost:5555 pnpm smoke:launch  (against running server)
  */
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.API_BASE_URL || process.env.BASE_URL || 'http://localhost:5555';
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLL_ATTEMPTS = 120;
 
@@ -74,13 +74,13 @@ async function fetchJSON(url: string, options?: RequestInit): Promise<any> {
 }
 
 async function main() {
-  log(`Base URL: ${BASE_URL}`);
+  log(`API Base URL: ${API_BASE_URL}`);
   log(`DEMO_MODE: ${process.env.DEMO_MODE || '(not set)'}`);
   console.log('');
 
   // Step 1: Create and complete a run
   await step('1. Create run', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run`, {
+    const data = await fetchJSON(`${API_BASE_URL}/api/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -100,14 +100,14 @@ async function main() {
 
   // Step 2: Start simulation
   await step('2. Start simulation', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/start`, { method: 'POST' });
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/start`, { method: 'POST' });
     return `status=${data.status ?? data.queued ?? 'started'}`;
   });
 
   // Step 3: Poll until completed
   await step('3. Poll until completed', async () => {
     for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
-      const data = await fetchJSON(`${BASE_URL}/api/run/${runId}`);
+      const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}`);
       const status = data.run?.status || data.status;
       if (status === 'completed') return `completed after ${i + 1} polls`;
       if (status === 'failed') throw new Error(`Run failed: ${data.run?.error}`);
@@ -118,7 +118,7 @@ async function main() {
 
   // Step 4: Fetch readiness + launch draft
   await step('4. GET /api/run/:id/launch (readiness + draft)', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/launch`);
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/launch`);
     if (!data.readiness) throw new Error('No readiness data');
     if (!data.launchInput) throw new Error('No launch input draft');
     if (!data.readiness.status) throw new Error('Readiness missing status');
@@ -128,7 +128,7 @@ async function main() {
 
   // Step 5: Submit launch payload
   await step('5. POST /api/run/:id/launch (submit payload)', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/launch`, {
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/launch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -148,7 +148,7 @@ async function main() {
 
   // Step 6: Execute launch (gets deep-link or tx data)
   await step('6. POST /api/run/:id/launch/execute', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/launch/execute`, { method: 'POST' });
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/launch/execute`, { method: 'POST' });
     if (!data.success) throw new Error(`Execute failed: ${data.error}`);
     if (!data.plan) throw new Error('No execution plan');
     if (!data.plan.mode) throw new Error('Plan missing mode');
@@ -158,7 +158,7 @@ async function main() {
   // Step 7: Confirm with mock tx hash
   const mockTxHash = '0x' + 'a'.repeat(64);
   await step('7. POST /api/run/:id/launch/confirm (mock tx)', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/launch/confirm`, {
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/launch/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -175,7 +175,7 @@ async function main() {
   // Step 8: Confirm success
   const mockTokenAddr = '0x' + 'b'.repeat(40);
   await step('8. POST /api/run/:id/launch/confirm (success)', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/launch/confirm`, {
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/launch/confirm`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -192,7 +192,7 @@ async function main() {
 
   // Step 9: Verify launch status endpoint
   await step('9. GET /api/run/:id/launch/status', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/launch/status`);
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/launch/status`);
     if (!data.launchRecord) throw new Error('No launch record');
     if (data.launchRecord.status !== 'success') throw new Error(`Expected success, got ${data.launchRecord.status}`);
     if (!data.events || data.events.length === 0) throw new Error('No launch events');
@@ -206,7 +206,7 @@ async function main() {
 
   // Step 10: Verify re-execution blocked (idempotency)
   await step('10. POST execute blocked for success (idempotency)', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/launch/execute`, { method: 'POST' });
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/launch/execute`, { method: 'POST' });
     if (data._httpStatus !== 409) throw new Error(`Expected 409 Conflict, got ${data._httpStatus || 'success'}`);
     return `correctly blocked with 409`;
   });

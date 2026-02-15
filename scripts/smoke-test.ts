@@ -6,10 +6,10 @@
  * Usage:
  *   DEMO_MODE=true DATABASE_URL=memory:// pnpm smoke
  *   # Or with a running dev server:
- *   BASE_URL=http://localhost:5000 pnpm smoke
+ *   API_BASE_URL=http://localhost:5555 pnpm smoke
  */
 
-const BASE_URL = process.env.BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = process.env.API_BASE_URL || process.env.BASE_URL || 'http://localhost:5555';
 const POLL_INTERVAL_MS = 1000;
 const MAX_POLL_ATTEMPTS = 120; // 2 minutes max
 
@@ -72,20 +72,20 @@ async function fetchJSON(url: string, options?: RequestInit): Promise<any> {
 }
 
 async function main() {
-  log(`Base URL: ${BASE_URL}`);
+  log(`API Base URL: ${API_BASE_URL}`);
   log(`DEMO_MODE: ${process.env.DEMO_MODE || '(not set)'}`);
   log(`DATABASE_URL: ${process.env.DATABASE_URL || '(not set)'}`);
   console.log('');
 
   // Step 1: Check diagnostics endpoint
   await step('GET /api/diagnostics', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/diagnostics`);
+    const data = await fetchJSON(`${API_BASE_URL}/api/diagnostics`);
     return `node=${data.nodeVersion}, storage=${data.storage?.activeBackend}, personas=${data.personaRegistry?.count}`;
   });
 
   // Step 2: Create a run
   await step('POST /api/run (create)', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run`, {
+    const data = await fetchJSON(`${API_BASE_URL}/api/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -106,7 +106,7 @@ async function main() {
 
   // Step 3: Start the run
   await step('POST /api/run/:id/start', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}/start`, {
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}/start`, {
       method: 'POST',
     });
     return `queued=${data.queued ?? 'inline'}, status=${data.status ?? 'started'}`;
@@ -115,7 +115,7 @@ async function main() {
   // Step 4: Poll until completed
   await step('Poll /api/run/:id until completed', async () => {
     for (let attempt = 0; attempt < MAX_POLL_ATTEMPTS; attempt++) {
-      const data = await fetchJSON(`${BASE_URL}/api/run/${runId}`);
+      const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}`);
       const status = data.run?.status || data.status;
 
       if (status === 'completed') {
@@ -132,7 +132,7 @@ async function main() {
 
   // Step 5: Assert report presence
   await step('Assert report present', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}`);
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}`);
     const report = data.run?.report;
 
     if (!report) throw new Error('No report in run data');
@@ -148,7 +148,7 @@ async function main() {
 
   // Step 6: Assert metrics shape
   await step('Assert metrics shape', async () => {
-    const data = await fetchJSON(`${BASE_URL}/api/run/${runId}`);
+    const data = await fetchJSON(`${API_BASE_URL}/api/run/${runId}`);
     const m = data.run?.report?.metrics;
 
     if (typeof m.expectedUpvotes !== 'number') throw new Error('Missing expectedUpvotes');

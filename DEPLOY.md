@@ -128,17 +128,58 @@ LLM_MODEL=gemini-2.5-flash   # use a different model
 ## 4. Local Development
 
 ```bash
-cp .env.example .env
-# Fill in GEMINI_API_KEY
-
 pnpm install
-pnpm dev          # http://localhost:5000
+cp .env.example .env
+# Fill in GEMINI_API_KEY and DATABASE_URL
 ```
 
-For zero-cost local testing:
+### Local Postgres (recommended)
 
 ```bash
-DEMO_MODE=true DATABASE_URL=memory:// pnpm dev
+docker run --name simvibe-postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=simvibe \
+  -p 5432:5432 \
+  -d postgres:16
+```
+
+`.env` example:
+
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/simvibe
+PORT=5555
+NODE_ENV=development
+```
+
+Run migrations + persona sync:
+
+```bash
+pnpm db:migrate
+pnpm personas:sync
+```
+
+Start split dev servers:
+
+```bash
+# Terminal 1 (API server)
+pnpm dev:api      # http://localhost:5555
+
+# Terminal 2 (FE)
+pnpm dev:web      # http://localhost:5556
+```
+
+Open:
+- `http://localhost:5556` (UI)
+- `http://localhost:5555/api/diagnostics` (API health)
+
+### Zero-cost demo mode
+
+In demo mode, landing extraction is forced to `pasted` (Jina/Firecrawl are not called).
+
+```bash
+DEMO_MODE=true DATABASE_URL=memory:// pnpm dev:api
+pnpm dev:web
 ```
 
 ## 5. Monitoring

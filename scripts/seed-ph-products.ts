@@ -3,15 +3,16 @@
  * Seed Product Hunt-style demo runs so report pages are ready to view.
  *
  * Usage:
- *   BASE_URL=http://localhost:5000 pnpm seed:ph
- *   BASE_URL=http://localhost:5000 PRODUCT_COUNT=6 RUN_MODE=quick pnpm seed:ph
+ *   API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 pnpm seed:ph
+ *   API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 PRODUCT_COUNT=6 RUN_MODE=quick pnpm seed:ph
  */
 
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { PH_SEED_PRODUCTS } from './fixtures/ph-seed-products';
 
-const BASE_URL = (process.env.BASE_URL || 'http://localhost:5000').replace(/\/+$/, '');
+const API_BASE_URL = (process.env.API_BASE_URL || process.env.BASE_URL || 'http://localhost:5555').replace(/\/+$/, '');
+const WEB_BASE_URL = (process.env.WEB_BASE_URL || process.env.PUBLIC_BASE_URL || 'http://localhost:5556').replace(/\/+$/, '');
 const RUN_MODE = process.env.RUN_MODE === 'deep' ? 'deep' : 'quick';
 const PRODUCT_COUNT = Math.max(1, Math.min(
   PH_SEED_PRODUCTS.length,
@@ -73,11 +74,11 @@ async function requestJSON(url: string, init?: RequestInit): Promise<HttpResult>
 
 async function ensureServer() {
   try {
-    await requestJSON(`${BASE_URL}/api/diagnostics`);
+    await requestJSON(`${API_BASE_URL}/api/diagnostics`);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Cannot reach server at ${BASE_URL}. Start web app first (e.g. pnpm dev).\n` +
+      `Cannot reach API server at ${API_BASE_URL}. Start API app first (e.g. pnpm dev:api).\n` +
       `Original error: ${msg}`
     );
   }
@@ -124,7 +125,7 @@ function toRunInput(product: typeof PH_SEED_PRODUCTS[number]) {
 async function createAndRun(product: typeof PH_SEED_PRODUCTS[number], index: number): Promise<SeededRun> {
   log(`(${index + 1}/${PRODUCT_COUNT}) create run: ${product.productName}`);
 
-  const created = await requestJSON(`${BASE_URL}/api/run`, {
+  const created = await requestJSON(`${API_BASE_URL}/api/run`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(toRunInput(product)),
@@ -135,10 +136,10 @@ async function createAndRun(product: typeof PH_SEED_PRODUCTS[number], index: num
   }
 
   const runId = created.runId as string;
-  await requestJSON(`${BASE_URL}/api/run/${runId}/start`, { method: 'POST' });
+  await requestJSON(`${API_BASE_URL}/api/run/${runId}/start`, { method: 'POST' });
 
   for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
-    const runData = await requestJSON(`${BASE_URL}/api/run/${runId}`);
+    const runData = await requestJSON(`${API_BASE_URL}/api/run/${runId}`);
     const status = runData.run?.status || runData.status;
 
     if (status === 'completed') {
@@ -147,7 +148,7 @@ async function createAndRun(product: typeof PH_SEED_PRODUCTS[number], index: num
         productName: product.productName,
         sourceUrl: product.sourceUrl,
         runId,
-        reportUrl: `${BASE_URL}/run/${runId}/report`,
+        reportUrl: `${WEB_BASE_URL}/run/${runId}/report`,
         status,
         tractionBand: report?.tractionBand,
         overallScore: report?.overallScore,
@@ -167,7 +168,8 @@ async function writeOutputs(results: SeededRun[]) {
   await mkdir(OUTPUT_DIR, { recursive: true });
   await writeFile(OUTPUT_JSON, JSON.stringify({
     generatedAt: new Date().toISOString(),
-    baseUrl: BASE_URL,
+    apiBaseUrl: API_BASE_URL,
+    webBaseUrl: WEB_BASE_URL,
     runMode: RUN_MODE,
     count: results.length,
     results,
@@ -177,7 +179,8 @@ async function writeOutputs(results: SeededRun[]) {
   mdLines.push('# Seeded Product Hunt Reports');
   mdLines.push('');
   mdLines.push(`- Generated: ${new Date().toISOString()}`);
-  mdLines.push(`- Base URL: ${BASE_URL}`);
+  mdLines.push(`- API Base URL: ${API_BASE_URL}`);
+  mdLines.push(`- Web Base URL: ${WEB_BASE_URL}`);
   mdLines.push(`- Run mode: ${RUN_MODE}`);
   mdLines.push('');
   mdLines.push('| Product | Run ID | Score | Traction | Report | Source |');
@@ -193,7 +196,8 @@ async function writeOutputs(results: SeededRun[]) {
 }
 
 async function main() {
-  log(`Server: ${BASE_URL}`);
+  log(`API: ${API_BASE_URL}`);
+  log(`Web: ${WEB_BASE_URL}`);
   log(`Run mode: ${RUN_MODE}, productCount: ${PRODUCT_COUNT}`);
 
   await ensureServer();

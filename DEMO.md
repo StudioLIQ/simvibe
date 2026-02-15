@@ -2,10 +2,11 @@
 
 ## Setup (Before Demo)
 1. Ensure `DEMO_MODE=true` in `.env` (uses cached extracts, no API calls)
-2. Start the app: `pnpm dev`
-3. Open http://localhost:5000
-4. (Optional) Seed Product Hunt-style runs for instant report links:
-   - `BASE_URL=http://localhost:5000 PRODUCT_COUNT=5 pnpm seed:ph`
+2. Start API server: `pnpm dev:api` (port `5555`)
+3. Start FE server: `pnpm dev:web` (port `5556`, proxies `/api/*` to `5555`)
+4. Open http://localhost:5556
+5. (Optional) Seed Product Hunt-style runs for instant report links:
+   - `API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 PRODUCT_COUNT=5 pnpm seed:ph`
    - links saved at `artifacts_runs/ph-seed-report-links.md`
 
 ---
@@ -82,7 +83,8 @@ Click "View Report" when complete:
 If API keys are missing or rate-limited, enable demo mode:
 
 ```bash
-DEMO_MODE=true pnpm dev
+DEMO_MODE=true DATABASE_URL=memory:// pnpm dev:api
+pnpm dev:web
 ```
 
 This uses cached landing extracts and deterministic agent outputs.
