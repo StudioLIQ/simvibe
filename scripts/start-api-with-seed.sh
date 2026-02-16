@@ -29,14 +29,11 @@ infer_api_base_url() {
     return
   fi
 
-  if [[ -n "${RAILWAY_PUBLIC_DOMAIN:-}" ]]; then
-    local host
-    host="$(normalize_url "$RAILWAY_PUBLIC_DOMAIN")"
-    printf 'https://%s' "$host"
-    return
-  fi
-
+  # When running seed from this same container, prefer loopback to avoid
+  # Railway edge routing and timeout behavior.
   printf 'http://127.0.0.1:%s' "$PORT"
+  return
+
 }
 
 infer_web_base_url() {

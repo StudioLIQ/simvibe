@@ -57,6 +57,7 @@ const NAD_LIVE_SOURCE_URL = process.env.NAD_SOURCE_URL || 'https://api.nadapp.ne
 const OUTPUT_DIR = path.join(process.cwd(), 'artifacts_runs');
 const OUTPUT_JSON = path.join(OUTPUT_DIR, 'nad-seed-summary.json');
 const OUTPUT_MD = path.join(OUTPUT_DIR, 'nad-seed-report-links.md');
+const START_INLINE_GEMINI_KEY = process.env.GEMINI_API_KEY?.trim();
 
 interface SeededRun {
   slug: string;
@@ -403,7 +404,21 @@ async function createAndRun(
   }
 
   const runId = created.runId as string;
-  await requestJSON(`${API_BASE_URL}/api/run/${runId}/start`, { method: 'POST' });
+  const startBody = START_INLINE_GEMINI_KEY
+    ? {
+        runtimeOverrides: {
+          llmProvider: 'gemini' as const,
+          geminiApiKey: START_INLINE_GEMINI_KEY,
+          llmModel: process.env.LLM_MODEL || undefined,
+        },
+      }
+    : undefined;
+
+  await requestJSON(`${API_BASE_URL}/api/run/${runId}/start`, {
+    method: 'POST',
+    headers: startBody ? { 'Content-Type': 'application/json' } : undefined,
+    body: startBody ? JSON.stringify(startBody) : undefined,
+  });
 
   for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
     const runData = await requestJSON(`${API_BASE_URL}/api/run/${runId}`);
@@ -501,6 +516,11 @@ async function main() {
   log(`Seed namespace: ${SEED_NAMESPACE}`);
   log(`Seed only missing: ${SEED_ONLY_MISSING}`);
   log(`Run mode: ${RUN_MODE}, productCount: ${productCount}`);
+  if (START_INLINE_GEMINI_KEY) {
+    log('Start mode: inline (runtime override with GEMINI_API_KEY)');
+  } else {
+    log('Start mode: default (/start queue behavior)');
+  }
 
   await ensureServer();
   const existingSlugs = await fetchExistingSeededSlugs(tokenNameToSlug);
