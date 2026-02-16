@@ -115,6 +115,13 @@ export default function ReportsPage() {
       });
   }, [runs, query, seededOnly, platformFilter]);
 
+  const inFlightSeedRuns = useMemo(() => {
+    return runs
+      .filter((run) => run.status !== 'completed')
+      .filter((run) => isSeeded(run))
+      .slice(0, 8);
+  }, [runs]);
+
   return (
     <main className="container">
       <header className="header" style={{ marginBottom: '1rem' }}>
@@ -179,7 +186,47 @@ export default function ReportsPage() {
         {error && <div className="error-message">{error}</div>}
 
         {!loading && !error && completedReports.length === 0 && (
-          <p className="hint">No reports match your filters.</p>
+          <div>
+            <p className="hint" style={{ marginBottom: inFlightSeedRuns.length > 0 ? '0.75rem' : 0 }}>
+              No completed reports match your filters yet.
+            </p>
+
+            {inFlightSeedRuns.length > 0 && (
+              <div style={{ display: 'grid', gap: '0.65rem' }}>
+                <div className="hint" style={{ fontWeight: 600 }}>Seed runs in progress</div>
+                {inFlightSeedRuns.map((run) => (
+                  <div
+                    key={run.id}
+                    style={{
+                      border: '1px solid var(--border)',
+                      borderRadius: '0.75rem',
+                      padding: '0.75rem',
+                      background: 'var(--surface-card)',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: '0.75rem', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontWeight: 700 }}>{getTitle(run)}</div>
+                        <div className="hint">{run.id}</div>
+                      </div>
+                      <div style={{ textTransform: 'uppercase', fontSize: '0.72rem', fontWeight: 700, color: 'var(--warn-text)' }}>
+                        {run.status}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '0.55rem' }}>
+                      <Link
+                        href={`/run/${run.id}`}
+                        className="btn"
+                        style={{ padding: '0.42rem 0.75rem', fontSize: '0.84rem', borderColor: 'var(--border)', color: 'var(--text-secondary)' }}
+                      >
+                        Open Run Detail
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
 
         {!loading && !error && completedReports.length > 0 && (

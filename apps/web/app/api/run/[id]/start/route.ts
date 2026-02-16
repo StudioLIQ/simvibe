@@ -18,6 +18,7 @@ interface StartRunBody {
     llmProvider?: 'gemini';
     geminiApiKey?: string;
     llmModel?: string;
+    forceInline?: boolean;
   };
 }
 
@@ -25,6 +26,7 @@ interface RuntimeOverrides {
   llmProvider?: 'gemini';
   geminiApiKey?: string;
   llmModel?: string;
+  forceInline?: boolean;
 }
 
 function getExtractorConfig(): ExtractorConfig {
@@ -76,6 +78,7 @@ export async function POST(
         llmProvider: body.runtimeOverrides.llmProvider,
         geminiApiKey: body.runtimeOverrides.geminiApiKey?.trim() || undefined,
         llmModel: body.runtimeOverrides.llmModel?.trim() || undefined,
+        forceInline: body.runtimeOverrides.forceInline === true,
       };
     }
   } catch {
@@ -120,7 +123,8 @@ export async function POST(
 
     const queueConfig = queueConfigFromEnv();
     const hasByokGemini = !!runtimeOverrides?.geminiApiKey;
-    const shouldForceInline = hasByokGemini;
+    const isSeedRun = Array.isArray(run.input?.tags) && run.input.tags.some((tag) => tag.startsWith('seed:'));
+    const shouldForceInline = hasByokGemini || runtimeOverrides?.forceInline === true || isSeedRun;
 
     // Async mode: enqueue to pg-boss, return immediately
     if (queueConfig.type === 'pgboss' && !shouldForceInline) {

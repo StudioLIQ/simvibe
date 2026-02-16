@@ -404,20 +404,19 @@ async function createAndRun(
   }
 
   const runId = created.runId as string;
-  const startBody = START_INLINE_GEMINI_KEY
-    ? {
-        runtimeOverrides: {
-          llmProvider: 'gemini' as const,
-          geminiApiKey: START_INLINE_GEMINI_KEY,
-          llmModel: process.env.LLM_MODEL || undefined,
-        },
-      }
-    : undefined;
+  const startBody = {
+    runtimeOverrides: {
+      forceInline: true,
+      llmProvider: 'gemini' as const,
+      geminiApiKey: START_INLINE_GEMINI_KEY || undefined,
+      llmModel: process.env.LLM_MODEL || undefined,
+    },
+  };
 
   await requestJSON(`${API_BASE_URL}/api/run/${runId}/start`, {
     method: 'POST',
-    headers: startBody ? { 'Content-Type': 'application/json' } : undefined,
-    body: startBody ? JSON.stringify(startBody) : undefined,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(startBody),
   });
 
   for (let i = 0; i < MAX_POLL_ATTEMPTS; i++) {
