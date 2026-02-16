@@ -8,6 +8,8 @@ SEED_ONLY_MISSING_VALUE="${SEED_ONLY_MISSING:-true}"
 PRODUCT_COUNT_VALUE="${PRODUCT_COUNT:-20}"
 RUN_MODE_VALUE="${RUN_MODE:-quick}"
 
+bash scripts/run-migrations-if-needed.sh
+
 normalize_url() {
   local value="$1"
   value="${value#http://}"

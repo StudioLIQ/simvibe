@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { validateRunInput } from '@simvibe/shared';
-import { createStorage, storageConfigFromEnv, ensurePersonaRegistry, validatePersonaIds } from '@simvibe/engine';
+import {
+  type Storage,
+  createStorage,
+  storageConfigFromEnv,
+  ensurePersonaRegistry,
+  validatePersonaIds,
+} from '@simvibe/engine';
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,6 +42,7 @@ export async function POST(request: NextRequest) {
     const storage = createStorage(storageConfigFromEnv());
 
     try {
+      await ensureStorageReady(storage);
       const run = await storage.createRun(validation.data);
 
       return NextResponse.json({
@@ -62,6 +69,7 @@ export async function GET(request: NextRequest) {
     const storage = createStorage(storageConfigFromEnv());
 
     try {
+      await ensureStorageReady(storage);
       const runs = await storage.listRuns(limit);
       return NextResponse.json({ runs });
     } finally {
@@ -73,5 +81,12 @@ export async function GET(request: NextRequest) {
       { error: error instanceof Error ? error.message : 'Internal server error' },
       { status: 500 }
     );
+  }
+}
+
+async function ensureStorageReady(storage: Storage): Promise<void> {
+  const maybeWithMigrations = storage as Storage & { ensureMigrations?: () => Promise<void> };
+  if (typeof maybeWithMigrations.ensureMigrations === 'function') {
+    await maybeWithMigrations.ensureMigrations();
   }
 }
