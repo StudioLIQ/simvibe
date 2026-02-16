@@ -38,6 +38,24 @@ interface RunData {
   variantOf?: string;
 }
 
+const DEFAULT_SCORES = {
+  clarity: 0,
+  credibility: 0,
+  differentiation: 0,
+  pricingFraming: 0,
+  conversionReadiness: 0,
+};
+
+const DEFAULT_METRICS = {
+  expectedUpvotes: 0,
+  expectedSignups: 0,
+  expectedPays: 0,
+  bounceRate: 0,
+  shareRate: 0,
+  disagreementScore: 0,
+  uncertaintyScore: 0,
+};
+
 function ScoreBar({ score, label }: { score: number; label: string }) {
   const color = score >= 70 ? 'var(--status-success)' : score >= 50 ? 'var(--status-warning)' : 'var(--status-danger)';
   return (
@@ -202,7 +220,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           bounceRate: run.actuals.bounceRate !== undefined ? (run.actuals.bounceRate * 100).toFixed(1) : '',
           notes: run.actuals.notes || '',
         });
-        if (run.report) {
+        if (run.report?.metrics) {
           const predicted = {
             signupRate: run.report.metrics.expectedSignups,
             payRate: run.report.metrics.expectedPays,
@@ -220,6 +238,8 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               ? Math.abs(predicted.bounceRate - run.actuals.bounceRate)
               : undefined,
           });
+        } else {
+          setPredictionErrors(null);
         }
       }
     }
@@ -584,7 +604,32 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
     );
   }
 
-  const report = run.report;
+  const report = run.report as Partial<Report>;
+  const overallScore = typeof report.overallScore === 'number' ? report.overallScore : 0;
+  const tractionBand = report.tractionBand ?? 'low';
+  const confidence = report.confidence ?? 'medium';
+  const scores = { ...DEFAULT_SCORES, ...(report.scores ?? {}) };
+  const metrics = { ...DEFAULT_METRICS, ...(report.metrics ?? {}) };
+  const rawMetrics = report.rawMetrics ? { ...DEFAULT_METRICS, ...report.rawMetrics } : null;
+  const warnings = Array.isArray(report.warnings) ? report.warnings : [];
+  const frictionList = Array.isArray(report.frictionList) ? report.frictionList.filter(Boolean) : [];
+  const oneLineFixes = Array.isArray(report.oneLineFixes) ? report.oneLineFixes.filter(Boolean) : [];
+  const personaReports = Array.isArray(report.personaReports) ? report.personaReports.filter(Boolean) : [];
+  const executedPersonaIds = Array.isArray(report.executedPersonaIds) ? report.executedPersonaIds : [];
+  const nadFunForecast = report.nadFunForecast
+    ? {
+        ...report.nadFunForecast,
+        buyIntent: report.nadFunForecast.buyIntent ?? 0,
+        holdIntent: report.nadFunForecast.holdIntent ?? 0,
+        earlyChurnRisk: report.nadFunForecast.earlyChurnRisk ?? 0,
+        snipeDumpRisk: report.nadFunForecast.snipeDumpRisk ?? 0,
+        communitySpreadPotential: report.nadFunForecast.communitySpreadPotential ?? 0,
+        launchViabilityScore: report.nadFunForecast.launchViabilityScore ?? 0,
+        narrativeStrength: report.nadFunForecast.narrativeStrength ?? 'none',
+        tokenomicsClarity: report.nadFunForecast.tokenomicsClarity ?? 0,
+        risks: Array.isArray(report.nadFunForecast.risks) ? report.nadFunForecast.risks : [],
+      }
+    : null;
 
   return (
     <main className="container">
@@ -605,7 +650,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         <p>{run.input.tagline}</p>
       </header>
 
-      {report.warnings && report.warnings.length > 0 && (
+      {warnings.length > 0 && (
         <div style={{
           background: 'var(--warn-bg)',
           border: '1px solid var(--warn-border)',
@@ -615,7 +660,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         }}>
           <strong style={{ color: 'var(--warn-text)' }}>Warnings:</strong>
           <ul style={{ margin: '0.5rem 0 0 1.5rem', color: 'var(--warn-text)' }}>
-            {report.warnings.map((w, i) => (
+            {warnings.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
           </ul>
@@ -641,9 +686,9 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             Persona Set: <strong style={{ color: 'var(--accent-secondary)' }}>{report.personaSet}</strong>
           </span>
         )}
-        {report.executedPersonaIds && (
+        {executedPersonaIds.length > 0 && (
           <span style={{ background: 'var(--surface-card)', padding: '0.25rem 0.5rem', borderRadius: '4px', border: '1px solid var(--border)' }}>
-            Personas: <strong style={{ color: 'var(--accent-secondary)' }}>{report.executedPersonaIds.length}</strong>
+            Personas: <strong style={{ color: 'var(--accent-secondary)' }}>{executedPersonaIds.length}</strong>
           </span>
         )}
         {report.earlyStopReason && (
@@ -816,34 +861,34 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card">
-          <h2 style={{ fontSize: '3rem', fontWeight: 700, color: report.overallScore >= 70 ? 'var(--status-success)' : report.overallScore >= 50 ? 'var(--status-warning)' : 'var(--status-danger)' }}>
-            {report.overallScore}
+          <h2 style={{ fontSize: '3rem', fontWeight: 700, color: overallScore >= 70 ? 'var(--status-success)' : overallScore >= 50 ? 'var(--status-warning)' : 'var(--status-danger)' }}>
+            {overallScore}
           </h2>
           <p style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}>Overall Score</p>
           <div style={{
             display: 'inline-block',
             padding: '0.25rem 0.75rem',
-            background: report.tractionBand === 'very_high' || report.tractionBand === 'high' ? 'var(--success-bg)' :
-                        report.tractionBand === 'moderate' ? 'var(--warn-bg)' : 'var(--danger-bg)',
+            background: tractionBand === 'very_high' || tractionBand === 'high' ? 'var(--success-bg)' :
+                        tractionBand === 'moderate' ? 'var(--warn-bg)' : 'var(--danger-bg)',
             borderRadius: '4px',
             fontSize: '0.875rem',
-            color: report.tractionBand === 'very_high' || report.tractionBand === 'high' ? 'var(--success-soft)' :
-                   report.tractionBand === 'moderate' ? 'var(--warn-text)' : 'var(--danger-soft)',
+            color: tractionBand === 'very_high' || tractionBand === 'high' ? 'var(--success-soft)' :
+                   tractionBand === 'moderate' ? 'var(--warn-text)' : 'var(--danger-soft)',
           }}>
-            {report.tractionBand.replace('_', ' ').toUpperCase()} TRACTION
+            {tractionBand.replace('_', ' ').toUpperCase()} TRACTION
           </div>
           <span style={{ marginLeft: '0.5rem', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            ({report.confidence} confidence)
+            ({confidence} confidence)
           </span>
         </div>
 
         <div className="card">
           <h3 style={{ marginBottom: '1rem', fontSize: '1rem', color: 'var(--text-muted)' }}>Score Breakdown</h3>
-          <ScoreBar score={report.scores.clarity} label="Clarity" />
-          <ScoreBar score={report.scores.credibility} label="Credibility" />
-          <ScoreBar score={report.scores.differentiation} label="Differentiation" />
-          <ScoreBar score={report.scores.pricingFraming} label="Pricing Framing" />
-          <ScoreBar score={report.scores.conversionReadiness} label="Conversion Readiness" />
+          <ScoreBar score={scores.clarity} label="Clarity" />
+          <ScoreBar score={scores.credibility} label="Credibility" />
+          <ScoreBar score={scores.differentiation} label="Differentiation" />
+          <ScoreBar score={scores.pricingFraming} label="Pricing Framing" />
+          <ScoreBar score={scores.conversionReadiness} label="Conversion Readiness" />
         </div>
       </div>
 
@@ -852,37 +897,37 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', textAlign: 'center' }}>
           <div>
             <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
-              {report.metrics.expectedUpvotes.toFixed(1)}
+              {metrics.expectedUpvotes.toFixed(1)}
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Upvotes</div>
           </div>
           <div>
             <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--status-success)' }}>
-              {(report.metrics.expectedSignups * 100).toFixed(0)}%
+              {(metrics.expectedSignups * 100).toFixed(0)}%
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Signups</div>
           </div>
           <div>
             <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-secondary)' }}>
-              {(report.metrics.expectedPays * 100).toFixed(0)}%
+              {(metrics.expectedPays * 100).toFixed(0)}%
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Pays</div>
           </div>
           <div>
             <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--status-danger)' }}>
-              {(report.metrics.bounceRate * 100).toFixed(0)}%
+              {(metrics.bounceRate * 100).toFixed(0)}%
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Bounce</div>
           </div>
           <div>
             <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--status-warning)' }}>
-              {(report.metrics.shareRate * 100).toFixed(0)}%
+              {(metrics.shareRate * 100).toFixed(0)}%
             </div>
             <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Share</div>
           </div>
         </div>
 
-        {report.calibrationApplied && report.rawMetrics && (
+        {report.calibrationApplied && rawMetrics && (
           <div style={{ marginTop: '1rem', padding: '0.75rem', background: 'var(--indigo-bg)', borderRadius: '0.5rem', border: '1px solid var(--indigo-border)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
               <span style={{ fontSize: '0.75rem', background: 'var(--indigo-badge-bg)', padding: '0.125rem 0.5rem', borderRadius: '4px', color: 'var(--indigo-badge-text)' }}>
@@ -894,13 +939,13 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', fontSize: '0.75rem' }}>
               <div style={{ color: 'var(--text-muted)' }}>
-                Raw Signups: <span style={{ color: 'var(--text-dim)' }}>{(report.rawMetrics.expectedSignups * 100).toFixed(1)}%</span>
+                Raw Signups: <span style={{ color: 'var(--text-dim)' }}>{(rawMetrics.expectedSignups * 100).toFixed(1)}%</span>
               </div>
               <div style={{ color: 'var(--text-muted)' }}>
-                Raw Pays: <span style={{ color: 'var(--text-dim)' }}>{(report.rawMetrics.expectedPays * 100).toFixed(1)}%</span>
+                Raw Pays: <span style={{ color: 'var(--text-dim)' }}>{(rawMetrics.expectedPays * 100).toFixed(1)}%</span>
               </div>
               <div style={{ color: 'var(--text-muted)' }}>
-                Raw Bounce: <span style={{ color: 'var(--text-dim)' }}>{(report.rawMetrics.bounceRate * 100).toFixed(1)}%</span>
+                Raw Bounce: <span style={{ color: 'var(--text-dim)' }}>{(rawMetrics.bounceRate * 100).toFixed(1)}%</span>
               </div>
             </div>
           </div>
@@ -908,7 +953,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       </div>
 
       {/* nad.fun Launch Forecast */}
-      {report.nadFunForecast && (
+      {nadFunForecast && (
         <div className="card" style={{ marginBottom: '1.5rem' }}>
           <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>nad.fun Launch Forecast</h3>
 
@@ -925,18 +970,18 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
             <div style={{
               fontSize: '2.5rem',
               fontWeight: 700,
-              color: report.nadFunForecast.launchViabilityScore >= 70 ? 'var(--status-success)'
-                : report.nadFunForecast.launchViabilityScore >= 45 ? 'var(--status-warning)'
+              color: nadFunForecast.launchViabilityScore >= 70 ? 'var(--status-success)'
+                : nadFunForecast.launchViabilityScore >= 45 ? 'var(--status-warning)'
                 : 'var(--status-danger)',
             }}>
-              {report.nadFunForecast.launchViabilityScore}
+              {nadFunForecast.launchViabilityScore}
             </div>
             <div>
               <div style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', fontWeight: 500 }}>Launch Viability</div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Narrative: <strong>{report.nadFunForecast.narrativeStrength.toUpperCase()}</strong>
+                Narrative: <strong>{nadFunForecast.narrativeStrength.toUpperCase()}</strong>
                 {' | '}
-                Tokenomics Clarity: <strong>{(report.nadFunForecast.tokenomicsClarity * 100).toFixed(0)}%</strong>
+                Tokenomics Clarity: <strong>{(nadFunForecast.tokenomicsClarity * 100).toFixed(0)}%</strong>
               </div>
             </div>
           </div>
@@ -945,43 +990,43 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem', textAlign: 'center', marginBottom: '1.5rem' }}>
             <div>
               <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--status-success)' }}>
-                {(report.nadFunForecast.buyIntent * 100).toFixed(0)}%
+                {(nadFunForecast.buyIntent * 100).toFixed(0)}%
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Buy Intent</div>
             </div>
             <div>
               <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-primary)' }}>
-                {(report.nadFunForecast.holdIntent * 100).toFixed(0)}%
+                {(nadFunForecast.holdIntent * 100).toFixed(0)}%
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Hold Intent</div>
             </div>
             <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: report.nadFunForecast.earlyChurnRisk > 0.5 ? 'var(--status-danger)' : 'var(--status-warning)' }}>
-                {(report.nadFunForecast.earlyChurnRisk * 100).toFixed(0)}%
+              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: nadFunForecast.earlyChurnRisk > 0.5 ? 'var(--status-danger)' : 'var(--status-warning)' }}>
+                {(nadFunForecast.earlyChurnRisk * 100).toFixed(0)}%
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Early Churn</div>
             </div>
             <div>
-              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: report.nadFunForecast.snipeDumpRisk > 0.5 ? 'var(--status-danger)' : 'var(--status-warning)' }}>
-                {(report.nadFunForecast.snipeDumpRisk * 100).toFixed(0)}%
+              <div style={{ fontSize: '1.5rem', fontWeight: 600, color: nadFunForecast.snipeDumpRisk > 0.5 ? 'var(--status-danger)' : 'var(--status-warning)' }}>
+                {(nadFunForecast.snipeDumpRisk * 100).toFixed(0)}%
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Snipe/Dump</div>
             </div>
             <div>
               <div style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--accent-secondary)' }}>
-                {(report.nadFunForecast.communitySpreadPotential * 100).toFixed(0)}%
+                {(nadFunForecast.communitySpreadPotential * 100).toFixed(0)}%
               </div>
               <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Community</div>
             </div>
           </div>
 
           {/* Launch Risks */}
-          {report.nadFunForecast.risks.length > 0 && (
+          {nadFunForecast.risks.length > 0 && (
             <div>
               <div style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                Launch Risks ({report.nadFunForecast.risks.length})
+                Launch Risks ({nadFunForecast.risks.length})
               </div>
-              {report.nadFunForecast.risks.map((risk, i) => (
+              {nadFunForecast.risks.map((risk, i) => (
                 <div key={i} style={{
                   display: 'flex',
                   alignItems: 'flex-start',
@@ -1031,7 +1076,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 <div style={{ display: 'flex', justifyContent: 'space-around' }}>
                   <div>
                     <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-dim)' }}>
-                      {(report.metrics.expectedSignups * 100).toFixed(1)}%
+                      {(metrics.expectedSignups * 100).toFixed(1)}%
                     </div>
                     <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Predicted</div>
                   </div>
@@ -1056,7 +1101,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 <div style={{ display: 'flex', justifyContent: 'space-around' }}>
                   <div>
                     <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-dim)' }}>
-                      {(report.metrics.expectedPays * 100).toFixed(1)}%
+                      {(metrics.expectedPays * 100).toFixed(1)}%
                     </div>
                     <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Predicted</div>
                   </div>
@@ -1082,7 +1127,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                   <div style={{ display: 'flex', justifyContent: 'space-around' }}>
                     <div>
                       <div style={{ fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-dim)' }}>
-                        {(report.metrics.bounceRate * 100).toFixed(1)}%
+                        {(metrics.bounceRate * 100).toFixed(1)}%
                       </div>
                       <div style={{ fontSize: '0.625rem', color: 'var(--text-dim)' }}>Predicted</div>
                     </div>
@@ -2023,15 +2068,15 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
         <div className="card">
           <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Top Friction Points</h3>
-          {report.frictionList.slice(0, 5).map((f) => (
+          {frictionList.slice(0, 5).map((f) => (
             <FrictionCard key={f.rank} friction={f} />
           ))}
         </div>
 
         <div className="card">
           <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Recommended Fixes</h3>
-          {report.oneLineFixes.slice(0, 5).map((fix) => (
-            <div key={fix.priority} style={{
+          {oneLineFixes.slice(0, 5).map((fix, index) => (
+            <div key={`${fix.priority}-${index}`} style={{
               background: 'var(--surface-card)',
               border: '1px solid var(--border)',
               borderRadius: '0.5rem',
@@ -2131,7 +2176,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
       <div className="card">
         <h3 style={{ marginBottom: '1rem', fontSize: '1rem' }}>Persona Analysis</h3>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-          {report.personaReports.map((persona) => (
+          {personaReports.map((persona) => (
             <PersonaCard key={persona.personaId} persona={persona} />
           ))}
         </div>
