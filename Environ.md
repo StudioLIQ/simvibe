@@ -66,6 +66,11 @@ NAD_DEFAULT_BUNDLED=false
 - `API_SERVER_ORIGIN` stays blank in single-service deploy (web + API together).  
 - For FE/API split deployments, set this to the API service origin and keep `PORT=5555`.
 
+Troubleshooting:
+- If worker logs show `getaddrinfo ENOTFOUND host`, do **not** use placeholder values like `host` in `DATABASE_URL`.
+- Set `DATABASE_URL` to the exact PostgreSQL URL from Railway/managed DB (for example:
+  `postgres://USER:PASS@HOST:5432/DATABASE`).
+
 ---
 
 ## 2) apps/worker (Railway)
