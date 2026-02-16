@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const MIGRATIONS_TABLE = '_migrations';
+const MIGRATIONS_DIR_ENV = 'SIMVIBE_MIGRATIONS_DIR';
 
 const CREATE_MIGRATIONS_TABLE = `
   CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
@@ -11,6 +12,37 @@ const CREATE_MIGRATIONS_TABLE = `
     applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
   );
 `;
+
+function isReadableDirectory(dirPath: string): boolean {
+  try {
+    return fs.statSync(dirPath).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+function resolveMigrationsDir(): string {
+  const cwd = process.cwd();
+  const candidates = [
+    process.env[MIGRATIONS_DIR_ENV],
+    path.join(__dirname, 'migrations'),
+    path.join(cwd, 'packages', 'engine', 'src', 'storage', 'migrations'),
+    path.join(cwd, 'node_modules', '@simvibe', 'engine', 'src', 'storage', 'migrations'),
+    path.join(cwd, 'dist', 'storage', 'migrations'),
+  ].filter((value): value is string => Boolean(value));
+
+  for (const dirPath of candidates) {
+    if (isReadableDirectory(dirPath)) {
+      return dirPath;
+    }
+  }
+
+  const attempted = candidates.map((value) => `- ${value}`).join('\n');
+  throw new Error(
+    `Unable to locate SQL migrations directory.\n` +
+      `Set ${MIGRATIONS_DIR_ENV} or ensure one of these paths exists:\n${attempted}`,
+  );
+}
 
 export async function runMigrations(pool: Pool): Promise<string[]> {
   const client = await pool.connect();
@@ -24,7 +56,7 @@ export async function runMigrations(pool: Pool): Promise<string[]> {
     );
     const appliedSet = new Set(existing.map((r: { name: string }) => r.name));
 
-    const migrationsDir = path.join(__dirname, 'migrations');
+    const migrationsDir = resolveMigrationsDir();
     const files = fs.readdirSync(migrationsDir)
       .filter(f => f.endsWith('.sql'))
       .sort();
