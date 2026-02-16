@@ -1,24 +1,20 @@
-# Environ (Railway, copy-paste ready)
+# Environment Template (Railway, Submission-Safe)
 
-Target domain: `https://simvibe.studioliq.com`  
-`DATABASE_URL` is intentionally excluded here. Add your own DB URL directly in Railway.
+Target domain: `https://simvibe.studioliq.com`
 
----
+`DATABASE_URL` is intentionally omitted below. Set it directly in Railway using your Postgres service value.
 
-## 1) apps/web (Railway API + UI, production)
+## 1) Web/API Service (`apps/web`)
 
 ```env
 NODE_ENV=production
 DEMO_MODE=false
 
-PORT=5555
-WORKER_PORT=8080
-
 LLM_PROVIDER=gemini
 LLM_MODEL=gemini-2.0-flash
 LLM_DAILY_TOKEN_LIMIT=2000000
 LLM_DAILY_COST_LIMIT_USD=5.00
-GEMINI_API_KEY=AIzaSyANSRtbg4mexfXk1WdvvRO3s4UruniRS10
+GEMINI_API_KEY=your_gemini_api_key
 
 EXTRACTOR_PROVIDER=jina
 # JINA_API_KEY=
@@ -49,7 +45,7 @@ NAD_DEFAULT_BUNDLED=false
 # NAD_DEFAULT_TELEGRAM_URL=
 # NAD_DEFAULT_IMAGE_URL=
 
-# Optional chain/launch
+# Optional chain / launch
 # ENABLE_CHAIN_RECEIPT=false
 # RECEIPT_CONTRACT_ADDRESS=
 # RECEIPT_CHAIN_ID=
@@ -60,20 +56,13 @@ NAD_DEFAULT_BUNDLED=false
 # CHAIN_RPC_URL=
 # CHAIN_ID=
 # CHAIN_PRIVATE_KEY=
-
 ```
 
-- `API_SERVER_ORIGIN` stays blank in single-service deploy (web + API together).  
-- For FE/API split deployments, set this to the API service origin and keep `PORT=5555`.
+Notes:
+- Do not set a fixed `PORT` value in Railway for web/API. Railway injects `PORT` automatically.
+- Keep `API_SERVER_ORIGIN` blank for single-service web+API deployment.
 
-Troubleshooting:
-- If worker logs show `getaddrinfo ENOTFOUND host`, do **not** use placeholder values like `host` in `DATABASE_URL`.
-- Set `DATABASE_URL` to the exact PostgreSQL URL from Railway/managed DB (for example:
-  `postgres://USER:PASS@HOST:5432/DATABASE`).
-
----
-
-## 2) apps/worker (Railway)
+## 2) Worker Service (`apps/worker`)
 
 ```env
 NODE_ENV=production
@@ -83,7 +72,7 @@ LLM_PROVIDER=gemini
 LLM_MODEL=gemini-2.0-flash
 LLM_DAILY_TOKEN_LIMIT=2000000
 LLM_DAILY_COST_LIMIT_USD=5.00
-GEMINI_API_KEY=AIzaSyANSRtbg4mexfXk1WdvvRO3s4UruniRS10
+GEMINI_API_KEY=your_gemini_api_key
 
 EXTRACTOR_PROVIDER=jina
 # JINA_API_KEY=
@@ -93,9 +82,7 @@ WORKER_PORT=8080
 WORKER_RUN_TIMEOUT_MS=600000
 ```
 
----
-
-## 3) Seed command (copy exactly)
+## 3) One-Off Railway Seed Command
 
 ```bash
 API_BASE_URL=https://simvibe.studioliq.com \
@@ -108,20 +95,9 @@ WAIT_FOR_SERVER_SECONDS=180 \
 pnpm seed:nad:railway
 ```
 
----
-
-## 4) Development fallback
+## 4) Local Fallback
 
 ```env
 API_BASE_URL=http://localhost:5555
 WEB_BASE_URL=http://localhost:5556
 ```
-
----
-
-## 5) URL/port rules
-
-- Public URL: `https://simvibe.studioliq.com` (no `:port`)
-- API check: `https://simvibe.studioliq.com/api/diagnostics`
-- Local API: `http://localhost:5555`
-- Local FE dev proxy: `http://localhost:5556`
