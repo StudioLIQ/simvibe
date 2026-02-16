@@ -89,8 +89,8 @@ interface HttpResult {
 function shouldPreserveSeed(runStatus?: string): boolean {
   const normalized = (runStatus || '').trim().toLowerCase();
 
-  // Re-seed failed launches while keeping currently active/finished successful seeds.
-  return normalized !== 'failed';
+  // Only keep healthy/active seeds; allow re-seed for stale queued/pending states.
+  return normalized === 'completed' || normalized === 'running';
 }
 
 interface NadLiveApiToken {
