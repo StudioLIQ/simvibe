@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import type {
   Report,
   PersonaReport,
@@ -152,8 +152,9 @@ function PersonaCard({ persona }: { persona: PersonaReport }) {
   );
 }
 
-export default function ReportPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function ReportPage() {
+  const params = useParams<{ id: string }>();
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const router = useRouter();
   const [run, setRun] = useState<RunData | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -203,6 +204,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   const [lifecycleError, setLifecycleError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!id) return;
     fetchRun();
     fetchReceiptStatus();
     fetchMonadStatus();
@@ -246,6 +248,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
   }, [run]);
 
   const fetchRun = async () => {
+    if (!id) return;
     try {
       const response = await fetch(`/api/run/${id}`);
       if (!response.ok) {

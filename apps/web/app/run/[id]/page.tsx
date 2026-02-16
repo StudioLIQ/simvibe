@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState, useRef, use } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import type { Report, SimEventType, PersonaId, ActionType, SimPhase, RunDiagnostics } from '@simvibe/shared';
 import { formatDuration } from '@simvibe/shared';
 
@@ -31,8 +32,9 @@ interface StreamEvent {
   report?: Report;
 }
 
-export default function RunPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function RunPage() {
+  const params = useParams<{ id: string }>();
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const [run, setRun] = useState<RunData | null>(null);
   const [events, setEvents] = useState<StreamEvent[]>([]);
   const [phase, setPhase] = useState<string>('loading');
@@ -45,6 +47,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
   const eventsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!id) return;
     fetchRun();
   }, [id]);
 
@@ -53,6 +56,7 @@ export default function RunPage({ params }: { params: Promise<{ id: string }> })
   }, [events]);
 
   const fetchRun = async () => {
+    if (!id) return;
     try {
       const response = await fetch(`/api/run/${id}`);
       if (!response.ok) {
