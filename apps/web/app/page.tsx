@@ -23,6 +23,36 @@ function countSeededRuns(runs: RunLite[]): number {
   }).length;
 }
 
+function ReportsIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="quick-link-icon" aria-hidden="true">
+      <path d="M5 5h14v14H5z" />
+      <path d="M9 10h6" />
+      <path d="M9 14h3" />
+    </svg>
+  );
+}
+
+function LaunchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="quick-link-icon" aria-hidden="true">
+      <path d="M6 18l3.2-.8L18 8.4A3.8 3.8 0 1012.6 3L3.8 11.8 3 15z" />
+      <path d="M11 7l6 6" />
+    </svg>
+  );
+}
+
+function PersonaIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="quick-link-icon" aria-hidden="true">
+      <path d="M8 12a3 3 0 100-6 3 3 0 000 6z" />
+      <path d="M16 11a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" />
+      <path d="M3.5 19a4.5 4.5 0 019 0" />
+      <path d="M13 19a3.5 3.5 0 017 0" />
+    </svg>
+  );
+}
+
 export default function HomePage() {
   const [runs, setRuns] = useState<RunLite[]>([]);
   const [personaCount, setPersonaCount] = useState<number | null>(null);
@@ -156,7 +186,12 @@ export default function HomePage() {
             href="/reports"
             className="quick-link-card"
           >
-            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Explore Reports</div>
+            <div className="quick-link-title">
+              <span className="quick-link-icon-wrap">
+                <ReportsIcon />
+              </span>
+              <span>Explore Reports</span>
+            </div>
             <p className="hint" style={{ margin: 0 }}>Review every completed simulation in one place.</p>
           </Link>
 
@@ -164,7 +199,12 @@ export default function HomePage() {
             href="/new"
             className="quick-link-card quick-link-primary"
           >
-            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Start New Simulation</div>
+            <div className="quick-link-title">
+              <span className="quick-link-icon-wrap">
+                <LaunchIcon />
+              </span>
+              <span>Start New Simulation</span>
+            </div>
             <p className="hint" style={{ margin: 0 }}>Predict nad.fun token launch reaction before deployment.</p>
           </Link>
 
@@ -172,7 +212,12 @@ export default function HomePage() {
             href="/personas"
             className="quick-link-card"
           >
-            <div style={{ fontWeight: 700, marginBottom: '0.25rem', color: 'var(--text-primary)' }}>Persona Registry</div>
+            <div className="quick-link-title">
+              <span className="quick-link-icon-wrap">
+                <PersonaIcon />
+              </span>
+              <span>Persona Registry</span>
+            </div>
             <p className="hint" style={{ margin: 0 }}>
               Search and inspect all personas. Currently loaded: {personaCount ?? '-'}.
             </p>
