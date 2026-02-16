@@ -233,7 +233,7 @@ export default function HomePage() {
 
         <div className="protocol-flow" aria-label="SimVibe protocol infographic">
           <article className="protocol-step">
-            <span className="protocol-step-index">Step 01</span>
+            <span className="protocol-step-index">1</span>
             <div className="protocol-step-body">
               <h3>Signal Capture</h3>
               <p className="protocol-step-summary">Convert your thesis, docs, and links into one clean launch brief.</p>
@@ -244,7 +244,7 @@ export default function HomePage() {
           </article>
 
           <article className="protocol-step">
-            <span className="protocol-step-index">Step 02</span>
+            <span className="protocol-step-index">2</span>
             <div className="protocol-step-body">
               <h3>Persona Simulation</h3>
               <p className="protocol-step-summary">Run the idea through personas that pressure-test your narrative.</p>
@@ -255,7 +255,7 @@ export default function HomePage() {
           </article>
 
           <article className="protocol-step">
-            <span className="protocol-step-index">Step 03</span>
+            <span className="protocol-step-index">3</span>
             <div className="protocol-step-body">
               <h3>Risk Scoring</h3>
               <p className="protocol-step-summary">Compare traction, credibility, and execution risk on one score.</p>
@@ -266,7 +266,7 @@ export default function HomePage() {
           </article>
 
           <article className="protocol-step">
-            <span className="protocol-step-index">Step 04</span>
+            <span className="protocol-step-index">4</span>
             <div className="protocol-step-body">
               <h3>Strategic Polish</h3>
               <p className="protocol-step-summary">Get a ranked list of fixes to remove your highest risks first.</p>
@@ -277,7 +277,7 @@ export default function HomePage() {
           </article>
 
           <article className="protocol-step">
-            <span className="protocol-step-index">Step 05</span>
+            <span className="protocol-step-index">5</span>
             <div className="protocol-step-body">
               <h3>Actionable Report</h3>
               <p className="protocol-step-summary">Receive a direct go/no-go memo with your exact next move.</p>
