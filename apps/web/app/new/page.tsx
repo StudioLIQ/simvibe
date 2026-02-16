@@ -16,6 +16,51 @@ const PRICING_MODELS: { value: PricingModel; label: string }[] = [
   { value: 'custom', label: 'Custom' },
 ];
 
+const DEMO_REQUEST_INPUT: {
+  tagline: string;
+  description: string;
+  url: string;
+  pricingModel: PricingModel;
+  category: string;
+  tags: string;
+  pastedContent: string;
+  runMode: RunMode;
+  personaSet: PersonaSetName;
+  customPersonaIds: string;
+  tokenName: string;
+  tokenSymbol: string;
+  launchThesis: string;
+  distributionPlan: string;
+  tokenNarrative: string;
+  riskAssumptions: string;
+  antiSnipe: boolean;
+  bundled: boolean;
+} = {
+  tagline: 'The first meme-curated culture token on Monad',
+  description:
+    'MonadMemes aggregates and rewards the best community memes on Monad. Holders vote on meme contests, and top creators earn token rewards from a community treasury. Every chain needs its culture layer, and MonadMemes is the cultural heartbeat of Monad.',
+  url: '',
+  pricingModel: 'free',
+  category: 'Meme',
+  tags: 'Meme, Community, Monad, Culture',
+  pastedContent: '',
+  runMode: 'quick',
+  personaSet: 'nad_fun_quick',
+  customPersonaIds: '',
+  tokenName: 'MonadMemes',
+  tokenSymbol: 'MMEME',
+  launchThesis:
+    'Meme culture drives early adoption in every L1 ecosystem. MonadMemes captures that energy by tokenizing meme curation and turning attention into governance power.',
+  distributionPlan:
+    'Launch via nad.fun with anti-snipe enabled. Seed first 200 holders from Monad Discord meme channels, coordinate CT meme account raids, and run weekly meme contests with token rewards.',
+  tokenNarrative:
+    'Every chain needs its culture layer. MonadMemes is the cultural heartbeat of Monad where the community decides what is funny and what spreads.',
+  riskAssumptions:
+    'High churn risk typical of meme tokens, reliance on social momentum, possible sniper pressure at launch, and copycat competition if narrative traction appears.',
+  antiSnipe: true,
+  bundled: false,
+};
+
 export default function HomePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -62,6 +107,28 @@ export default function HomePage() {
       cancelled = true;
     };
   }, []);
+
+  const handleAutofillDemoInput = () => {
+    setError(null);
+    setTagline(DEMO_REQUEST_INPUT.tagline);
+    setDescription(DEMO_REQUEST_INPUT.description);
+    setUrl(DEMO_REQUEST_INPUT.url);
+    setPricingModel(DEMO_REQUEST_INPUT.pricingModel);
+    setCategory(DEMO_REQUEST_INPUT.category);
+    setTags(DEMO_REQUEST_INPUT.tags);
+    setPastedContent(DEMO_REQUEST_INPUT.pastedContent);
+    setRunMode(DEMO_REQUEST_INPUT.runMode);
+    setPersonaSet(DEMO_REQUEST_INPUT.personaSet);
+    setCustomPersonaIds(DEMO_REQUEST_INPUT.customPersonaIds);
+    setTokenName(DEMO_REQUEST_INPUT.tokenName);
+    setTokenSymbol(DEMO_REQUEST_INPUT.tokenSymbol);
+    setLaunchThesis(DEMO_REQUEST_INPUT.launchThesis);
+    setDistributionPlan(DEMO_REQUEST_INPUT.distributionPlan);
+    setTokenNarrative(DEMO_REQUEST_INPUT.tokenNarrative);
+    setRiskAssumptions(DEMO_REQUEST_INPUT.riskAssumptions);
+    setAntiSnipe(DEMO_REQUEST_INPUT.antiSnipe);
+    setBundled(DEMO_REQUEST_INPUT.bundled);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,6 +209,25 @@ export default function HomePage() {
             {error}
           </div>
         )}
+
+        <div className="card quick-fill-card">
+          <div className="quick-fill-row">
+            <div>
+              <h2 style={{ marginBottom: '0.25rem', fontSize: '1.08rem' }}>Demo Input Example</h2>
+              <p className="hint" style={{ margin: 0 }}>
+                nad.fun launch 예시 1세트를 모든 필드에 자동 입력합니다.
+              </p>
+            </div>
+            <button
+              type="button"
+              className="btn"
+              onClick={handleAutofillDemoInput}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              Autofill Example
+            </button>
+          </div>
+        </div>
 
         <div className="card">
           <h2 style={{ marginBottom: '1rem', fontSize: '1.25rem' }}>Token / Project Info</h2>

@@ -495,6 +495,20 @@ a:hover {
   letter-spacing: 0.04em;
 }
 
+.quick-fill-card {
+  background:
+    linear-gradient(120deg, rgba(37, 35, 96, 0.45), rgba(17, 26, 45, 0.88)),
+    var(--surface-card);
+}
+
+.quick-fill-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
 .hint {
   font-size: 0.84rem;
   color: var(--text-muted);
