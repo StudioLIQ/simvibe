@@ -53,6 +53,55 @@ function PersonaIcon() {
   );
 }
 
+function IntakeIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
+      <path d="M4 5h16v14H4z" />
+      <path d="M8 9h8" />
+      <path d="M8 13h5" />
+    </svg>
+  );
+}
+
+function SimulateIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
+      <circle cx="12" cy="12" r="3.5" />
+      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M19.1 4.9l-2.2 2.2M7.1 16.9l-2.2 2.2" />
+    </svg>
+  );
+}
+
+function ScoreIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
+      <path d="M4 18h16" />
+      <rect x="6" y="11" width="3" height="5" rx="1" />
+      <rect x="11" y="8" width="3" height="8" rx="1" />
+      <rect x="16" y="6" width="3" height="10" rx="1" />
+    </svg>
+  );
+}
+
+function PatchIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
+      <path d="M6 12l4 4L18 8" />
+      <path d="M4 6h6M14 18h6" />
+    </svg>
+  );
+}
+
+function ReportIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
+      <path d="M7 3h8l4 4v14H7z" />
+      <path d="M15 3v4h4" />
+      <path d="M10 14h6M10 18h4" />
+    </svg>
+  );
+}
+
 export default function HomePage() {
   const [runs, setRuns] = useState<RunLite[]>([]);
   const [personaCount, setPersonaCount] = useState<number | null>(null);
@@ -225,13 +274,65 @@ export default function HomePage() {
         </div>
       </div>
 
-      <div className="card">
-        <h2 style={{ marginBottom: '0.75rem', fontSize: '1.2rem' }}>Production Endpoints</h2>
-        <ul style={{ paddingLeft: '1.25rem', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-          <li>Web: <code>https://simvibe.studioliq.com</code></li>
-          <li>API: <code>https://api-simvibe.studioliq.com</code></li>
-          <li>Diagnostics: <code>/api/diagnostics</code></li>
-        </ul>
+      <div className="card protocol-card">
+        <h2 style={{ marginBottom: '0.45rem', fontSize: '1.2rem' }}>How The Protocol Works</h2>
+        <p className="hint" style={{ marginBottom: '0.95rem' }}>
+          Signal in, persona swarm simulation, calibrated launch report out.
+        </p>
+
+        <div className="protocol-flow" aria-label="SimVibe protocol infographic">
+          <article className="protocol-step">
+            <span className="protocol-step-index">01</span>
+            <span className="protocol-step-icon-wrap"><IntakeIcon /></span>
+            <div className="protocol-step-body">
+              <h3>Ingest</h3>
+              <p>Token thesis, URL and narrative are normalized into a launch brief.</p>
+            </div>
+          </article>
+
+          <article className="protocol-step">
+            <span className="protocol-step-index">02</span>
+            <span className="protocol-step-icon-wrap"><SimulateIcon /></span>
+            <div className="protocol-step-body">
+              <h3>Simulate</h3>
+              <p>Multi-agent personas react with realistic sentiment and objections.</p>
+            </div>
+          </article>
+
+          <article className="protocol-step">
+            <span className="protocol-step-index">03</span>
+            <span className="protocol-step-icon-wrap"><ScoreIcon /></span>
+            <div className="protocol-step-body">
+              <h3>Score</h3>
+              <p>Traction, risk and confidence metrics are computed and weighted.</p>
+            </div>
+          </article>
+
+          <article className="protocol-step">
+            <span className="protocol-step-index">04</span>
+            <span className="protocol-step-icon-wrap"><PatchIcon /></span>
+            <div className="protocol-step-body">
+              <h3>Refine</h3>
+              <p>Weak points get patch suggestions before final recommendation.</p>
+            </div>
+          </article>
+
+          <article className="protocol-step">
+            <span className="protocol-step-index">05</span>
+            <span className="protocol-step-icon-wrap"><ReportIcon /></span>
+            <div className="protocol-step-body">
+              <h3>Launch Report</h3>
+              <p>Decision-ready summary with rationale and next action checklist.</p>
+            </div>
+          </article>
+        </div>
+
+        <div className="protocol-rail" aria-hidden="true">
+          <span className="protocol-chip">INPUT BRIEF</span>
+          <span className="protocol-chip">PERSONA SWARM</span>
+          <span className="protocol-chip">RISK MODEL</span>
+          <span className="protocol-chip">GO / NO-GO</span>
+        </div>
       </div>
     </main>
   );
