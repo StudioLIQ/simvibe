@@ -1,4 +1,4 @@
-# simvi.be Deployment Runbook (Vercel + Railway)
+# simvi.be Deployment Runbook (Railway)
 
 Last updated: 2026-02-15
 
@@ -8,18 +8,16 @@ This runbook reflects the current production architecture and operational flow.
 
 ```text
 [User]
-  -> Vercel Web (apps/web)
-       -> /api/* rewrite
-            -> Railway API (apps/web Next server + route handlers)
-                 -> Postgres (Railway)
-                 -> pg-boss queue
-                      -> Railway Worker (apps/worker)
+  -> Railway Web + API (apps/web Next server + route handlers + React UI)
+       -> Postgres (Railway)
+       -> pg-boss queue
+            -> Railway Worker (apps/worker)
 ```
 
 Key rules:
 - Production storage must be Postgres (`DATABASE_URL=postgres://...`).
 - API and Worker must share the same `DATABASE_URL`.
-- Web on Vercel proxies `/api/*` to Railway API via `API_SERVER_ORIGIN`.
+- API requests are handled on the same Railway service as the web UI (`apps/web`).
 - On-chain features (Receipt/Gate/NAD launch) are optional. System still works in off-chain mode.
 
 ---
@@ -71,7 +69,7 @@ AUTO_SEED_WAIT_SECONDS=180
 SEED_ONLY_MISSING=true
 PRODUCT_COUNT=20
 RUN_MODE=quick
-WEB_BASE_URL=https://simvibe.example.com
+WEB_BASE_URL=https://simvibe.studioliq.com
 # NAD_SOURCE_URL=https://api.nadapp.net/order/market_cap?sort=desc&offset=0&limit=20
 ```
 
@@ -93,16 +91,17 @@ LLM_DAILY_TOKEN_LIMIT=2000000
 LLM_DAILY_COST_LIMIT_USD=5.00
 ```
 
-### 3-3. Web service (Vercel, required)
+### 3-3. Web/API service (Railway)
 
 ```env
-API_SERVER_ORIGIN=https://api-simvibe.example.com
+# API and web run together, so leave API_SERVER_ORIGIN unset unless split deployment.
+API_SERVER_ORIGIN=
 NODE_ENV=production
+WEB_ORIGIN=https://simvibe.studioliq.com
 ```
 
 Security recommendation:
-- Do not place DB/API/wallet secrets in Vercel.
-- Keep secrets only in Railway API/Worker.
+- Keep all API/web secrets in Railway service only.
 
 ### 3-4. Optional chain/launch variables
 
@@ -157,10 +156,10 @@ pnpm start:api:seed
 5. Set Worker env vars from section 3-2
 
 ### 4-4. Connect API domain
-Example: `api-simvibe.example.com`
+Example: `simvibe.studioliq.com`
 
 Verify:
-- `https://api-simvibe.example.com/api/diagnostics`
+- `https://simvibe.studioliq.com/api/diagnostics`
 - Check `storage.activeBackend=postgres`
 
 ---
@@ -178,9 +177,9 @@ Verify migration and persona sync logs are successful.
 
 ---
 
-## 6) Vercel Deployment (Web)
+## 6) Optional: Dedicated FE Split (only if needed)
 
-1. Import project from repo
+1. If you still want FE-only split, import project from repo
 2. Root Directory: `apps/web`
 3. Install command:
 
@@ -195,11 +194,11 @@ cd ../.. && pnpm --filter @simvibe/web build
 ```
 
 5. Set Web env vars from section 3-3
-6. Connect domain (example: `simvibe.example.com`)
+6. Connect domain (example: `simvibe.studioliq.com`)
 
 Verify:
-- `https://simvibe.example.com` loads
-- `/api/*` requests are proxied to `API_SERVER_ORIGIN`
+- `https://simvibe.studioliq.com` loads
+- `/api/*` route handlers are on same Next.js origin
 
 ---
 
@@ -275,8 +274,8 @@ AUTO_SEED_NAD_ON_START=false
 nad.fun demo seeding:
 
 ```bash
-API_BASE_URL=https://api-simvibe.example.com \
-WEB_BASE_URL=https://simvibe.example.com \
+API_BASE_URL=https://simvibe.studioliq.com \
+WEB_BASE_URL=https://simvibe.studioliq.com \
 SEED_ONLY_MISSING=true \
 WAIT_FOR_SERVER_SECONDS=180 \
 PRODUCT_COUNT=20 \
@@ -291,7 +290,7 @@ pnpm seed:nad:railway
 1. Check API `GET /api/diagnostics`
 2. Validate `DATABASE_URL` and Postgres connectivity
 3. Check Worker logs (queue consumption, execution errors)
-4. Validate Vercel `API_SERVER_ORIGIN`
+4. Validate split-FE `API_SERVER_ORIGIN` (only if running FE separately)
 5. If launch returns 403, check report lifecycle status first
 
 ---

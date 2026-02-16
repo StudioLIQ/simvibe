@@ -671,7 +671,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                   : reportLifecycle.status === 'review' ? 'var(--status-warning)'
                   : reportLifecycle.status === 'frozen' ? 'var(--accent-primary)'
                   : 'var(--text-muted)',
-                color: '#fff',
+                color: 'var(--text-on-accent)',
               }}>
                 {reportLifecycle.status.toUpperCase()}
               </span>
@@ -744,7 +744,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                       onClick={() => transitionLifecycle('frozen')}
                       disabled={isTransitioning}
                       className="btn"
-                      style={{ background: 'var(--accent-primary)', color: '#fff', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                      style={{ background: 'var(--accent-primary)', color: 'var(--text-on-accent)', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
                     >
                       {isTransitioning ? '...' : 'Freeze Report'}
                     </button>
@@ -764,7 +764,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                       onClick={() => transitionLifecycle('frozen')}
                       disabled={isTransitioning}
                       className="btn"
-                      style={{ background: 'var(--accent-primary)', color: '#fff', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                      style={{ background: 'var(--accent-primary)', color: 'var(--text-on-accent)', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
                     >
                       {isTransitioning ? '...' : 'Freeze Report'}
                     </button>
@@ -772,7 +772,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                       onClick={() => transitionLifecycle('open')}
                       disabled={isTransitioning}
                       className="btn"
-                      style={{ background: 'var(--border)', color: 'var(--text-secondary)', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                      style={{ background: 'var(--border)', color: 'var(--text-on-accent)', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
                     >
                       {isTransitioning ? '...' : 'Reopen'}
                     </button>
@@ -784,7 +784,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                       onClick={() => transitionLifecycle('published')}
                       disabled={isTransitioning}
                       className="btn"
-                      style={{ background: 'var(--status-success)', color: '#fff', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
+                      style={{ background: 'var(--status-success)', color: 'var(--text-on-accent)', padding: '0.375rem 0.75rem', fontSize: '0.8rem' }}
                     >
                       {isTransitioning ? '...' : 'Publish (Immutable)'}
                     </button>
@@ -1357,7 +1357,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                     className="btn"
                     style={{
                       background: 'var(--accent-primary)',
-                      color: 'white',
+                      color: 'var(--text-on-accent)',
                       padding: '0.5rem 1rem',
                       fontSize: '0.875rem',
                       width: '100%',
@@ -1398,7 +1398,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
                 className="btn"
                 style={{
                   background: 'var(--accent-primary)',
-                  color: 'white',
+                  color: 'var(--text-on-accent)',
                   padding: '0.5rem 1rem',
                   fontSize: '0.875rem',
                   cursor: isPublishingToMonad ? 'not-allowed' : 'pointer',
@@ -2041,7 +2041,7 @@ export default function ReportPage({ params }: { params: Promise<{ id: string }>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem' }}>
                 <span style={{
                   background: 'var(--accent-primary)',
-                  color: 'white',
+                  color: 'var(--text-on-accent)',
                   padding: '0.125rem 0.5rem',
                   borderRadius: '4px',
                   fontSize: '0.75rem',

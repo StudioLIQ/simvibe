@@ -215,7 +215,7 @@ export default function HomePage() {
             <div>
               <h2 style={{ marginBottom: '0.25rem', fontSize: '1.08rem' }}>Demo Input Example</h2>
               <p className="hint" style={{ margin: 0 }}>
-                nad.fun launch 예시 1세트를 모든 필드에 자동 입력합니다.
+                Clicking this fills one full nad.fun launch example into all fields.
               </p>
             </div>
             <button

@@ -2566,7 +2566,7 @@ All tickets are written to be executed by an LLM coding agent (Claude) sequentia
 - Client validation: allows submission without URL when nad.fun fields (tokenName/launchThesis/tokenNarrative) are provided
 - `nadFunSubmission` payload wired into `createRun()` call
 - PH path kept behind explicit `(legacy)` toggle; all primary-flow copy is nad.fun-first
-- Homepage card updated to "nad.fun 토큰 런치 리액션을 예측합니다"
+- Homepage card updated to "Predicts nad.fun token launch reactions"
 - Test: `pnpm typecheck` passes for all packages
 
 ### [x] MND-030 (P0) Add API compatibility layer for legacy PH payloads

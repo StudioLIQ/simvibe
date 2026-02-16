@@ -5,7 +5,7 @@
  * Usage:
  *   API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 pnpm seed:nad
  *   API_BASE_URL=http://localhost:5555 WEB_BASE_URL=http://localhost:5556 PRODUCT_COUNT=5 RUN_MODE=quick pnpm seed:nad
- *   API_BASE_URL=https://api-simvibe.studioliq.com WEB_BASE_URL=https://simvibe.studioliq.com \
+ *   API_BASE_URL=https://simvibe.studioliq.com WEB_BASE_URL=https://simvibe.studioliq.com \
  *     WAIT_FOR_SERVER_SECONDS=180 SEED_ONLY_MISSING=true pnpm seed:nad
  */
 
@@ -70,6 +70,7 @@ interface SeededRun {
 }
 
 interface ExistingRunLite {
+  status?: string;
   input?: {
     tags?: string[];
     platformMode?: string;
@@ -82,6 +83,13 @@ interface ExistingRunLite {
 interface HttpResult {
   _httpStatus: number;
   [key: string]: any;
+}
+
+function shouldPreserveSeed(runStatus?: string): boolean {
+  const normalized = (runStatus || '').trim().toLowerCase();
+
+  // Re-seed failed launches while keeping currently active/finished successful seeds.
+  return normalized !== 'failed';
 }
 
 interface NadLiveApiToken {
@@ -338,17 +346,30 @@ async function fetchExistingSeededSlugs(tokenNameToSlug: Map<string, string>): P
 
     for (const run of runs) {
       const tags = Array.isArray(run.input?.tags) ? run.input!.tags! : [];
+      const preserveSeed = shouldPreserveSeed(run.status);
+      const seedSlugs: string[] = [];
 
       for (const tag of tags) {
         if (tag.startsWith(SEED_SLUG_TAG_PREFIX)) {
           const slug = tag.slice(SEED_SLUG_TAG_PREFIX.length).trim();
-          if (slug) existingSlugs.add(slug);
+          if (slug) seedSlugs.push(slug);
         }
       }
 
       const legacySlug = inferLegacySlug(run, tokenNameToSlug);
       if (legacySlug) {
-        existingSlugs.add(legacySlug);
+        seedSlugs.push(legacySlug);
+      }
+
+      if (seedSlugs.length > 0) {
+        if (preserveSeed) {
+          for (const slug of seedSlugs) {
+            if (slug) existingSlugs.add(slug);
+          }
+        } else {
+          const status = run.status || 'unknown';
+          log(`Found failed seed run (status=${status}); will re-seed slugs: ${seedSlugs.join(', ')}`);
+        }
       }
     }
 

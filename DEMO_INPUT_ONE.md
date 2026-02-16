@@ -1,6 +1,6 @@
 # Demo Input (Single Copy/Paste Set)
 
-아래 값 그대로 입력하면 데모를 바로 시작할 수 있습니다.
+You can start the demo immediately by entering the values below.
 
 ## Token / Project Info
 - `Tagline`:
@@ -14,9 +14,9 @@
 
 ## Project URL / Content
 - `URL`:
-  비워도 됨 (nad.fun 모드에서는 아래 필드로 충분)
+  Optional (in nad.fun mode, the fields below are enough)
 - `Or paste content directly`:
-  비워도 됨
+  Optional
 
 ## Platform Mode
 - `Platform Mode`: `nad.fun` (default)
@@ -36,8 +36,8 @@
 - `Bundled`: unchecked
 
 ## Simulation Mode
-- 데모 속도 우선: `quick`
-- 상호반응 데모 강조: `deep`
+- Demo speed-first: `quick`
+- Emphasis on inter-agent reaction simulation: `deep`
 
 ## Optional (BYOK)
-- Run 화면에서 `Optional: your GEMINI_API_KEY` 칸에 사용자 키 입력 후 시작하면 해당 런만 BYOK로 실행됩니다.
+- On the Run screen, enter your own key in `Optional: your GEMINI_API_KEY`; only that run executes with BYOK.

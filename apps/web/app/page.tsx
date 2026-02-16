@@ -53,55 +53,6 @@ function PersonaIcon() {
   );
 }
 
-function IntakeIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
-      <path d="M4 5h16v14H4z" />
-      <path d="M8 9h8" />
-      <path d="M8 13h5" />
-    </svg>
-  );
-}
-
-function SimulateIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
-      <circle cx="12" cy="12" r="3.5" />
-      <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M19.1 4.9l-2.2 2.2M7.1 16.9l-2.2 2.2" />
-    </svg>
-  );
-}
-
-function ScoreIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
-      <path d="M4 18h16" />
-      <rect x="6" y="11" width="3" height="5" rx="1" />
-      <rect x="11" y="8" width="3" height="8" rx="1" />
-      <rect x="16" y="6" width="3" height="10" rx="1" />
-    </svg>
-  );
-}
-
-function PatchIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
-      <path d="M6 12l4 4L18 8" />
-      <path d="M4 6h6M14 18h6" />
-    </svg>
-  );
-}
-
-function ReportIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="protocol-step-icon" aria-hidden="true">
-      <path d="M7 3h8l4 4v14H7z" />
-      <path d="M15 3v4h4" />
-      <path d="M10 14h6M10 18h4" />
-    </svg>
-  );
-}
-
 export default function HomePage() {
   const [runs, setRuns] = useState<RunLite[]>([]);
   const [personaCount, setPersonaCount] = useState<number | null>(null);
@@ -277,52 +228,62 @@ export default function HomePage() {
       <div className="card protocol-card">
         <h2 style={{ marginBottom: '0.45rem', fontSize: '1.2rem' }}>How The Protocol Works</h2>
         <p className="hint" style={{ marginBottom: '0.95rem' }}>
-          Signal in, persona swarm simulation, calibrated launch report out.
+          We convert startup intuition into launch-grade decisions in five precise steps—so you can move from guesswork to go/no-go with confidence.
         </p>
 
         <div className="protocol-flow" aria-label="SimVibe protocol infographic">
           <article className="protocol-step">
-            <span className="protocol-step-index">01</span>
-            <span className="protocol-step-icon-wrap"><IntakeIcon /></span>
+            <span className="protocol-step-index">Step 01</span>
             <div className="protocol-step-body">
-              <h3>Ingest</h3>
-              <p>Token thesis, URL and narrative are normalized into a launch brief.</p>
+              <h3>Signal Capture</h3>
+              <p className="protocol-step-summary">Convert your thesis, docs, and links into one clean launch brief.</p>
+              <p className="protocol-step-detail">
+                Convert your thesis, docs, and links into a structured launch brief before noise dilutes the signal.
+              </p>
             </div>
           </article>
 
           <article className="protocol-step">
-            <span className="protocol-step-index">02</span>
-            <span className="protocol-step-icon-wrap"><SimulateIcon /></span>
+            <span className="protocol-step-index">Step 02</span>
             <div className="protocol-step-body">
-              <h3>Simulate</h3>
-              <p>Multi-agent personas react with realistic sentiment and objections.</p>
+              <h3>Persona Simulation</h3>
+              <p className="protocol-step-summary">Run the idea through personas that pressure-test your narrative.</p>
+              <p className="protocol-step-detail">
+                Put the concept in front of many personality types to expose blind spots and pressure-test your narrative.
+              </p>
             </div>
           </article>
 
           <article className="protocol-step">
-            <span className="protocol-step-index">03</span>
-            <span className="protocol-step-icon-wrap"><ScoreIcon /></span>
+            <span className="protocol-step-index">Step 03</span>
             <div className="protocol-step-body">
-              <h3>Score</h3>
-              <p>Traction, risk and confidence metrics are computed and weighted.</p>
+              <h3>Risk Scoring</h3>
+              <p className="protocol-step-summary">Compare traction, credibility, and execution risk on one score.</p>
+              <p className="protocol-step-detail">
+                Score traction, credibility, and execution risk together so your team can compare opportunities objectively.
+              </p>
             </div>
           </article>
 
           <article className="protocol-step">
-            <span className="protocol-step-index">04</span>
-            <span className="protocol-step-icon-wrap"><PatchIcon /></span>
+            <span className="protocol-step-index">Step 04</span>
             <div className="protocol-step-body">
-              <h3>Refine</h3>
-              <p>Weak points get patch suggestions before final recommendation.</p>
+              <h3>Strategic Polish</h3>
+              <p className="protocol-step-summary">Get a ranked list of fixes to remove your highest risks first.</p>
+              <p className="protocol-step-detail">
+                Get a ranked action list that targets the biggest blockers first and removes costly launch risk quickly.
+              </p>
             </div>
           </article>
 
           <article className="protocol-step">
-            <span className="protocol-step-index">05</span>
-            <span className="protocol-step-icon-wrap"><ReportIcon /></span>
+            <span className="protocol-step-index">Step 05</span>
             <div className="protocol-step-body">
-              <h3>Launch Report</h3>
-              <p>Decision-ready summary with rationale and next action checklist.</p>
+              <h3>Actionable Report</h3>
+              <p className="protocol-step-summary">Receive a direct go/no-go memo with your exact next move.</p>
+              <p className="protocol-step-detail">
+                Receive a final decision memo with go/no-go clarity, rationale, and the exact next move for launch prep.
+              </p>
             </div>
           </article>
         </div>
