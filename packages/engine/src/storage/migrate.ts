@@ -3,7 +3,6 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const MIGRATIONS_TABLE = '_migrations';
-const MIGRATIONS_DIR_ENV = 'SIMVIBE_MIGRATIONS_DIR';
 
 const CREATE_MIGRATIONS_TABLE = `
   CREATE TABLE IF NOT EXISTS ${MIGRATIONS_TABLE} (
@@ -24,12 +23,12 @@ function isReadableDirectory(dirPath: string): boolean {
 function resolveMigrationsDir(): string {
   const cwd = process.cwd();
   const candidates = [
-    process.env[MIGRATIONS_DIR_ENV],
+    '/app/packages/engine/src/storage/migrations',
     path.join(__dirname, 'migrations'),
     path.join(cwd, 'packages', 'engine', 'src', 'storage', 'migrations'),
     path.join(cwd, 'node_modules', '@simvibe', 'engine', 'src', 'storage', 'migrations'),
     path.join(cwd, 'dist', 'storage', 'migrations'),
-  ].filter((value): value is string => Boolean(value));
+  ];
 
   for (const dirPath of candidates) {
     if (isReadableDirectory(dirPath)) {
@@ -40,7 +39,7 @@ function resolveMigrationsDir(): string {
   const attempted = candidates.map((value) => `- ${value}`).join('\n');
   throw new Error(
     `Unable to locate SQL migrations directory.\n` +
-      `Set ${MIGRATIONS_DIR_ENV} or ensure one of these paths exists:\n${attempted}`,
+      `Expected one of these paths to exist:\n${attempted}`,
   );
 }
 
